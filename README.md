@@ -19,7 +19,7 @@
 ### Build from Source
 
 ```bash
-git clone https://github.com/yourusername/clasp.git
+git clone https://github.com/cuihairu/clasp.git
 cd clasp
 mkdir build && cd build
 cmake ..
