@@ -14,7 +14,7 @@
 
 ### Prerequisites
 
-- **C++20**: Clasp utilizes modern C++ features, so a C++20 compliant compiler is required.
+- **C++17**: Clasp targets C++17 for broader compiler compatibility.
 
 ### Build from Source
 
@@ -32,22 +32,25 @@ sudo make install
 ### Basic Example
 
 ```cpp
-#include <clasp/clasp.hpp>
+#include "clasp/clasp.hpp"
+#include <iostream>
+#include <string>
+#include <vector>
 
 int main(int argc, char** argv) {
-    auto rootCmd = Clasp::Command("app", "A brief description of your application");
+    clasp::Command rootCmd("app", "A brief description of your application");
 
-    auto printCmd = Clasp::Command("print", "Prints a message to the console")
-        .withFlag<std::string>("--message", "-m", "Message to print", "Hello, World!")
-        .action([](auto& args) {
-            std::string message = args.getFlag<std::string>("--message");
-            std::cout << message << std::endl;
+    clasp::Command printCmd("print", "Prints a message to the console");
+    printCmd
+        .withFlag("--message", "-m", "message", "Message to print", std::string("Hello, World!"))
+        .action([](clasp::Command& /*cmd*/, const clasp::Parser& parser, const std::vector<std::string>& /*args*/) {
+            const auto message = parser.getFlag<std::string>("--message", "Hello, World!");
+            std::cout << message << "\n";
+            return 0;
         });
 
-    rootCmd.addCommand(printCmd);
-    rootCmd.run(argc, argv);
-
-    return 0;
+    rootCmd.addCommand(std::move(printCmd));
+    return rootCmd.run(argc, argv);
 }
 ```
 
