@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <cstddef>
 #include <cstdlib>
 
 #include "flag.hpp"
@@ -24,11 +25,18 @@ public:
         bool shortFlagGrouping{true}; // -abc
         bool boolNegation{true};      // --no-foo
         bool suggestFlags{true};
+        std::size_t suggestionsMinimumDistance{2};
+        bool disableFlagParsing{false};
     };
 
     Parser(int argc, char** argv, const std::vector<Flag>& flags) : Parser(argc, argv, flags, Options{}) {}
 
     Parser(int argc, char** argv, const std::vector<Flag>& flags, Options options) : options_(options) {
+        if (options_.disableFlagParsing) {
+            for (int i = 1; i < argc; ++i) positionals_.push_back(argv[i]);
+            return;
+        }
+
         // Built-ins (even if not declared on a command).
         aliases_["--help"] = "--help";
         aliases_["-h"] = "--help";
@@ -120,11 +128,23 @@ public:
         return it != flagValues_.end();
     }
 
+    bool hasValue(const std::string& flag) const {
+        const auto key = resolveKey(flag);
+        if (flagValues_.find(key) != flagValues_.end()) return true;
+        if (externalValues_.find(key) != externalValues_.end()) return true;
+        return false;
+    }
+
+    void setExternalValues(std::unordered_map<std::string, std::string> values) { externalValues_ = std::move(values); }
+
     template <typename T>
     T getFlag(const std::string& flag, T defaultValue = T()) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
         if (it != flagValues_.end()) return parse<T>(it->second, std::move(defaultValue));
+
+        const auto extIt = externalValues_.find(key);
+        if (extIt != externalValues_.end()) return parse<T>(extIt->second, std::move(defaultValue));
 
         const auto defIt = defaults_.find(key);
         if (defIt != defaults_.end()) return parse<T>(defIt->second, std::move(defaultValue));
@@ -256,13 +276,14 @@ private:
         ok_ = false;
         error_ = "unknown flag: " + key;
         if (!options_.suggestFlags || knownKeys_.empty()) return;
-        const auto suggestions = utils::suggest(key, knownKeys_);
+        const auto suggestions = utils::suggest(key, knownKeys_, /*maxResults=*/3, options_.suggestionsMinimumDistance);
         if (suggestions.empty()) return;
         error_ += "\n\nDid you mean this?\n";
         for (const auto& s : suggestions) error_ += "  " + s + "\n";
     }
 
     std::unordered_map<std::string, std::string> flagValues_;
+    std::unordered_map<std::string, std::string> externalValues_;
     std::unordered_map<std::string, std::string> aliases_;
     std::unordered_map<std::string, Kind> kinds_;
     std::unordered_map<std::string, std::string> defaults_;

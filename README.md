@@ -7,6 +7,7 @@
 - **Command and Subcommand Handling**: Easily define and manage commands with subcommands and associated actions.
 - **Argument Parsing**: Supports both positional and named arguments with type safety.
 - **Flag Management**: Define and parse command-line flags effortlessly.
+- **Cobra-Like Ergonomics**: Persistent hooks/flags, command aliases, suggestions, and `TraverseChildren` (child flags before subcommands).
 - **Help and Usage Generation**: Automatically generate help text and usage instructions based on defined commands and flags.
 - **Extensibility**: Flexible enough to be extended for more complex CLI needs.
 

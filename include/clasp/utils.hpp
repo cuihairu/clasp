@@ -32,7 +32,8 @@ inline std::size_t levenshteinDistance(std::string_view a, std::string_view b) {
 
 inline std::vector<std::string> suggest(std::string_view input,
                                         const std::vector<std::string>& candidates,
-                                        std::size_t maxResults = 3) {
+                                        std::size_t maxResults = 3,
+                                        std::size_t maxDistance = 2) {
     struct Scored {
         std::string value;
         std::size_t score;
@@ -58,7 +59,7 @@ inline std::vector<std::string> suggest(std::string_view input,
     out.reserve(maxResults);
     for (const auto& s : scored) {
         if (out.size() >= maxResults) break;
-        if (s.score <= 2) out.push_back(s.value);
+        if (s.score <= maxDistance) out.push_back(s.value);
     }
     return out;
 }
