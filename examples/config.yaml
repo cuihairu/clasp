@@ -1,0 +1,4 @@
+# YAML config example for config_yaml_example.cpp
+message: fromyaml
+nested:
+  mode: deep

@@ -1,0 +1,5 @@
+# TOML config example for config_toml_example.cpp
+message = "fromtoml"
+
+[nested]
+mode = "deep"

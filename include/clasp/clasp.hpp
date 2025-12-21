@@ -2,6 +2,7 @@
 #define CLASP_HPP
 #include "command.hpp"
 #include "flag.hpp"
+#include "value.hpp"
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define CLASP_VERSION_MAJOR 0

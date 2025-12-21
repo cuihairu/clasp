@@ -1,0 +1,7 @@
+{
+  "message": "fromjson",
+  "nested": {
+    "mode": "deep"
+  }
+}
+

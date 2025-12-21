@@ -7,6 +7,7 @@
 int main(int argc, char** argv) {
     clasp::Command rootCmd("app", "A brief description of your application");
     rootCmd.version("0.1.0");
+    rootCmd.examples("app print --message \"Hello\"\napp help print\napp --version");
     rootCmd.withPersistentFlag("--verbose", "-v", "Enable verbose output");
     rootCmd.withPersistentFlag("--quiet", "-q", "Disable output");
 

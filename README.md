@@ -6,9 +6,11 @@
 
 - **Command and Subcommand Handling**: Easily define and manage commands with subcommands and associated actions.
 - **Argument Parsing**: Supports both positional and named arguments with type safety.
-- **Flag Management**: Define and parse command-line flags effortlessly.
-- **Cobra-Like Ergonomics**: Persistent hooks/flags, command aliases, suggestions, and `TraverseChildren` (child flags before subcommands).
+- **Flag Management**: Persistent/local flags, required/hidden/deprecated, groups, repeated flags, and optional values (NoOptDefVal).
+- **Cobra-Like Ergonomics**: Hooks, aliases, suggestions, `TraverseChildren`, sorted help output, examples, and custom help/usage/version templates.
 - **Help and Usage Generation**: Automatically generate help text and usage instructions based on defined commands and flags.
+- **Shell Completion**: bash/zsh/fish/powershell completion generation + `__complete` directives and configurable completion command names.
+- **Config Integration**: env binding and config file merge (supports `.env`-style, `.json`, `.toml`, `.yaml`).
 - **Extensibility**: Flexible enough to be extended for more complex CLI needs.
 
 ## Installation
@@ -25,6 +27,7 @@ cd clasp
 mkdir build && cd build
 cmake ..
 make
+ctest --output-on-failure
 sudo make install
 ```
 
@@ -69,11 +72,13 @@ Hello, Clasp!
 
 ## Documentation
 
-Comprehensive documentation and API references are available at [Clasp Documentation](https://yourdocurl.com).
+- `EXAMPLES.md`: index of all runnable examples and what they demonstrate.
+- `COMPAT.md`: what “Cobra-like” means for this project.
+- Public headers live under `include/clasp/` (`clasp/clasp.hpp` includes the main API).
 
 ## Contributing
 
-We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Issues and PRs are welcome.
 
 ## License
 
