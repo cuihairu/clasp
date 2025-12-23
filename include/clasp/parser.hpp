@@ -81,16 +81,14 @@ public:
                     }
                 }
 
-                if (options_.shortFlagGrouping && isShortGroupToken(arg)) {
-                    if (!parseShortGroup(arg, i, argc, argv)) continue;
-                    continue;
-                }
-
-                // Support --k=v
+                // Support --k=v and -k=v (short-form with equals).
                 const auto eq = arg.find('=');
                 if (eq != std::string::npos) {
                     key = arg.substr(0, eq);
                     value = arg.substr(eq + 1);
+                } else if (options_.shortFlagGrouping && isShortGroupToken(arg)) {
+                    if (!parseShortGroup(arg, i, argc, argv)) continue;
+                    continue;
                 } else {
                     key = arg;
                     const auto canonical = normalizeKey(key);

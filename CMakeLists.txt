@@ -38,7 +38,7 @@ add_test(NAME basic_unknown COMMAND basic_example nope)
 set_tests_properties(basic_unknown PROPERTIES PASS_REGULAR_EXPRESSION "unknown command")
 
 add_test(NAME basic_missing_flag_value COMMAND basic_example print --message)
-set_tests_properties(basic_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION "flag needs an argument")
+set_tests_properties(basic_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION "flag needs an argument.*Usage: app print")
 
 add_test(NAME basic_unknown_cmd_suggest COMMAND basic_example prnit)
 set_tests_properties(basic_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
@@ -57,11 +57,44 @@ set_tests_properties(basic_short_group PROPERTIES PASS_REGULAR_EXPRESSION "hi")
 add_test(NAME basic_bool_negation COMMAND basic_example --no-verbose print --message hi)
 set_tests_properties(basic_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "hi")
 
+add_test(NAME basic_short_value_inline COMMAND basic_example print -mhi)
+set_tests_properties(basic_short_value_inline PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+
+add_test(NAME basic_short_value_eq COMMAND basic_example print -m=hi)
+set_tests_properties(basic_short_value_eq PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+
+add_test(NAME basic_end_of_flags COMMAND basic_example print -- --message hi)
+set_tests_properties(basic_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION "Hello, World!")
+
+add_test(NAME basic_end_of_flags_preserves_before COMMAND basic_example print --message hi -- --message bye)
+set_tests_properties(basic_end_of_flags_preserves_before PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+
 add_test(NAME basic_alias COMMAND basic_example p --message hi)
 set_tests_properties(basic_alias PROPERTIES PASS_REGULAR_EXPRESSION "hi")
 
+add_executable(args_example examples/args_example.cpp)
+target_link_libraries(args_example PRIVATE clasp)
+
+add_test(NAME args_noargs_ok COMMAND args_example noargs)
+set_tests_properties(args_noargs_ok PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+add_test(NAME args_noargs_fail_shows_usage COMMAND args_example noargs x)
+set_tests_properties(args_noargs_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts no arguments.*Usage: app noargs")
+
+add_test(NAME args_exact_fail_shows_usage COMMAND args_example exact one)
+set_tests_properties(args_exact_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts 2 arg\\(s\\).*Usage: app exact")
+
+add_test(NAME args_range_fail_shows_usage COMMAND args_example range a b c)
+set_tests_properties(args_range_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts between 1 and 2 arg\\(s\\).*Usage: app range")
+
+add_test(NAME args_silence_usage_hides_usage COMMAND args_example silence_usage)
+set_tests_properties(args_silence_usage_hides_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts 1 arg\\(s\\)" FAIL_REGULAR_EXPRESSION "Usage:")
+
+add_test(NAME args_silence_errors_hides_error COMMAND args_example silence_errors)
+set_tests_properties(args_silence_errors_hides_error PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app silence_errors" FAIL_REGULAR_EXPRESSION "Error:")
+
 add_test(NAME basic_invalid_bool_eq COMMAND basic_example --verbose=maybe print --message hi)
-set_tests_properties(basic_invalid_bool_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "maybe" for "--verbose"]==])
+set_tests_properties(basic_invalid_bool_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "maybe" for "--verbose".*Usage: app print]==])
 
 add_test(NAME basic_disable_flag_parsing COMMAND basic_example raw --help --x -y)
 set_tests_properties(basic_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION "--help --x -y")
@@ -82,7 +115,7 @@ add_executable(required_example examples/required_example.cpp)
 target_link_libraries(required_example PRIVATE clasp)
 
 add_test(NAME required_missing COMMAND required_example do)
-set_tests_properties(required_missing PROPERTIES PASS_REGULAR_EXPRESSION "required flag not set")
+set_tests_properties(required_missing PROPERTIES PASS_REGULAR_EXPRESSION "required flag not set.*Usage: app do")
 
 add_test(NAME required_ok COMMAND required_example do --name bob)
 set_tests_properties(required_ok PROPERTIES PASS_REGULAR_EXPRESSION "bob")

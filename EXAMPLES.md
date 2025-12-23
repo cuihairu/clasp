@@ -13,6 +13,7 @@ ctest --test-dir build --output-on-failure
 ## Example Index
 
 - `examples/basic_example.cpp`: Basic command + flags + alias + version/help.
+- `examples/args_example.cpp`: Args validators (`NoArgs/ExactArgs/RangeArgs`) + `SilenceUsage` / `SilenceErrors` behavior.
 - `examples/hooks_example.cpp`: Hook ordering (`PersistentPreRun`/`PreRun`/`PostRun`).
 - `examples/required_example.cpp`: Required flags.
 - `examples/flag_groups_example.cpp`: Mutually-exclusive / one-required / required-together groups.

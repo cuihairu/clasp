@@ -10,7 +10,7 @@ Goal: implement a C++17 CLI framework that mirrors Go cobra's behavior and ergon
 ## Plan (Next: Full Cobra Parity)
 
 - [x] 定义“对齐范围”：明确必须支持/可选支持/不支持的 Cobra 能力（以 Cobra `Command` API + CLI 行为为准），见 `COMPAT.md`
-- [ ] 功能差距盘点：逐项对照 Cobra（help/usage/version 模板、completion 回调/指令、flag 类型/语义、命令分组/排序、错误/usage 输出一致性等）
+- [x] 功能差距盘点：逐项对照 Cobra（help/usage/version 模板、completion 回调/指令、flag 类型/语义、命令分组/排序、错误/usage 输出一致性等），见 `COMPAT.md` 的 “Feature Inventory”
 - [ ] 分阶段落地：每个缺口补齐对应示例 + CTest（先核心 CLI 行为，再生态与可选项）
 - [ ] 兼容性与稳定性：完善错误信息/输出一致性、边界用例（unknown flags/args、组合 flags、`--` 等）
 - [ ] 文档收尾：README + 文档生成/完成脚本用法更新
