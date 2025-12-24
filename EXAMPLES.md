@@ -32,6 +32,7 @@ ctest --test-dir build --output-on-failure
 - `examples/repeat_example.cpp`: Repeated flags + CSV-style split helper.
 - `examples/map_example.cpp`: Map-style helper (`a=1,b=2`) built on repeated/split values.
 - `examples/types_example.cpp`: Extra flag types (`int64/uint64/double/duration`).
+- `examples/net_example.cpp`: IP + CIDR flag types (`withIPFlag` / `withCIDRFlag`).
 - `examples/external_typed_example.cpp`: Env-bound typed flags validated strictly (env value parse errors fail early).
 - `examples/bytes_example.cpp`: Bytes flag (`withPersistentBytesFlag`, values like `1KB`, `1.5MiB`).
 - `examples/pflag_types_example.cpp`: pflag-like getters (`getStringSlice/getStringArray/getStringToString`).

@@ -1,6 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include <array>
 #include <chrono>
 #include <cctype>
 #include <cerrno>
@@ -86,60 +87,69 @@ public:
                 if (eq != std::string::npos) {
                     key = arg.substr(0, eq);
                     value = arg.substr(eq + 1);
-                } else if (options_.shortFlagGrouping && isShortGroupToken(arg)) {
-                    if (!parseShortGroup(arg, i, argc, argv)) continue;
-                    continue;
-                } else {
-                    key = arg;
                     const auto canonical = normalizeKey(key);
                     const auto kindIt = kinds_.find(canonical);
-                    if (kindIt == kinds_.end() && !options_.allowUnknownFlags) {
+                    if (kindIt == kinds_.end()) {
+                        if (!options_.allowUnknownFlags) failUnknownFlag(key);
+                        continue; // ignore unknown flag and its "=value"
+                    }
+                    if (!normalizeValue(canonical, value, kindIt->second)) continue;
+                    recordFlagValue(canonical, std::move(value));
+                    continue;
+                }
+
+                if (options_.shortFlagGrouping && isShortGroupToken(arg)) {
+                    if (!parseShortGroup(arg, i, argc, argv)) continue;
+                    continue;
+                }
+
+                key = arg;
+                const auto canonical = normalizeKey(key);
+                const auto kindIt = kinds_.find(canonical);
+                if (kindIt == kinds_.end()) {
+                    if (!options_.allowUnknownFlags) {
                         failUnknownFlag(key);
                         continue;
                     }
+                    // Cobra-like (UnknownFlags whitelist): ignore unknown flags; consume an optional value only if the
+                    // next token doesn't look like a flag.
+                    if (i + 1 < argc && !isFlagToken(std::string(argv[i + 1]))) ++i;
+                    continue;
+                }
 
-                    const bool isBool = (kindIt != kinds_.end() && kindIt->second == Kind::Bool);
-                    const bool isCount = (countKeys_.find(canonical) != countKeys_.end());
-                    if (isBool) {
-                        if (i + 1 < argc && isBoolLiteral(argv[i + 1])) {
-                            value = argv[++i];
-                        } else {
-                            value = "true";
-                        }
-                    } else if (isCount) {
-                        // pflag Count: treat as bool-like (no separate arg); each occurrence increments by 1.
-                        value = "1";
+                const bool isBool = (kindIt->second == Kind::Bool);
+                const bool isCount = (countKeys_.find(canonical) != countKeys_.end());
+                if (isBool) {
+                    if (i + 1 < argc && isBoolLiteral(argv[i + 1])) {
+                        value = argv[++i];
                     } else {
-                        const auto noOptIt = noOptDefaults_.find(canonical);
-                        if (i + 1 >= argc) {
-                            if (noOptIt != noOptDefaults_.end()) {
-                                value = noOptIt->second;
-                            } else {
-                                ok_ = false;
-                                error_ = "flag needs an argument: " + key;
-                                continue;
-                            }
+                        value = "true";
+                    }
+                } else if (isCount) {
+                    // pflag Count: treat as bool-like (no separate arg); each occurrence increments by 1.
+                    value = "1";
+                } else {
+                    const auto noOptIt = noOptDefaults_.find(canonical);
+                    if (i + 1 >= argc) {
+                        if (noOptIt != noOptDefaults_.end()) {
+                            value = noOptIt->second;
                         } else {
-                            const std::string_view next = argv[i + 1];
-                            if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) {
-                                value = noOptIt->second;
-                            } else {
-                                value = argv[++i];
-                            }
+                            ok_ = false;
+                            error_ = "flag needs an argument: " + key;
+                            continue;
+                        }
+                    } else {
+                        const std::string_view next = argv[i + 1];
+                        if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) {
+                            value = noOptIt->second;
+                        } else {
+                            value = argv[++i];
                         }
                     }
                 }
 
-                key = normalizeKey(std::move(key));
-                const auto kindIt2 = kinds_.find(key);
-                if (kindIt2 == kinds_.end() && !options_.allowUnknownFlags) {
-                    failUnknownFlag(key);
-                    continue;
-                }
-                if (kindIt2 != kinds_.end()) {
-                    if (!normalizeValue(key, value, kindIt2->second)) continue;
-                }
-                recordFlagValue(key, std::move(value));
+                if (!normalizeValue(canonical, value, kindIt->second)) continue;
+                recordFlagValue(canonical, std::move(value));
                 continue;
             }
 
@@ -779,13 +789,298 @@ private:
         return true;
     }
 
+    struct ParsedIP {
+        bool v4{false};
+        std::array<std::uint8_t, 16> bytes{};
+    };
+
+    static bool tryParseIPv4(std::string_view s, ParsedIP& out) {
+        const auto sv = trimWs(s);
+        if (sv.empty()) return false;
+        if (sv.find(':') != std::string_view::npos) return false;
+
+        std::array<std::uint8_t, 4> octets{};
+        std::size_t octetIdx = 0;
+        std::size_t start = 0;
+        for (;;) {
+            const auto dot = sv.find('.', start);
+            const auto part = (dot == std::string_view::npos) ? sv.substr(start) : sv.substr(start, dot - start);
+            if (part.empty()) return false;
+            if (octetIdx >= octets.size()) return false;
+            std::uint32_t value = 0;
+            for (const char ch : part) {
+                if (ch < '0' || ch > '9') return false;
+                value = value * 10u + static_cast<std::uint32_t>(ch - '0');
+                if (value > 255u) return false;
+            }
+            octets[octetIdx++] = static_cast<std::uint8_t>(value);
+            if (dot == std::string_view::npos) break;
+            start = dot + 1;
+        }
+        if (octetIdx != 4) return false;
+
+        out.v4 = true;
+        out.bytes.fill(0);
+        for (std::size_t i = 0; i < 4; ++i) out.bytes[i] = octets[i];
+        return true;
+    }
+
+    static bool tryParseHextet(std::string_view s, std::uint16_t& out) {
+        const auto sv = trimWs(s);
+        if (sv.empty() || sv.size() > 4) return false;
+        std::uint32_t v = 0;
+        for (const char ch : sv) {
+            std::uint32_t digit = 0;
+            if (ch >= '0' && ch <= '9') digit = static_cast<std::uint32_t>(ch - '0');
+            else if (ch >= 'a' && ch <= 'f') digit = 10u + static_cast<std::uint32_t>(ch - 'a');
+            else if (ch >= 'A' && ch <= 'F') digit = 10u + static_cast<std::uint32_t>(ch - 'A');
+            else return false;
+            v = (v << 4) | digit;
+            if (v > 0xFFFFu) return false;
+        }
+        out = static_cast<std::uint16_t>(v);
+        return true;
+    }
+
+    static bool splitOnChar(std::string_view s, char sep, std::vector<std::string_view>& out) {
+        out.clear();
+        std::size_t start = 0;
+        for (;;) {
+            const auto pos = s.find(sep, start);
+            if (pos == std::string_view::npos) {
+                out.push_back(s.substr(start));
+                break;
+            }
+            out.push_back(s.substr(start, pos - start));
+            start = pos + 1;
+        }
+        return true;
+    }
+
+    static bool tryParseIPv6(std::string_view s, ParsedIP& out) {
+        const auto sv = trimWs(s);
+        if (sv.empty()) return false;
+        if (sv.find('%') != std::string_view::npos) return false; // zone IDs not supported
+
+        const auto dbl = sv.find("::");
+        const bool hasDbl = (dbl != std::string_view::npos);
+        if (hasDbl && sv.find("::", dbl + 2) != std::string_view::npos) return false;
+
+        const auto head = hasDbl ? sv.substr(0, dbl) : sv;
+        const auto tail = hasDbl ? sv.substr(dbl + 2) : std::string_view{};
+
+        std::vector<std::string_view> headParts;
+        std::vector<std::string_view> tailParts;
+        if (!head.empty()) splitOnChar(head, ':', headParts);
+        if (!tail.empty()) splitOnChar(tail, ':', tailParts);
+
+        for (const auto& p : headParts) {
+            if (p.empty()) return false;
+        }
+        for (const auto& p : tailParts) {
+            if (p.empty()) return false;
+        }
+
+        auto parseParts = [](const std::vector<std::string_view>& parts, bool allowV4Tail, std::vector<std::uint16_t>& groups) {
+            groups.clear();
+            groups.reserve(parts.size());
+            for (std::size_t idx = 0; idx < parts.size(); ++idx) {
+                const auto part = parts[idx];
+                const bool isLast = (idx + 1 == parts.size());
+                if (allowV4Tail && isLast && part.find('.') != std::string_view::npos) {
+                    ParsedIP ip4{};
+                    if (!tryParseIPv4(part, ip4)) return false;
+                    const std::uint16_t g1 = (static_cast<std::uint16_t>(ip4.bytes[0]) << 8) | ip4.bytes[1];
+                    const std::uint16_t g2 = (static_cast<std::uint16_t>(ip4.bytes[2]) << 8) | ip4.bytes[3];
+                    groups.push_back(g1);
+                    groups.push_back(g2);
+                    continue;
+                }
+                if (part.find('.') != std::string_view::npos) return false;
+                std::uint16_t g{};
+                if (!tryParseHextet(part, g)) return false;
+                groups.push_back(g);
+            }
+            return true;
+        };
+
+        std::vector<std::uint16_t> headGroups;
+        std::vector<std::uint16_t> tailGroups;
+        const bool headV4Tail = (!hasDbl && !headParts.empty() && tailParts.empty() && headParts.back().find('.') != std::string_view::npos);
+        const bool tailV4Tail = (!tailParts.empty() && tailParts.back().find('.') != std::string_view::npos);
+
+        if (!parseParts(headParts, headV4Tail, headGroups)) return false;
+        if (!parseParts(tailParts, tailV4Tail, tailGroups)) return false;
+
+        const std::size_t total = headGroups.size() + tailGroups.size();
+        if (hasDbl) {
+            if (total > 8) return false;
+            const std::size_t missing = 8 - total;
+            if (missing == 0) return false; // "::" must compress at least one 0 group
+            std::vector<std::uint16_t> all;
+            all.reserve(8);
+            all.insert(all.end(), headGroups.begin(), headGroups.end());
+            all.insert(all.end(), missing, 0);
+            all.insert(all.end(), tailGroups.begin(), tailGroups.end());
+            if (all.size() != 8) return false;
+            out.v4 = false;
+            out.bytes.fill(0);
+            for (std::size_t j = 0; j < 8; ++j) {
+                const std::uint16_t g = all[j];
+                out.bytes[j * 2] = static_cast<std::uint8_t>((g >> 8) & 0xFFu);
+                out.bytes[j * 2 + 1] = static_cast<std::uint8_t>(g & 0xFFu);
+            }
+            return true;
+        }
+
+        if (total != 8) return false;
+        std::vector<std::uint16_t> all;
+        all.reserve(8);
+        all.insert(all.end(), headGroups.begin(), headGroups.end());
+        all.insert(all.end(), tailGroups.begin(), tailGroups.end());
+        out.v4 = false;
+        out.bytes.fill(0);
+        for (std::size_t j = 0; j < 8; ++j) {
+            const std::uint16_t g = all[j];
+            out.bytes[j * 2] = static_cast<std::uint8_t>((g >> 8) & 0xFFu);
+            out.bytes[j * 2 + 1] = static_cast<std::uint8_t>(g & 0xFFu);
+        }
+        return true;
+    }
+
+    static std::string formatIPv4(const ParsedIP& ip) {
+        return std::to_string(ip.bytes[0]) + "." + std::to_string(ip.bytes[1]) + "." + std::to_string(ip.bytes[2]) + "." +
+               std::to_string(ip.bytes[3]);
+    }
+
+    static std::string hexNoLeading(std::uint16_t v) {
+        if (v == 0) return "0";
+        std::string tmp;
+        while (v != 0) {
+            const std::uint16_t d = static_cast<std::uint16_t>(v & 0xFu);
+            tmp.push_back("0123456789abcdef"[d]);
+            v = static_cast<std::uint16_t>(v >> 4);
+        }
+        std::string out;
+        out.reserve(tmp.size());
+        for (auto it = tmp.rbegin(); it != tmp.rend(); ++it) out.push_back(*it);
+        return out;
+    }
+
+    static std::string formatIPv6(const ParsedIP& ip) {
+        std::array<std::uint16_t, 8> groups{};
+        for (std::size_t i = 0; i < 8; ++i) {
+            groups[i] = (static_cast<std::uint16_t>(ip.bytes[i * 2]) << 8) | static_cast<std::uint16_t>(ip.bytes[i * 2 + 1]);
+        }
+
+        std::size_t bestStart = 0;
+        std::size_t bestLen = 0;
+        for (std::size_t i = 0; i < 8;) {
+            if (groups[i] != 0) {
+                ++i;
+                continue;
+            }
+            std::size_t j = i;
+            while (j < 8 && groups[j] == 0) ++j;
+            const std::size_t len = j - i;
+            if (len >= 2 && len > bestLen) {
+                bestStart = i;
+                bestLen = len;
+            }
+            i = j;
+        }
+
+        std::string out;
+        bool first = true;
+        for (std::size_t i = 0; i < 8; ++i) {
+            if (bestLen >= 2 && i == bestStart) {
+                out += first ? "::" : "::";
+                first = false;
+                i += bestLen - 1;
+                continue;
+            }
+            if (!first && out.back() != ':') out.push_back(':');
+            out += hexNoLeading(groups[i]);
+            first = false;
+        }
+        if (out.empty()) return "::";
+        return out;
+    }
+
+    static bool tryParseIP(std::string_view s, std::string& canonical) {
+        ParsedIP ip{};
+        if (s.find(':') != std::string_view::npos) {
+            if (!tryParseIPv6(s, ip)) return false;
+            canonical = formatIPv6(ip);
+            return true;
+        }
+        if (!tryParseIPv4(s, ip)) return false;
+        canonical = formatIPv4(ip);
+        return true;
+    }
+
+    static bool tryParseCIDR(std::string_view s, std::string& canonical) {
+        const auto sv = trimWs(s);
+        const auto slash = sv.find('/');
+        if (slash == std::string_view::npos) return false;
+
+        const auto ipPart = trimWs(sv.substr(0, slash));
+        const auto prefixPart = trimWs(sv.substr(slash + 1));
+        if (ipPart.empty() || prefixPart.empty()) return false;
+
+        ParsedIP ip{};
+        std::string ipCanon;
+        if (ipPart.find(':') != std::string_view::npos) {
+            if (!tryParseIPv6(ipPart, ip)) return false;
+        } else {
+            if (!tryParseIPv4(ipPart, ip)) return false;
+        }
+
+        int prefix = 0;
+        for (const char ch : prefixPart) {
+            if (ch < '0' || ch > '9') return false;
+            prefix = prefix * 10 + static_cast<int>(ch - '0');
+            if (prefix > 128) return false;
+        }
+
+        const int maxBits = ip.v4 ? 32 : 128;
+        if (prefix < 0 || prefix > maxBits) return false;
+
+        const std::size_t bytesLen = ip.v4 ? 4 : 16;
+        for (std::size_t idx = 0; idx < bytesLen; ++idx) {
+            const int bits = prefix - static_cast<int>(idx * 8);
+            if (bits >= 8) continue;
+            if (bits <= 0) {
+                ip.bytes[idx] = 0;
+                continue;
+            }
+            const std::uint8_t mask = static_cast<std::uint8_t>(0xFFu << (8 - bits));
+            ip.bytes[idx] = static_cast<std::uint8_t>(ip.bytes[idx] & mask);
+        }
+        for (std::size_t idx = bytesLen; idx < 16; ++idx) ip.bytes[idx] = 0;
+
+        ipCanon = ip.v4 ? formatIPv4(ip) : formatIPv6(ip);
+        canonical = ipCanon + "/" + std::to_string(prefix);
+        return true;
+    }
+
     bool normalizeValue(const std::string& key, std::string& value, Kind kind) {
         if (!ok_) return false;
         const std::string original = value;
         bool valid = true;
         switch (kind) {
         case Kind::String:
-            valid = true;
+            if (ipKeys_.find(key) != ipKeys_.end()) {
+                std::string canon;
+                valid = tryParseIP(value, canon);
+                if (valid) value = std::move(canon);
+            } else if (cidrKeys_.find(key) != cidrKeys_.end()) {
+                std::string canon;
+                valid = tryParseCIDR(value, canon);
+                if (valid) value = std::move(canon);
+            } else {
+                valid = true;
+            }
             break;
         case Kind::Bool: {
             bool parsed{};
@@ -872,6 +1167,14 @@ private:
             if (bytesIt != f.annotations().end() && isTruthyAnnotation(bytesIt->second)) {
                 bytesKeys_.insert(f.longName());
             }
+            const auto ipIt = f.annotations().find("ip");
+            if (ipIt != f.annotations().end() && isTruthyAnnotation(ipIt->second)) {
+                ipKeys_.insert(f.longName());
+            }
+            const auto cidrIt = f.annotations().find("cidr");
+            if (cidrIt != f.annotations().end() && isTruthyAnnotation(cidrIt->second)) {
+                cidrKeys_.insert(f.longName());
+            }
             knownKeys_.push_back(f.longName());
         }
         if (!f.shortName().empty() && !f.longName().empty()) {
@@ -889,9 +1192,18 @@ private:
             const std::string key = std::string("-") + group[pos];
             const auto canonical = normalizeKey(key);
             const auto kindIt = kinds_.find(canonical);
-            if (kindIt == kinds_.end() && !options_.allowUnknownFlags) {
-                failUnknownFlag(key);
-                return false;
+            if (kindIt == kinds_.end()) {
+                if (!options_.allowUnknownFlags) {
+                    failUnknownFlag(key);
+                    return false;
+                }
+                // Cobra-like (UnknownFlags whitelist): ignore unknown short flags inside a group, but only the last
+                // unknown flag may consume an optional value (if the next token isn't another flag).
+                if (pos + 1 == group.size()) {
+                    if (i + 1 < argc && !isFlagToken(std::string(argv[i + 1]))) ++i;
+                    return true;
+                }
+                continue;
             }
 
             if (kindIt != kinds_.end() && kindIt->second == Kind::Bool) {
@@ -973,6 +1285,8 @@ private:
     std::unordered_map<std::string, std::string> noOptDefaults_;
     std::unordered_set<std::string> countKeys_;
     std::unordered_set<std::string> bytesKeys_;
+    std::unordered_set<std::string> ipKeys_;
+    std::unordered_set<std::string> cidrKeys_;
     std::vector<std::string> knownKeys_;
     std::vector<std::string> positionals_;
     bool ok_{true};

@@ -297,8 +297,20 @@ set_tests_properties(dynamic_complete_flag_value PROPERTIES PASS_REGULAR_EXPRESS
 add_executable(parser_knobs_example examples/parser_knobs_example.cpp)
 target_link_libraries(parser_knobs_example PRIVATE clasp)
 
-add_test(NAME parser_knobs_allow_unknown COMMAND parser_knobs_example unknown_ok --mystery value)
-set_tests_properties(parser_knobs_allow_unknown PROPERTIES PASS_REGULAR_EXPRESSION "ran")
+add_test(NAME parser_knobs_allow_unknown_consumes_value COMMAND parser_knobs_example unknown_ok --mystery value)
+set_tests_properties(parser_knobs_allow_unknown_consumes_value PROPERTIES PASS_REGULAR_EXPRESSION "verbose=false args=\\[\\]")
+
+add_test(NAME parser_knobs_allow_unknown_does_not_consume_other_flags COMMAND parser_knobs_example unknown_ok --mystery -v)
+set_tests_properties(parser_knobs_allow_unknown_does_not_consume_other_flags PROPERTIES PASS_REGULAR_EXPRESSION "verbose=true args=\\[\\]")
+
+add_test(NAME parser_knobs_allow_unknown_eq_consumes_token_only COMMAND parser_knobs_example unknown_ok --mystery=val leftover)
+set_tests_properties(parser_knobs_allow_unknown_eq_consumes_token_only PROPERTIES PASS_REGULAR_EXPRESSION "verbose=false args=\\[leftover\\]")
+
+add_test(NAME parser_knobs_allow_unknown_short_unknown_not_last_does_not_consume COMMAND parser_knobs_example unknown_ok -xv value)
+set_tests_properties(parser_knobs_allow_unknown_short_unknown_not_last_does_not_consume PROPERTIES PASS_REGULAR_EXPRESSION "verbose=true args=\\[value\\]")
+
+add_test(NAME parser_knobs_allow_unknown_short_unknown_last_consumes COMMAND parser_knobs_example unknown_ok -vx value)
+set_tests_properties(parser_knobs_allow_unknown_short_unknown_last_consumes PROPERTIES PASS_REGULAR_EXPRESSION "verbose=true args=\\[\\]")
 
 add_test(NAME parser_knobs_no_short_group COMMAND parser_knobs_example no_group -vq)
 set_tests_properties(parser_knobs_no_short_group PROPERTIES PASS_REGULAR_EXPRESSION "unknown flag: -vq")
@@ -487,6 +499,27 @@ set_tests_properties(types_invalid_pi_trailing PROPERTIES PASS_REGULAR_EXPRESSIO
 
 add_test(NAME types_invalid_timeout_unit COMMAND types_example --timeout 5q)
 set_tests_properties(types_invalid_timeout_unit PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "5q" for "--timeout"]==])
+
+add_executable(net_example examples/net_example.cpp)
+target_link_libraries(net_example PRIVATE clasp)
+
+add_test(NAME net_help_shows_types COMMAND net_example help show)
+set_tests_properties(net_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "(--ip ip.*--cidr cidr)|(--cidr cidr.*--ip ip)")
+
+add_test(NAME net_ip_ipv6_canonical COMMAND net_example show --ip 2001:db8:0:0:0:0:2:1)
+set_tests_properties(net_ip_ipv6_canonical PROPERTIES PASS_REGULAR_EXPRESSION "ip=2001:db8::2:1")
+
+add_test(NAME net_cidr_v4_masks COMMAND net_example show --cidr 10.0.1.2/8)
+set_tests_properties(net_cidr_v4_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=10.0.0.0/8")
+
+add_test(NAME net_cidr_v6_masks COMMAND net_example show --cidr 2001:db8::1/32)
+set_tests_properties(net_cidr_v6_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=2001:db8::/32")
+
+add_test(NAME net_invalid_ip COMMAND net_example show --ip 999.0.0.1)
+set_tests_properties(net_invalid_ip PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "999.0.0.1" for "--ip".*Usage: app show]==])
+
+add_test(NAME net_invalid_cidr_prefix COMMAND net_example show --cidr 10.0.0.1/33)
+set_tests_properties(net_invalid_cidr_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "10.0.0.1/33" for "--cidr".*Usage: app show]==])
 
 add_executable(external_typed_example examples/external_typed_example.cpp)
 target_link_libraries(external_typed_example PRIVATE clasp)

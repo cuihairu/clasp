@@ -215,12 +215,50 @@ public:
         return *this;
     }
 
+    // pflag-like: IP flag stored as string, validated/canonicalized as IPv4 or IPv6.
+    Command& withIPFlag(std::string longName,
+                        std::string shortName,
+                        std::string varName,
+                        std::string description,
+                        std::string defaultValue = "") {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            std::move(defaultValue));
+        flags_.back().setAnnotation("ip", "true");
+        return *this;
+    }
+
+    // pflag-like: CIDR flag stored as string, validated/canonicalized (network address + prefix).
+    Command& withCIDRFlag(std::string longName,
+                          std::string shortName,
+                          std::string varName,
+                          std::string description,
+                          std::string defaultValue = "") {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            std::move(defaultValue));
+        flags_.back().setAnnotation("cidr", "true");
+        return *this;
+    }
+
     Command& withBytesFlag(std::string longName, std::string shortName, std::string description, std::uint64_t defaultValue = 0) {
         return withBytesFlag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
     }
 
     Command& withCountFlag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
         return withCountFlag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withIPFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withIPFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withCIDRFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withCIDRFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
     // Convenience: bool flag with default false.
@@ -270,6 +308,34 @@ public:
         return *this;
     }
 
+    Command& withPersistentIPFlag(std::string longName,
+                                  std::string shortName,
+                                  std::string varName,
+                                  std::string description,
+                                  std::string defaultValue = "") {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      std::move(defaultValue));
+        persistentFlags_.back().setAnnotation("ip", "true");
+        return *this;
+    }
+
+    Command& withPersistentCIDRFlag(std::string longName,
+                                    std::string shortName,
+                                    std::string varName,
+                                    std::string description,
+                                    std::string defaultValue = "") {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      std::move(defaultValue));
+        persistentFlags_.back().setAnnotation("cidr", "true");
+        return *this;
+    }
+
     Command& withPersistentBytesFlag(std::string longName,
                                      std::string shortName,
                                      std::string description,
@@ -282,6 +348,14 @@ public:
                                      std::string description,
                                      int defaultValue = 0) {
         return withPersistentCountFlag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withPersistentIPFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withPersistentIPFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withPersistentCIDRFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withPersistentCIDRFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
     Command& withPersistentFlag(std::string longName, std::string shortName, std::string description) {
@@ -1443,6 +1517,10 @@ private:
         if (bytesIt != ann.end() && (bytesIt->second == "true" || bytesIt->second == "1" || bytesIt->second == "yes")) return "bytes";
         const auto it = ann.find("count");
         if (it != ann.end() && it->second == "true") return "count";
+        const auto ipIt = ann.find("ip");
+        if (ipIt != ann.end() && (ipIt->second == "true" || ipIt->second == "1" || ipIt->second == "yes")) return "ip";
+        const auto cidrIt = ann.find("cidr");
+        if (cidrIt != ann.end() && (cidrIt->second == "true" || cidrIt->second == "1" || cidrIt->second == "yes")) return "cidr";
 
         return std::visit(
             [](const auto& x) -> std::optional<std::string> {

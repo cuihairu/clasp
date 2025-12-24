@@ -4,14 +4,24 @@
 
 #include "clasp/clasp.hpp"
 
+static void printArgs(const std::vector<std::string>& args) {
+    std::cout << "args=[";
+    for (std::size_t i = 0; i < args.size(); ++i) {
+        if (i) std::cout << ",";
+        std::cout << args[i];
+    }
+    std::cout << "]\n";
+}
+
 int main(int argc, char** argv) {
     clasp::Command rootCmd("app", "Parser knobs example");
     rootCmd.withPersistentFlag("--verbose", "-v", "Enable verbose output");
     rootCmd.withPersistentFlag("--quiet", "-q", "Disable output");
 
     clasp::Command unknownOk("unknown_ok", "Allows unknown flags");
-    unknownOk.allowUnknownFlags(true).action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
-        std::cout << "ran\n";
+    unknownOk.allowUnknownFlags(true).action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>& args) {
+        std::cout << "verbose=" << (parser.hasFlag("--verbose") ? "true" : "false") << " ";
+        printArgs(args);
         return 0;
     });
 
@@ -33,4 +43,3 @@ int main(int argc, char** argv) {
 
     return rootCmd.run(argc, argv);
 }
-
