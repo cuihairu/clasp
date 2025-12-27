@@ -89,9 +89,13 @@ jobs:
       - name: Generate coverage (lcov)
         shell: bash
         run: |
-          lcov --capture --directory build --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '*/build/*' '*/examples/*' --output-file coverage.info
-          lcov --list coverage.info
+          lcov --capture --directory build --output-file coverage.info \
+            --rc lcov_branch_coverage=1 \
+            --rc geninfo_unexecuted_blocks=1
+          lcov --remove coverage.info '/usr/*' '*/examples/*' --output-file coverage.info \
+            --rc lcov_branch_coverage=1 \
+            --ignore-errors unused
+          lcov --list coverage.info --rc lcov_branch_coverage=1
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
