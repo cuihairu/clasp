@@ -120,6 +120,10 @@ add_test(NAME basic_unknown_cmd_suggest COMMAND basic_example prnit)
 set_tests_properties(basic_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
   print]==])
 
+add_test(NAME basic_unknown_cmd_prefix_suggest COMMAND basic_example pri)
+set_tests_properties(basic_unknown_cmd_prefix_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
+  print]==])
+
 add_test(NAME basic_unknown_flag_suggest COMMAND basic_example print --mesage hi)
 set_tests_properties(basic_unknown_flag_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
   --message]==])
@@ -626,6 +630,39 @@ set_tests_properties(url_invalid_scheme PROPERTIES PASS_REGULAR_EXPRESSION [==[i
 
 add_test(NAME url_invalid_empty_authority COMMAND url_example show --url http:///a)
 set_tests_properties(url_invalid_empty_authority PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "http:///a" for "--url".*Usage: app show]==])
+
+add_executable(flag_convert_example examples/flag_convert_example.cpp)
+target_link_libraries(flag_convert_example PRIVATE clasp)
+
+add_test(NAME flag_convert_bool_empty COMMAND flag_convert_example bool)
+set_tests_properties(flag_convert_bool_empty PROPERTIES PASS_REGULAR_EXPRESSION "bool=false")
+
+add_test(NAME flag_convert_bool_true COMMAND flag_convert_example bool true)
+set_tests_properties(flag_convert_bool_true PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+add_test(NAME flag_convert_bool_true_1 COMMAND flag_convert_example bool 1)
+set_tests_properties(flag_convert_bool_true_1 PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+add_test(NAME flag_convert_bool_true_True COMMAND flag_convert_example bool True)
+set_tests_properties(flag_convert_bool_true_True PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+add_test(NAME flag_convert_bool_true_TRUE COMMAND flag_convert_example bool TRUE)
+set_tests_properties(flag_convert_bool_true_TRUE PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+add_test(NAME flag_convert_bool_true_on COMMAND flag_convert_example bool on)
+set_tests_properties(flag_convert_bool_true_on PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+add_test(NAME flag_convert_bool_false COMMAND flag_convert_example bool false)
+set_tests_properties(flag_convert_bool_false PROPERTIES PASS_REGULAR_EXPRESSION "bool=false")
+
+add_test(NAME flag_convert_int COMMAND flag_convert_example int 42)
+set_tests_properties(flag_convert_int PROPERTIES PASS_REGULAR_EXPRESSION "int=42")
+
+add_test(NAME flag_convert_float COMMAND flag_convert_example float 1.5)
+set_tests_properties(flag_convert_float PROPERTIES PASS_REGULAR_EXPRESSION "float=1\\.500000")
+
+add_test(NAME flag_convert_string COMMAND flag_convert_example string hello)
+set_tests_properties(flag_convert_string PROPERTIES PASS_REGULAR_EXPRESSION "string=hello")
 
 add_executable(external_typed_example examples/external_typed_example.cpp)
 target_link_libraries(external_typed_example PRIVATE clasp)

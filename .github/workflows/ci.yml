@@ -104,5 +104,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.info
+          disable_search: true
+          plugins: noop
           fail_ci_if_error: true
           verbose: true
