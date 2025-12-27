@@ -374,6 +374,12 @@ set_tests_properties(dynamic_complete_valid_args PROPERTIES PASS_REGULAR_EXPRESS
 add_test(NAME dynamic_complete_flag_value COMMAND dynamic_completion_example __completeNoDesc paint --color r)
 set_tests_properties(dynamic_complete_flag_value PROPERTIES PASS_REGULAR_EXPRESSION "red")
 
+add_test(NAME dynamic_complete_flag_value_eq COMMAND dynamic_completion_example __completeNoDesc paint --color=r)
+set_tests_properties(dynamic_complete_flag_value_eq PROPERTIES PASS_REGULAR_EXPRESSION "--color=red")
+
+add_test(NAME dynamic_complete_flag_names COMMAND dynamic_completion_example __completeNoDesc paint --)
+set_tests_properties(dynamic_complete_flag_names PROPERTIES PASS_REGULAR_EXPRESSION "--color")
+
 add_executable(parser_knobs_example examples/parser_knobs_example.cpp)
 target_link_libraries(parser_knobs_example PRIVATE clasp)
 
@@ -759,6 +765,15 @@ set_tests_properties(pflag_map_int64 PROPERTIES PASS_REGULAR_EXPRESSION "big=a=1
 
 add_test(NAME pflag_map_bool COMMAND pflag_types_example show --toggles a=true --toggles b=false,c=yes)
 set_tests_properties(pflag_map_bool PROPERTIES PASS_REGULAR_EXPRESSION "toggles=a=true\\|b=false\\|c=true")
+
+add_executable(utils_suggest_example examples/utils_suggest_example.cpp)
+target_link_libraries(utils_suggest_example PRIVATE clasp)
+
+add_test(NAME utils_suggest_prefix_branch COMMAND utils_suggest_example pri print)
+set_tests_properties(utils_suggest_prefix_branch PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+add_test(NAME utils_suggest_distance_branch COMMAND utils_suggest_example prnit print)
+set_tests_properties(utils_suggest_distance_branch PROPERTIES PASS_REGULAR_EXPRESSION "print")
 
 add_executable(custom_value_example examples/custom_value_example.cpp)
 target_link_libraries(custom_value_example PRIVATE clasp)
