@@ -31,6 +31,7 @@ ctest --test-dir build --output-on-failure
 - `examples/noopt_example.cpp`: `NoOptDefVal` (non-bool flag optional value).
 - `examples/repeat_example.cpp`: Repeated flags + CSV-style split helper.
 - `examples/map_example.cpp`: Map-style helper (`a=1,b=2`) built on repeated/split values.
+- `examples/float_flag_example.cpp`: Float flag parsing (valid + invalid).
 - `examples/types_example.cpp`: Extra flag types (`int64/uint64/double/duration`).
 - `examples/net_example.cpp`: IP + CIDR flag types (`withIPFlag` / `withCIDRFlag`).
 - `examples/net_extra_example.cpp`: IPNet + IPMask flag types (`withIPNetFlag` / `withIPMaskFlag`).
@@ -39,6 +40,7 @@ ctest --test-dir build --output-on-failure
 - `examples/bytes_example.cpp`: Bytes flag (`withPersistentBytesFlag`, values like `1KB`, `1.5MiB`).
 - `examples/pflag_types_example.cpp`: pflag-like getters (`getStringSlice/getStringArray/getStringToString`).
 - `examples/custom_value_example.cpp`: Custom flag Value interface (`Value::set/string/type`).
+- `examples/parser_external_example.cpp`: Parser external values (multi-source merge + count flags).
 - `examples/silence_errors_example.cpp`: `SilenceErrors` suppresses unknown-command output.
 - `examples/version_template_example.cpp`: Custom version template (`setVersionTemplate`).
 - `examples/disable_flags_in_use_line_example.cpp`: Hide `[flags]` in the usage line (`disableFlagsInUseLine`).
@@ -54,3 +56,5 @@ ctest --test-dir build --output-on-failure
 - `examples/config_list_example.cpp` + `examples/config_list.*`: Multi-value config arrays/sequences mapped to repeated flags.
 - `examples/sorting_example.cpp` / `examples/no_sorting_example.cpp`: Command/flag sorting toggles.
 - `examples/execute_example.cpp`: Programmatic execution (`setArgs` + `execute()`).
+- `examples/hook_error_example.cpp`: Error-returning hooks (`*PreRunE/*PostRunE`) and `actionE`.
+- `examples/api_coverage_example.cpp`: Builder-style API surface coverage.

@@ -452,7 +452,7 @@ target_link_libraries(group_example PRIVATE clasp)
 
 add_test(NAME group_help COMMAND group_example --help)
 set_tests_properties(group_help PROPERTIES PASS_REGULAR_EXPRESSION [==[Commands:
-  zulu - Zulu cmd
+  (zulu - Zulu cmd.*ghost - Ghost cmd|ghost - Ghost cmd.*zulu - Zulu cmd)
 
 Core Commands:
   alpha - Alpha cmd
@@ -610,8 +610,14 @@ set_tests_properties(net_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "(-
 add_test(NAME net_ip_ipv6_canonical COMMAND net_example show --ip 2001:db8:0:0:0:0:2:1)
 set_tests_properties(net_ip_ipv6_canonical PROPERTIES PASS_REGULAR_EXPRESSION "ip=2001:db8::2:1")
 
+add_test(NAME net_ip_ipv4_canonical COMMAND net_example show --ip 10.0.0.1)
+set_tests_properties(net_ip_ipv4_canonical PROPERTIES PASS_REGULAR_EXPRESSION "ip=10\\.0\\.0\\.1")
+
 add_test(NAME net_cidr_v4_masks COMMAND net_example show --cidr 10.0.1.2/8)
 set_tests_properties(net_cidr_v4_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=10.0.0.0/8")
+
+add_test(NAME net_cidr_v4_partial_byte_masks COMMAND net_example show --cidr 10.0.0.1/9)
+set_tests_properties(net_cidr_v4_partial_byte_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=10\\.0\\.0\\.0/9")
 
 add_test(NAME net_cidr_v6_masks COMMAND net_example show --cidr 2001:db8::1/32)
 set_tests_properties(net_cidr_v6_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=2001:db8::/32")
@@ -844,6 +850,45 @@ set_tests_properties(custom_value_invalid PROPERTIES PASS_REGULAR_EXPRESSION "in
 
 add_test(NAME custom_value_help_shows_type COMMAND custom_value_example help show)
 set_tests_properties(custom_value_help_shows_type PROPERTIES PASS_REGULAR_EXPRESSION "--level level")
+
+add_executable(float_flag_example examples/float_flag_example.cpp)
+target_link_libraries(float_flag_example PRIVATE clasp)
+
+add_test(NAME float_flag_ok COMMAND float_flag_example --ratio 1.5)
+set_tests_properties(float_flag_ok PROPERTIES PASS_REGULAR_EXPRESSION "ratio=1\\.5")
+
+add_test(NAME float_flag_invalid COMMAND float_flag_example --ratio 1,2)
+set_tests_properties(float_flag_invalid PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "1,2" for "--ratio".*Usage: app]==])
+
+add_executable(api_coverage_example examples/api_coverage_example.cpp)
+target_link_libraries(api_coverage_example PRIVATE clasp)
+
+add_test(NAME api_coverage COMMAND api_coverage_example)
+set_tests_properties(api_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+add_executable(parser_external_example examples/parser_external_example.cpp)
+target_link_libraries(parser_external_example PRIVATE clasp)
+
+add_test(NAME parser_external_multi_sources COMMAND parser_external_example)
+set_tests_properties(parser_external_multi_sources PROPERTIES PASS_REGULAR_EXPRESSION "name=b.*count=3")
+
+add_executable(hook_error_example examples/hook_error_example.cpp)
+target_link_libraries(hook_error_example PRIVATE clasp)
+
+add_test(NAME hook_error_actionE COMMAND hook_error_example do --action-err)
+set_tests_properties(hook_error_actionE PROPERTIES PASS_REGULAR_EXPRESSION "Error: action")
+
+add_test(NAME hook_error_preRunE COMMAND hook_error_example do --sub-pre-err)
+set_tests_properties(hook_error_preRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: sub-pre")
+
+add_test(NAME hook_error_postRunE COMMAND hook_error_example do --sub-post-err)
+set_tests_properties(hook_error_postRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: sub-post")
+
+add_test(NAME hook_error_persistentPreRunE COMMAND hook_error_example --root-pre-err do)
+set_tests_properties(hook_error_persistentPreRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: root-pre")
+
+add_test(NAME hook_error_persistentPostRunE COMMAND hook_error_example --root-post-err do)
+set_tests_properties(hook_error_persistentPostRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: root-post")
 
 add_executable(silence_errors_example examples/silence_errors_example.cpp)
 target_link_libraries(silence_errors_example PRIVATE clasp)

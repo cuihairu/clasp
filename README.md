@@ -104,4 +104,4 @@ Issues and PRs are welcome.
 
 ## License
 
-Clasp is licensed under the MIT License. See [LICENSE](LICENSE) for more details.
+Clasp is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for more details.
