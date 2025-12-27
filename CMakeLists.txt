@@ -5,8 +5,36 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include(CTest)
-enable_testing()
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/include/clasp/clasp.hpp CLASP_HPP_CONTENTS)
+string(REGEX MATCH "#define[ \t]+CLASP_VERSION_MAJOR[ \t]+([0-9]+)" _ ${CLASP_HPP_CONTENTS})
+set(CLASP_HEADER_VERSION_MAJOR "${CMAKE_MATCH_1}")
+string(REGEX MATCH "#define[ \t]+CLASP_VERSION_MINOR[ \t]+([0-9]+)" _ ${CLASP_HPP_CONTENTS})
+set(CLASP_HEADER_VERSION_MINOR "${CMAKE_MATCH_1}")
+string(REGEX MATCH "#define[ \t]+CLASP_VERSION_PATCH[ \t]+([0-9]+)" _ ${CLASP_HPP_CONTENTS})
+set(CLASP_HEADER_VERSION_PATCH "${CMAKE_MATCH_1}")
+set(CLASP_HEADER_VERSION "${CLASP_HEADER_VERSION_MAJOR}.${CLASP_HEADER_VERSION_MINOR}.${CLASP_HEADER_VERSION_PATCH}")
+if(NOT CLASP_HEADER_VERSION STREQUAL PROJECT_VERSION)
+  message(FATAL_ERROR "Version mismatch: project(clasp VERSION ${PROJECT_VERSION}) but include/clasp/clasp.hpp defines ${CLASP_HEADER_VERSION}")
+endif()
+
+set(CLASP_TOP_LEVEL OFF)
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(CLASP_TOP_LEVEL ON)
+endif()
+option(CLASP_BUILD_EXAMPLES "Build Clasp examples and CTest suite" ${CLASP_TOP_LEVEL})
+option(CLASP_ENABLE_COVERAGE "Enable code coverage flags (GCC/Clang only)" OFF)
+
+if(CLASP_ENABLE_COVERAGE)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-O0 -g --coverage)
+    add_link_options(--coverage)
+  else()
+    message(WARNING "CLASP_ENABLE_COVERAGE is only supported with GCC/Clang")
+  endif()
+endif()
 
 add_library(clasp
         src/clasp.cpp
@@ -14,7 +42,55 @@ add_library(clasp
         src/flag.cpp
 )
 
-target_include_directories(clasp PUBLIC include)
+target_include_directories(clasp
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+target_compile_features(clasp PUBLIC cxx_std_17)
+
+set_target_properties(clasp PROPERTIES
+  EXPORT_NAME clasp
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
+add_library(clasp::clasp ALIAS clasp)
+
+install(TARGETS clasp
+  EXPORT claspTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT claspTargets
+  NAMESPACE clasp::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/clasp
+)
+
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/claspConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/claspConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/clasp
+)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/claspConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/claspConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/claspConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/clasp
+)
+
+if(CLASP_BUILD_EXAMPLES)
+  include(CTest)
+  enable_testing()
 
 add_executable(basic_example examples/basic_example.cpp)
 target_link_libraries(basic_example PRIVATE clasp)
@@ -521,6 +597,36 @@ set_tests_properties(net_invalid_ip PROPERTIES PASS_REGULAR_EXPRESSION [==[inval
 add_test(NAME net_invalid_cidr_prefix COMMAND net_example show --cidr 10.0.0.1/33)
 set_tests_properties(net_invalid_cidr_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "10.0.0.1/33" for "--cidr".*Usage: app show]==])
 
+add_executable(net_extra_example examples/net_extra_example.cpp)
+target_link_libraries(net_extra_example PRIVATE clasp)
+
+add_test(NAME net_extra_help_shows_types COMMAND net_extra_example help show)
+set_tests_properties(net_extra_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "(--ipnet ipnet.*--mask ipmask)|(--mask ipmask.*--ipnet ipnet)")
+
+add_test(NAME net_extra_ipnet_masks COMMAND net_extra_example show --ipnet 10.0.1.2/8)
+set_tests_properties(net_extra_ipnet_masks PROPERTIES PASS_REGULAR_EXPRESSION "ipnet=10.0.0.0/8")
+
+add_test(NAME net_extra_mask_ok COMMAND net_extra_example show --mask 255.255.255.0)
+set_tests_properties(net_extra_mask_ok PROPERTIES PASS_REGULAR_EXPRESSION "mask=255.255.255.0")
+
+add_test(NAME net_extra_invalid_mask COMMAND net_extra_example show --mask 255.0.255.0)
+set_tests_properties(net_extra_invalid_mask PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "255.0.255.0" for "--mask".*Usage: app show]==])
+
+add_executable(url_example examples/url_example.cpp)
+target_link_libraries(url_example PRIVATE clasp)
+
+add_test(NAME url_help_shows_type COMMAND url_example help show)
+set_tests_properties(url_help_shows_type PROPERTIES PASS_REGULAR_EXPRESSION "--url url")
+
+add_test(NAME url_canonicalizes_scheme_host COMMAND url_example show --url HTTP://Example.COM/a)
+set_tests_properties(url_canonicalizes_scheme_host PROPERTIES PASS_REGULAR_EXPRESSION "url=http://example\\.com/a")
+
+add_test(NAME url_invalid_scheme COMMAND url_example show --url 1http://example.com/a)
+set_tests_properties(url_invalid_scheme PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "1http://example.com/a" for "--url".*Usage: app show]==])
+
+add_test(NAME url_invalid_empty_authority COMMAND url_example show --url http:///a)
+set_tests_properties(url_invalid_empty_authority PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "http:///a" for "--url".*Usage: app show]==])
+
 add_executable(external_typed_example examples/external_typed_example.cpp)
 target_link_libraries(external_typed_example PRIVATE clasp)
 
@@ -655,3 +761,5 @@ set_tests_properties(map_single PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=1,b
 
 add_test(NAME map_repeat_overrides COMMAND map_example --label a=1 --label a=9)
 set_tests_properties(map_repeat_overrides PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=9")
+
+endif()

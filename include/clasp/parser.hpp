@@ -1019,6 +1019,26 @@ private:
         return true;
     }
 
+    static bool tryParseIPMask(std::string_view s, std::string& canonical) {
+        const auto sv = trimWs(s);
+        if (sv.empty()) {
+            canonical.clear();
+            return true;
+        }
+        if (sv.find(':') != std::string_view::npos) return false; // IPv4 masks only
+
+        ParsedIP ip{};
+        if (!tryParseIPv4(sv, ip)) return false;
+
+        std::uint32_t mask = (static_cast<std::uint32_t>(ip.bytes[0]) << 24) | (static_cast<std::uint32_t>(ip.bytes[1]) << 16) |
+                             (static_cast<std::uint32_t>(ip.bytes[2]) << 8) | static_cast<std::uint32_t>(ip.bytes[3]);
+        const std::uint32_t inv = ~mask;
+        if ((static_cast<std::uint64_t>(inv) & (static_cast<std::uint64_t>(inv) + 1ULL)) != 0ULL) return false; // requires contiguous bits
+
+        canonical = formatIPv4(ip);
+        return true;
+    }
+
     static bool tryParseCIDR(std::string_view s, std::string& canonical) {
         const auto sv = trimWs(s);
         const auto slash = sv.find('/');
@@ -1064,6 +1084,94 @@ private:
         return true;
     }
 
+    static bool tryParseURL(std::string_view s, std::string& canonical) {
+        auto toLowerAscii = [](std::string_view v) {
+            std::string out;
+            out.reserve(v.size());
+            for (const auto ch : v) out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+            return out;
+        };
+
+        const auto sv = trimWs(s);
+        if (sv.empty()) {
+            canonical.clear();
+            return true;
+        }
+        for (const auto ch : sv) {
+            if (std::isspace(static_cast<unsigned char>(ch))) return false;
+        }
+
+        canonical = std::string(sv);
+
+        const auto schemeSep = canonical.find("://");
+        if (schemeSep == std::string::npos) return true; // accept non-hierarchical / relative forms
+
+        const std::string_view scheme(canonical.data(), schemeSep);
+        if (scheme.empty()) return false;
+        auto isAlpha = [](char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
+        auto isSchemeChar = [&](char c) {
+            return isAlpha(c) || (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.';
+        };
+        if (!isAlpha(scheme.front())) return false;
+        for (const auto ch : scheme) {
+            if (!isSchemeChar(ch)) return false;
+        }
+
+        const std::size_t authorityStart = schemeSep + 3;
+        std::size_t authorityEnd = canonical.find_first_of("/?#", authorityStart);
+        if (authorityEnd == std::string::npos) authorityEnd = canonical.size();
+
+        const std::string_view authority(canonical.data() + authorityStart, authorityEnd - authorityStart);
+        if (authority.empty()) return false;
+
+        const std::string_view rest(canonical.data() + authorityEnd, canonical.size() - authorityEnd);
+
+        std::string_view userinfo;
+        std::string_view hostport = authority;
+        const auto at = authority.rfind('@');
+        if (at != std::string_view::npos) {
+            userinfo = authority.substr(0, at + 1);
+            hostport = authority.substr(at + 1);
+        }
+        if (hostport.empty()) return false;
+
+        std::string hostLower;
+        std::string_view portSuffix;
+
+        if (!hostport.empty() && hostport.front() == '[') {
+            const auto close = hostport.find(']');
+            if (close == std::string_view::npos) return false;
+            const auto inner = hostport.substr(1, close - 1);
+            hostLower = "[" + toLowerAscii(inner) + "]";
+            portSuffix = hostport.substr(close + 1);
+        } else {
+            const auto firstColon = hostport.find(':');
+            const auto lastColon = hostport.rfind(':');
+            if (firstColon != std::string_view::npos && firstColon == lastColon) {
+                const auto hostPart = hostport.substr(0, firstColon);
+                const auto portPart = hostport.substr(firstColon + 1);
+                bool numeric = !portPart.empty();
+                for (const auto ch : portPart) {
+                    if (ch < '0' || ch > '9') {
+                        numeric = false;
+                        break;
+                    }
+                }
+                if (numeric) {
+                    hostLower = toLowerAscii(hostPart);
+                    portSuffix = hostport.substr(firstColon);
+                } else {
+                    hostLower = toLowerAscii(hostport);
+                }
+            } else {
+                hostLower = toLowerAscii(hostport);
+            }
+        }
+
+        canonical = toLowerAscii(scheme) + "://" + std::string(userinfo) + hostLower + std::string(portSuffix) + std::string(rest);
+        return true;
+    }
+
     bool normalizeValue(const std::string& key, std::string& value, Kind kind) {
         if (!ok_) return false;
         const std::string original = value;
@@ -1074,9 +1182,21 @@ private:
                 std::string canon;
                 valid = tryParseIP(value, canon);
                 if (valid) value = std::move(canon);
+            } else if (ipMaskKeys_.find(key) != ipMaskKeys_.end()) {
+                std::string canon;
+                valid = tryParseIPMask(value, canon);
+                if (valid) value = std::move(canon);
             } else if (cidrKeys_.find(key) != cidrKeys_.end()) {
                 std::string canon;
                 valid = tryParseCIDR(value, canon);
+                if (valid) value = std::move(canon);
+            } else if (ipNetKeys_.find(key) != ipNetKeys_.end()) {
+                std::string canon;
+                valid = tryParseCIDR(value, canon);
+                if (valid) value = std::move(canon);
+            } else if (urlKeys_.find(key) != urlKeys_.end()) {
+                std::string canon;
+                valid = tryParseURL(value, canon);
                 if (valid) value = std::move(canon);
             } else {
                 valid = true;
@@ -1171,9 +1291,21 @@ private:
             if (ipIt != f.annotations().end() && isTruthyAnnotation(ipIt->second)) {
                 ipKeys_.insert(f.longName());
             }
+            const auto ipMaskIt = f.annotations().find("ipmask");
+            if (ipMaskIt != f.annotations().end() && isTruthyAnnotation(ipMaskIt->second)) {
+                ipMaskKeys_.insert(f.longName());
+            }
             const auto cidrIt = f.annotations().find("cidr");
             if (cidrIt != f.annotations().end() && isTruthyAnnotation(cidrIt->second)) {
                 cidrKeys_.insert(f.longName());
+            }
+            const auto ipNetIt = f.annotations().find("ipnet");
+            if (ipNetIt != f.annotations().end() && isTruthyAnnotation(ipNetIt->second)) {
+                ipNetKeys_.insert(f.longName());
+            }
+            const auto urlIt = f.annotations().find("url");
+            if (urlIt != f.annotations().end() && isTruthyAnnotation(urlIt->second)) {
+                urlKeys_.insert(f.longName());
             }
             knownKeys_.push_back(f.longName());
         }
@@ -1286,7 +1418,10 @@ private:
     std::unordered_set<std::string> countKeys_;
     std::unordered_set<std::string> bytesKeys_;
     std::unordered_set<std::string> ipKeys_;
+    std::unordered_set<std::string> ipMaskKeys_;
     std::unordered_set<std::string> cidrKeys_;
+    std::unordered_set<std::string> ipNetKeys_;
+    std::unordered_set<std::string> urlKeys_;
     std::vector<std::string> knownKeys_;
     std::vector<std::string> positionals_;
     bool ok_{true};

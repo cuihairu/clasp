@@ -53,3 +53,49 @@ jobs:
       - name: Test
         shell: bash
         run: ctest --test-dir build --output-on-failure
+
+  coverage:
+    name: Coverage (Codecov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v6
+
+      - name: Install lcov
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov
+
+      - name: Configure (coverage)
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DCLASP_BUILD_EXAMPLES=ON \
+            -DCLASP_ENABLE_COVERAGE=ON
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --parallel
+
+      - name: Test
+        shell: bash
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Generate coverage (lcov)
+        shell: bash
+        run: |
+          lcov --capture --directory build --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*/build/*' '*/examples/*' --output-file coverage.info
+          lcov --list coverage.info
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.info
+          fail_ci_if_error: true
+          verbose: true

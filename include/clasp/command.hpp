@@ -230,6 +230,21 @@ public:
         return *this;
     }
 
+    // pflag-like: IPMask flag stored as string, validated/canonicalized as an IPv4 netmask (contiguous bits).
+    Command& withIPMaskFlag(std::string longName,
+                            std::string shortName,
+                            std::string varName,
+                            std::string description,
+                            std::string defaultValue = "") {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            std::move(defaultValue));
+        flags_.back().setAnnotation("ipmask", "true");
+        return *this;
+    }
+
     // pflag-like: CIDR flag stored as string, validated/canonicalized (network address + prefix).
     Command& withCIDRFlag(std::string longName,
                           std::string shortName,
@@ -245,6 +260,36 @@ public:
         return *this;
     }
 
+    // pflag-like: IPNet flag stored as string, validated/canonicalized as CIDR (network address + prefix).
+    Command& withIPNetFlag(std::string longName,
+                           std::string shortName,
+                           std::string varName,
+                           std::string description,
+                           std::string defaultValue = "") {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            std::move(defaultValue));
+        flags_.back().setAnnotation("ipnet", "true");
+        return *this;
+    }
+
+    // pflag-like: URL flag stored as string, validated/canonicalized (best-effort).
+    Command& withURLFlag(std::string longName,
+                         std::string shortName,
+                         std::string varName,
+                         std::string description,
+                         std::string defaultValue = "") {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            std::move(defaultValue));
+        flags_.back().setAnnotation("url", "true");
+        return *this;
+    }
+
     Command& withBytesFlag(std::string longName, std::string shortName, std::string description, std::uint64_t defaultValue = 0) {
         return withBytesFlag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
     }
@@ -257,8 +302,20 @@ public:
         return withIPFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
+    Command& withIPMaskFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withIPMaskFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
     Command& withCIDRFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
         return withCIDRFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withIPNetFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withIPNetFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withURLFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withURLFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
     // Convenience: bool flag with default false.
@@ -322,6 +379,20 @@ public:
         return *this;
     }
 
+    Command& withPersistentIPMaskFlag(std::string longName,
+                                      std::string shortName,
+                                      std::string varName,
+                                      std::string description,
+                                      std::string defaultValue = "") {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      std::move(defaultValue));
+        persistentFlags_.back().setAnnotation("ipmask", "true");
+        return *this;
+    }
+
     Command& withPersistentCIDRFlag(std::string longName,
                                     std::string shortName,
                                     std::string varName,
@@ -333,6 +404,34 @@ public:
                                       std::move(varName),
                                       std::move(defaultValue));
         persistentFlags_.back().setAnnotation("cidr", "true");
+        return *this;
+    }
+
+    Command& withPersistentIPNetFlag(std::string longName,
+                                     std::string shortName,
+                                     std::string varName,
+                                     std::string description,
+                                     std::string defaultValue = "") {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      std::move(defaultValue));
+        persistentFlags_.back().setAnnotation("ipnet", "true");
+        return *this;
+    }
+
+    Command& withPersistentURLFlag(std::string longName,
+                                   std::string shortName,
+                                   std::string varName,
+                                   std::string description,
+                                   std::string defaultValue = "") {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      std::move(defaultValue));
+        persistentFlags_.back().setAnnotation("url", "true");
         return *this;
     }
 
@@ -354,8 +453,20 @@ public:
         return withPersistentIPFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
+    Command& withPersistentIPMaskFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withPersistentIPMaskFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
     Command& withPersistentCIDRFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
         return withPersistentCIDRFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withPersistentIPNetFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withPersistentIPNetFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withPersistentURLFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withPersistentURLFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
     Command& withPersistentFlag(std::string longName, std::string shortName, std::string description) {
@@ -1519,8 +1630,14 @@ private:
         if (it != ann.end() && it->second == "true") return "count";
         const auto ipIt = ann.find("ip");
         if (ipIt != ann.end() && (ipIt->second == "true" || ipIt->second == "1" || ipIt->second == "yes")) return "ip";
+        const auto ipMaskIt = ann.find("ipmask");
+        if (ipMaskIt != ann.end() && (ipMaskIt->second == "true" || ipMaskIt->second == "1" || ipMaskIt->second == "yes")) return "ipmask";
         const auto cidrIt = ann.find("cidr");
         if (cidrIt != ann.end() && (cidrIt->second == "true" || cidrIt->second == "1" || cidrIt->second == "yes")) return "cidr";
+        const auto ipNetIt = ann.find("ipnet");
+        if (ipNetIt != ann.end() && (ipNetIt->second == "true" || ipNetIt->second == "1" || ipNetIt->second == "yes")) return "ipnet";
+        const auto urlIt = ann.find("url");
+        if (urlIt != ann.end() && (urlIt->second == "true" || urlIt->second == "1" || urlIt->second == "yes")) return "url";
 
         return std::visit(
             [](const auto& x) -> std::optional<std::string> {

@@ -1,12 +1,16 @@
 # Clasp
 
+[![CI](https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/clasp/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver)](https://github.com/cuihairu/clasp/tags)
+[![Codecov](https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg)](https://codecov.io/gh/cuihairu/clasp)
+
 **Clasp** is a modern C++ library designed for building powerful command-line applications. Inspired by Go's Cobra library, Clasp offers a straightforward API to define and organize commands, parse flags, and manage CLI application lifecycles.
 
 ## Features
 
 - **Command and Subcommand Handling**: Easily define and manage commands with subcommands and associated actions.
 - **Argument Parsing**: Supports both positional and named arguments with type safety.
-- **Flag Management**: Persistent/local flags, required/hidden/deprecated, groups, repeated flags, and optional values (NoOptDefVal).
+- **Flag Management**: Persistent/local flags, required/hidden/deprecated, groups, repeated flags, optional values (NoOptDefVal), and extra helpers like bytes/count/IP/CIDR/IPNet/IPMask/URL.
 - **Cobra-Like Ergonomics**: Hooks, aliases, suggestions, `TraverseChildren`, sorted help output, examples, and custom help/usage/version templates.
 - **Help and Usage Generation**: Automatically generate help text and usage instructions based on defined commands and flags.
 - **Shell Completion**: bash/zsh/fish/powershell completion generation + `__complete` directives and configurable completion command names.
@@ -24,12 +28,14 @@
 ```bash
 git clone https://github.com/cuihairu/clasp.git
 cd clasp
-mkdir build && cd build
-cmake ..
-make
-ctest --output-on-failure
-sudo make install
+cmake -S . -B build
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+cmake --install build
+# or: cmake --install build --prefix /your/prefix
 ```
+
+To build/install only the library (no examples/CTest), configure with `-DCLASP_BUILD_EXAMPLES=OFF`.
 
 ## Getting Started
 
@@ -74,7 +80,21 @@ Hello, Clasp!
 
 - `EXAMPLES.md`: index of all runnable examples and what they demonstrate.
 - `COMPAT.md`: what “Cobra-like” means for this project.
+- `CHANGELOG.md`: notable changes and release notes.
 - Public headers live under `include/clasp/` (`clasp/clasp.hpp` includes the main API).
+
+## Versioning
+
+Clasp follows SemVer. The version in `CMakeLists.txt` is kept consistent with the `CLASP_VERSION_*` macros in `include/clasp/clasp.hpp`.
+
+## Using With CMake
+
+After installing (or setting `CMAKE_PREFIX_PATH` to your install prefix), consume Clasp via:
+
+```cmake
+find_package(clasp CONFIG REQUIRED)
+target_link_libraries(myapp PRIVATE clasp::clasp)
+```
 
 ## Contributing
 
