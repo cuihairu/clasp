@@ -128,6 +128,9 @@ add_test(NAME basic_unknown_flag_suggest COMMAND basic_example print --mesage hi
 set_tests_properties(basic_unknown_flag_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
   --message]==])
 
+add_test(NAME basic_no_args_prints_help COMMAND basic_example)
+set_tests_properties(basic_no_args_prints_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app")
+
 add_test(NAME basic_persistent_flag_before_sub COMMAND basic_example --verbose print --message hi)
 set_tests_properties(basic_persistent_flag_before_sub PROPERTIES PASS_REGULAR_EXPRESSION "hi")
 
@@ -257,6 +260,9 @@ set_tests_properties(completion_powershell_dynamic PROPERTIES PASS_REGULAR_EXPRE
 add_test(NAME completion_powershell_eq_split COMMAND completion_example completion powershell)
 set_tests_properties(completion_powershell_eq_split PROPERTIES PASS_REGULAR_EXPRESSION "\\$origWordToComplete")
 
+add_test(NAME completion_complete_no_desc_includes_version COMMAND completion_example __completeNoDesc --)
+set_tests_properties(completion_complete_no_desc_includes_version PROPERTIES PASS_REGULAR_EXPRESSION "--version")
+
 add_executable(file_completion_example examples/file_completion_example.cpp)
 target_link_libraries(file_completion_example PRIVATE clasp)
 
@@ -373,6 +379,15 @@ set_tests_properties(dynamic_complete_valid_args PROPERTIES PASS_REGULAR_EXPRESS
 
 add_test(NAME dynamic_complete_flag_value COMMAND dynamic_completion_example __completeNoDesc paint --color r)
 set_tests_properties(dynamic_complete_flag_value PROPERTIES PASS_REGULAR_EXPRESSION "red")
+
+add_test(NAME dynamic_complete_flag_value_short COMMAND dynamic_completion_example __completeNoDesc paint -c r)
+set_tests_properties(dynamic_complete_flag_value_short PROPERTIES PASS_REGULAR_EXPRESSION "red")
+
+add_test(NAME dynamic_complete_flag_value_eq_short COMMAND dynamic_completion_example __completeNoDesc paint -c=r)
+set_tests_properties(dynamic_complete_flag_value_eq_short PROPERTIES PASS_REGULAR_EXPRESSION "-c=red")
+
+add_test(NAME dynamic_complete_flag_names_short COMMAND dynamic_completion_example __completeNoDesc paint -)
+set_tests_properties(dynamic_complete_flag_names_short PROPERTIES PASS_REGULAR_EXPRESSION "-c")
 
 add_test(NAME dynamic_complete_flag_value_eq COMMAND dynamic_completion_example __completeNoDesc paint --color=r)
 set_tests_properties(dynamic_complete_flag_value_eq PROPERTIES PASS_REGULAR_EXPRESSION "--color=red")
@@ -622,6 +637,12 @@ set_tests_properties(net_extra_mask_ok PROPERTIES PASS_REGULAR_EXPRESSION "mask=
 add_test(NAME net_extra_invalid_mask COMMAND net_extra_example show --mask 255.0.255.0)
 set_tests_properties(net_extra_invalid_mask PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "255.0.255.0" for "--mask".*Usage: app show]==])
 
+add_test(NAME net_extra_empty_mask_ok COMMAND net_extra_example show --mask=)
+set_tests_properties(net_extra_empty_mask_ok PROPERTIES PASS_REGULAR_EXPRESSION "mask=")
+
+add_test(NAME net_extra_ipv6_mask_rejected COMMAND net_extra_example show --mask 2001:db8::1)
+set_tests_properties(net_extra_ipv6_mask_rejected PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "2001:db8::1" for "--mask".*Usage: app show]==])
+
 add_executable(url_example examples/url_example.cpp)
 target_link_libraries(url_example PRIVATE clasp)
 
@@ -636,6 +657,12 @@ set_tests_properties(url_invalid_scheme PROPERTIES PASS_REGULAR_EXPRESSION [==[i
 
 add_test(NAME url_invalid_empty_authority COMMAND url_example show --url http:///a)
 set_tests_properties(url_invalid_empty_authority PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "http:///a" for "--url".*Usage: app show]==])
+
+add_test(NAME url_relative_ok COMMAND url_example show --url foo/bar)
+set_tests_properties(url_relative_ok PROPERTIES PASS_REGULAR_EXPRESSION "url=foo/bar")
+
+add_test(NAME url_empty_ok COMMAND url_example show --url=)
+set_tests_properties(url_empty_ok PROPERTIES PASS_REGULAR_EXPRESSION "url=")
 
 add_executable(flag_convert_example examples/flag_convert_example.cpp)
 target_link_libraries(flag_convert_example PRIVATE clasp)
@@ -774,6 +801,25 @@ set_tests_properties(utils_suggest_prefix_branch PROPERTIES PASS_REGULAR_EXPRESS
 
 add_test(NAME utils_suggest_distance_branch COMMAND utils_suggest_example prnit print)
 set_tests_properties(utils_suggest_distance_branch PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+add_executable(traverse_completion_example examples/traverse_completion_example.cpp)
+target_link_libraries(traverse_completion_example PRIVATE clasp)
+
+add_test(NAME traverse_completion_flag_before_sub_skips_value COMMAND traverse_completion_example __completeNoDesc --message hi p)
+set_tests_properties(traverse_completion_flag_before_sub_skips_value PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+add_test(NAME traverse_completion_short_group_skips_value COMMAND traverse_completion_example __completeNoDesc -vm hi p)
+set_tests_properties(traverse_completion_short_group_skips_value PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+add_test(NAME traverse_completion_bool_negation COMMAND traverse_completion_example __completeNoDesc --no-verbose p)
+set_tests_properties(traverse_completion_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+add_executable(deprecated_example examples/deprecated_example.cpp)
+target_link_libraries(deprecated_example PRIVATE clasp)
+
+add_test(NAME deprecated_command_and_flag_warn COMMAND deprecated_example old --old-flag)
+set_tests_properties(deprecated_command_and_flag_warn PROPERTIES
+  PASS_REGULAR_EXPRESSION [==[deprecated: use `app new` instead.*Flag \"--old-flag\" is deprecated: use `--new-flag` instead]==])
 
 add_executable(custom_value_example examples/custom_value_example.cpp)
 target_link_libraries(custom_value_example PRIVATE clasp)
