@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cctype>
 #include <cerrno>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -353,11 +354,26 @@ public:
 
     // pflag-like helpers.
     // Slice: split each occurrence by `sep` and concatenate.
+    template <typename T>
+    std::vector<T> getSlice(const std::string& flag, char sep = ',') const {
+        if constexpr (std::is_same_v<T, std::string>) {
+            return getFlagValuesSplit(flag, sep);
+        } else {
+            return getFlagValuesAsFromSplit<T>(flag, sep);
+        }
+    }
+
     std::vector<std::string> getStringSlice(const std::string& flag, char sep = ',') const { return getFlagValuesSplit(flag, sep); }
     std::vector<bool> getBoolSlice(const std::string& flag, char sep = ',') const { return getFlagValuesAsFromSplit<bool>(flag, sep); }
     std::vector<int> getIntSlice(const std::string& flag, char sep = ',') const { return getFlagValuesAsFromSplit<int>(flag, sep); }
+    std::vector<std::int32_t> getInt32Slice(const std::string& flag, char sep = ',') const {
+        return getFlagValuesAsFromSplit<std::int32_t>(flag, sep);
+    }
     std::vector<std::int64_t> getInt64Slice(const std::string& flag, char sep = ',') const {
         return getFlagValuesAsFromSplit<std::int64_t>(flag, sep);
+    }
+    std::vector<std::uint32_t> getUint32Slice(const std::string& flag, char sep = ',') const {
+        return getFlagValuesAsFromSplit<std::uint32_t>(flag, sep);
     }
     std::vector<std::uint64_t> getUint64Slice(const std::string& flag, char sep = ',') const {
         return getFlagValuesAsFromSplit<std::uint64_t>(flag, sep);
@@ -370,13 +386,26 @@ public:
 
     // Array: do not split on commas; each occurrence is one element.
     // If only a scalar default exists and it's empty, treat it as an empty array.
+    template <typename T>
+    std::vector<T> getArray(const std::string& flag) const {
+        if constexpr (std::is_same_v<T, std::string>) {
+            return getArrayRaw(flag);
+        } else if constexpr (std::is_same_v<T, std::chrono::milliseconds>) {
+            return getArrayAs<std::chrono::milliseconds>(flag, std::chrono::milliseconds{0});
+        } else {
+            return getArrayAs<T>(flag, T{});
+        }
+    }
+
     std::vector<std::string> getStringArray(const std::string& flag) const {
         return getArrayRaw(flag);
     }
 
     std::vector<bool> getBoolArray(const std::string& flag) const { return getArrayAs<bool>(flag, false); }
     std::vector<int> getIntArray(const std::string& flag) const { return getArrayAs<int>(flag, 0); }
+    std::vector<std::int32_t> getInt32Array(const std::string& flag) const { return getArrayAs<std::int32_t>(flag, 0); }
     std::vector<std::int64_t> getInt64Array(const std::string& flag) const { return getArrayAs<std::int64_t>(flag, 0); }
+    std::vector<std::uint32_t> getUint32Array(const std::string& flag) const { return getArrayAs<std::uint32_t>(flag, 0); }
     std::vector<std::uint64_t> getUint64Array(const std::string& flag) const { return getArrayAs<std::uint64_t>(flag, 0); }
     std::vector<float> getFloatArray(const std::string& flag) const { return getArrayAs<float>(flag, 0.0f); }
     std::vector<double> getDoubleArray(const std::string& flag) const { return getArrayAs<double>(flag, 0.0); }
@@ -385,6 +414,16 @@ public:
     }
 
     // Map helpers: parse "k=v" entries (comma-separated across occurrences).
+    template <typename V>
+    std::unordered_map<std::string, V> getStringTo(const std::string& flag, char entrySep = ',', char kvSep = '=') const {
+        static_assert(std::is_default_constructible_v<V>, "map value type must be default-constructible");
+        std::unordered_map<std::string, V> out;
+        for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
+            out[k] = parse<V>(v, V{});
+        }
+        return out;
+    }
+
     std::unordered_map<std::string, std::string> getStringToString(const std::string& flag,
                                                                     char entrySep = ',',
                                                                     char kvSep = '=') const {
@@ -399,6 +438,12 @@ public:
         return out;
     }
 
+    std::unordered_map<std::string, std::int32_t> getStringToInt32(const std::string& flag,
+                                                                   char entrySep = ',',
+                                                                   char kvSep = '=') const {
+        return getStringTo<std::int32_t>(flag, entrySep, kvSep);
+    }
+
     std::unordered_map<std::string, std::int64_t> getStringToInt64(const std::string& flag,
                                                                    char entrySep = ',',
                                                                    char kvSep = '=') const {
@@ -409,12 +454,32 @@ public:
         return out;
     }
 
+    std::unordered_map<std::string, std::uint32_t> getStringToUint32(const std::string& flag,
+                                                                     char entrySep = ',',
+                                                                     char kvSep = '=') const {
+        return getStringTo<std::uint32_t>(flag, entrySep, kvSep);
+    }
+
     std::unordered_map<std::string, std::uint64_t> getStringToUint64(const std::string& flag,
                                                                      char entrySep = ',',
                                                                      char kvSep = '=') const {
         std::unordered_map<std::string, std::uint64_t> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
             out[k] = parse<std::uint64_t>(v, 0);
+        }
+        return out;
+    }
+
+    std::unordered_map<std::string, double> getStringToDouble(const std::string& flag, char entrySep = ',', char kvSep = '=') const {
+        return getStringTo<double>(flag, entrySep, kvSep);
+    }
+
+    std::unordered_map<std::string, std::chrono::milliseconds> getStringToDuration(const std::string& flag,
+                                                                                   char entrySep = ',',
+                                                                                   char kvSep = '=') const {
+        std::unordered_map<std::string, std::chrono::milliseconds> out;
+        for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
+            out[k] = parse<std::chrono::milliseconds>(v, std::chrono::milliseconds{0});
         }
         return out;
     }

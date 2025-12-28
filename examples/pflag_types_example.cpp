@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -67,6 +68,8 @@ int main(int argc, char** argv) {
     show.withFlag("--scores", "", "scores", "StringToInt-like (a=1,b=2)", std::string(""));
     show.withFlag("--big", "", "big", "StringToInt64-like (a=1,b=2)", std::string(""));
     show.withFlag("--toggles", "", "toggles", "StringToBool-like (a=true,b=false)", std::string(""));
+    show.withFlag("--u32s", "", "u32s", "Uint32Slice-like (comma-split, repeatable)", std::string(""));
+    show.withFlag("--small", "", "small", "StringToUint32-like (a=1,b=2)", std::string(""));
 
     show.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
         const auto names = p.getStringSlice("--names");
@@ -85,6 +88,8 @@ int main(int argc, char** argv) {
         const auto scores = p.getStringToInt("--scores");
         const auto big = p.getStringToInt64("--big");
         const auto toggles = p.getStringToBool("--toggles");
+        const auto u32s = p.getUint32Slice("--u32s");
+        const auto small = p.getStringToUint32("--small");
 
         std::cout << "names=" << join(names) << "\n";
         std::cout << "tags=" << join(tags) << "\n";
@@ -95,6 +100,8 @@ int main(int argc, char** argv) {
         std::cout << "scores=" << joinMapSorted(scores) << "\n";
         std::cout << "big=" << joinMapSorted(big) << "\n";
         std::cout << "toggles=" << joinMapSortedBool(toggles) << "\n";
+        std::cout << "u32s=" << joinNumeric(u32s) << "\n";
+        std::cout << "small=" << joinMapSorted(small) << "\n";
         return 0;
     });
 

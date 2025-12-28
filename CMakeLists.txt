@@ -799,6 +799,12 @@ set_tests_properties(pflag_map_int64 PROPERTIES PASS_REGULAR_EXPRESSION "big=a=1
 add_test(NAME pflag_map_bool COMMAND pflag_types_example show --toggles a=true --toggles b=false,c=yes)
 set_tests_properties(pflag_map_bool PROPERTIES PASS_REGULAR_EXPRESSION "toggles=a=true\\|b=false\\|c=true")
 
+add_test(NAME pflag_uint32_slice_splits COMMAND pflag_types_example show --u32s 1,2 --u32s 3)
+set_tests_properties(pflag_uint32_slice_splits PROPERTIES PASS_REGULAR_EXPRESSION "u32s=1\\|2\\|3")
+
+add_test(NAME pflag_map_uint32 COMMAND pflag_types_example show --small a=1,b=2 --small c=3)
+set_tests_properties(pflag_map_uint32 PROPERTIES PASS_REGULAR_EXPRESSION "small=a=1\\|b=2\\|c=3")
+
 add_executable(utils_suggest_example examples/utils_suggest_example.cpp)
 target_link_libraries(utils_suggest_example PRIVATE clasp)
 
