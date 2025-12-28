@@ -96,10 +96,12 @@ add_executable(basic_example examples/basic_example.cpp)
 target_link_libraries(basic_example PRIVATE clasp)
 
 add_test(NAME basic_help COMMAND basic_example help)
-set_tests_properties(basic_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app")
+set_tests_properties(basic_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
 
 add_test(NAME basic_help_sub COMMAND basic_example help print)
-set_tests_properties(basic_help_sub PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app print")
+set_tests_properties(basic_help_sub PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app print \[flags\]\r?
+]==])
 
 add_test(NAME basic_help_examples COMMAND basic_example --help)
 set_tests_properties(basic_help_examples PROPERTIES PASS_REGULAR_EXPRESSION "Examples:")
@@ -111,22 +113,42 @@ add_test(NAME basic_help_shows_types COMMAND basic_example help print)
 set_tests_properties(basic_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "--message string")
 
 add_test(NAME basic_unknown COMMAND basic_example nope)
-set_tests_properties(basic_unknown PROPERTIES PASS_REGULAR_EXPRESSION "unknown command")
+set_tests_properties(basic_unknown PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==])
 
 add_test(NAME basic_missing_flag_value COMMAND basic_example print --message)
-set_tests_properties(basic_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION "flag needs an argument.*Usage: app print")
+set_tests_properties(basic_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
 
 add_test(NAME basic_unknown_cmd_suggest COMMAND basic_example prnit)
-set_tests_properties(basic_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
-  print]==])
+set_tests_properties(basic_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"prnit\" for \"app\"\r?
+\r?
+Did you mean this\?\r?
+  print\r?
+\r?
+Run 'app --help' for usage\.\r?
+]==])
 
 add_test(NAME basic_unknown_cmd_prefix_suggest COMMAND basic_example pri)
-set_tests_properties(basic_unknown_cmd_prefix_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
-  print]==])
+set_tests_properties(basic_unknown_cmd_prefix_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"pri\" for \"app\"\r?
+\r?
+Did you mean this\?\r?
+  print\r?
+\r?
+Run 'app --help' for usage\.\r?
+]==])
 
 add_test(NAME basic_unknown_flag_suggest COMMAND basic_example print --mesage hi)
-set_tests_properties(basic_unknown_flag_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[Did you mean this\?
-  --message]==])
+set_tests_properties(basic_unknown_flag_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --mesage\r?
+\r?
+Did you mean this\?\r?
+  --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
 
 add_test(NAME basic_no_args_prints_help COMMAND basic_example)
 set_tests_properties(basic_no_args_prints_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app")
@@ -162,13 +184,22 @@ add_test(NAME args_noargs_ok COMMAND args_example noargs)
 set_tests_properties(args_noargs_ok PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
 add_test(NAME args_noargs_fail_shows_usage COMMAND args_example noargs x)
-set_tests_properties(args_noargs_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts no arguments.*Usage: app noargs")
+set_tests_properties(args_noargs_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts no arguments\r?
+\r?
+Usage: app noargs \[flags\]\r?
+]==])
 
 add_test(NAME args_exact_fail_shows_usage COMMAND args_example exact one)
-set_tests_properties(args_exact_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts 2 arg\\(s\\).*Usage: app exact")
+set_tests_properties(args_exact_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts 2 arg\(s\)\r?
+\r?
+Usage: app exact \[flags\]\r?
+]==])
 
 add_test(NAME args_range_fail_shows_usage COMMAND args_example range a b c)
-set_tests_properties(args_range_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts between 1 and 2 arg\\(s\\).*Usage: app range")
+set_tests_properties(args_range_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts between 1 and 2 arg\(s\)\r?
+\r?
+Usage: app range \[flags\]\r?
+]==])
 
 add_test(NAME args_silence_usage_hides_usage COMMAND args_example silence_usage)
 set_tests_properties(args_silence_usage_hides_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts 1 arg\\(s\\)" FAIL_REGULAR_EXPRESSION "Usage:")
@@ -177,7 +208,10 @@ add_test(NAME args_silence_errors_hides_error COMMAND args_example silence_error
 set_tests_properties(args_silence_errors_hides_error PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app silence_errors" FAIL_REGULAR_EXPRESSION "Error:")
 
 add_test(NAME basic_invalid_bool_eq COMMAND basic_example --verbose=maybe print --message hi)
-set_tests_properties(basic_invalid_bool_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "maybe" for "--verbose".*Usage: app print]==])
+set_tests_properties(basic_invalid_bool_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: invalid argument \"maybe\" for \"--verbose\"\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
 
 add_test(NAME basic_disable_flag_parsing COMMAND basic_example raw --help --x -y)
 set_tests_properties(basic_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION "--help --x -y")

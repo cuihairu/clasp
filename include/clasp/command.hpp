@@ -1880,7 +1880,8 @@ private:
 
     int fail(std::string message, bool showUsage) const {
         if (!silenceErrors_ && !message.empty()) {
-            err() << "Error: " << message << "\n";
+            err() << "Error: " << message;
+            if (message.back() != '\n') err() << "\n";
         }
         if (showUsage && !silenceUsage_) {
             err() << "\n";
