@@ -2,6 +2,8 @@ module.exports = {
   lang: 'zh-CN',
   title: 'Clasp',
   description: 'C++17 的 Cobra-like 命令行框架（兼容行为优先）',
+  // GitHub Pages project site base (https://<user>.github.io/<repo>/)
+  base: '/clasp/',
 
   themeConfig: {
     repo: 'cuihairu/clasp',
@@ -30,4 +32,3 @@ module.exports = {
     },
   },
 }
-
