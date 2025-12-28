@@ -1,0 +1,11 @@
+{
+  "name": "clasp-docs",
+  "private": true,
+  "scripts": {
+    "dev": "vuepress dev .",
+    "build": "vuepress build ."
+  },
+  "devDependencies": {
+    "vuepress": "^1.9.10"
+  }
+}

@@ -84,6 +84,15 @@ Hello, Clasp!
 - `COMPAT.md`: what “Cobra-like” means for this project.
 - `CHANGELOG.md`: notable changes and release notes.
 - Public headers live under `include/clasp/` (`clasp/clasp.hpp` includes the main API).
+- `docs/`: VuePress site sources (optional).
+
+### VuePress Docs (Optional)
+
+```bash
+cd docs
+npm install
+npm run dev
+```
 
 ## Versioning
 

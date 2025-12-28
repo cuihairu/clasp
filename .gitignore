@@ -36,3 +36,9 @@ build/
 build-*/
 .venv-gcovr/
 .idea/
+
+# Node / VuePress docs
+node_modules/
+docs/.vuepress/dist/
+docs/.vuepress/.cache/
+docs/.vuepress/.temp/
