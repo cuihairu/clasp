@@ -151,37 +151,47 @@ Usage: app print \[flags\]\r?
 ]==])
 
 add_test(NAME basic_no_args_prints_help COMMAND basic_example)
-set_tests_properties(basic_no_args_prints_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app")
+set_tests_properties(basic_no_args_prints_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
 
 add_test(NAME basic_persistent_flag_before_sub COMMAND basic_example --verbose print --message hi)
-set_tests_properties(basic_persistent_flag_before_sub PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+set_tests_properties(basic_persistent_flag_before_sub PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
 
 add_test(NAME basic_short_group COMMAND basic_example -vq print --message hi)
-set_tests_properties(basic_short_group PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+set_tests_properties(basic_short_group PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
 
 add_test(NAME basic_bool_negation COMMAND basic_example --no-verbose print --message hi)
-set_tests_properties(basic_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+set_tests_properties(basic_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
 
 add_test(NAME basic_short_value_inline COMMAND basic_example print -mhi)
-set_tests_properties(basic_short_value_inline PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+set_tests_properties(basic_short_value_inline PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
 
 add_test(NAME basic_short_value_eq COMMAND basic_example print -m=hi)
-set_tests_properties(basic_short_value_eq PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+set_tests_properties(basic_short_value_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
 
 add_test(NAME basic_end_of_flags COMMAND basic_example print -- --message hi)
-set_tests_properties(basic_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION "Hello, World!")
+set_tests_properties(basic_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello, World!\r?
+$]==])
 
 add_test(NAME basic_end_of_flags_preserves_before COMMAND basic_example print --message hi -- --message bye)
-set_tests_properties(basic_end_of_flags_preserves_before PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+set_tests_properties(basic_end_of_flags_preserves_before PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
 
 add_test(NAME basic_alias COMMAND basic_example p --message hi)
-set_tests_properties(basic_alias PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+set_tests_properties(basic_alias PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
 
 add_executable(args_example examples/args_example.cpp)
 target_link_libraries(args_example PRIVATE clasp)
 
 add_test(NAME args_noargs_ok COMMAND args_example noargs)
-set_tests_properties(args_noargs_ok PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+set_tests_properties(args_noargs_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok\r?
+$]==])
 
 add_test(NAME args_noargs_fail_shows_usage COMMAND args_example noargs x)
 set_tests_properties(args_noargs_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts no arguments\r?
@@ -202,10 +212,12 @@ Usage: app range \[flags\]\r?
 ]==])
 
 add_test(NAME args_silence_usage_hides_usage COMMAND args_example silence_usage)
-set_tests_properties(args_silence_usage_hides_usage PROPERTIES PASS_REGULAR_EXPRESSION "Error: accepts 1 arg\\(s\\)" FAIL_REGULAR_EXPRESSION "Usage:")
+set_tests_properties(args_silence_usage_hides_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts 1 arg\(s\)\r?
+$]==] FAIL_REGULAR_EXPRESSION "Usage:")
 
 add_test(NAME args_silence_errors_hides_error COMMAND args_example silence_errors)
-set_tests_properties(args_silence_errors_hides_error PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app silence_errors" FAIL_REGULAR_EXPRESSION "Error:")
+set_tests_properties(args_silence_errors_hides_error PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app silence_errors \[flags\]\r?
+$]==] FAIL_REGULAR_EXPRESSION "Error:")
 
 add_test(NAME basic_invalid_bool_eq COMMAND basic_example --verbose=maybe print --message hi)
 set_tests_properties(basic_invalid_bool_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: invalid argument \"maybe\" for \"--verbose\"\r?
@@ -214,13 +226,16 @@ Usage: app print \[flags\]\r?
 ]==])
 
 add_test(NAME basic_disable_flag_parsing COMMAND basic_example raw --help --x -y)
-set_tests_properties(basic_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION "--help --x -y")
+set_tests_properties(basic_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION [==[^--help --x -y\r?
+$]==])
 
 add_test(NAME basic_version_flag COMMAND basic_example --version)
-set_tests_properties(basic_version_flag PROPERTIES PASS_REGULAR_EXPRESSION "0.1.0")
+set_tests_properties(basic_version_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^0\.1\.0\r?
+$]==])
 
 add_test(NAME basic_version_cmd COMMAND basic_example version)
-set_tests_properties(basic_version_cmd PROPERTIES PASS_REGULAR_EXPRESSION "0.1.0")
+set_tests_properties(basic_version_cmd PROPERTIES PASS_REGULAR_EXPRESSION [==[^0\.1\.0\r?
+$]==])
 
 add_executable(hooks_example examples/hooks_example.cpp)
 target_link_libraries(hooks_example PRIVATE clasp)
@@ -232,10 +247,14 @@ add_executable(required_example examples/required_example.cpp)
 target_link_libraries(required_example PRIVATE clasp)
 
 add_test(NAME required_missing COMMAND required_example do)
-set_tests_properties(required_missing PROPERTIES PASS_REGULAR_EXPRESSION "required flag not set.*Usage: app do")
+set_tests_properties(required_missing PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: required flag not set: --name\r?
+\r?
+Usage: app do \[flags\]\r?
+]==])
 
 add_test(NAME required_ok COMMAND required_example do --name bob)
-set_tests_properties(required_ok PROPERTIES PASS_REGULAR_EXPRESSION "bob")
+set_tests_properties(required_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^bob\r?
+$]==])
 
 add_test(NAME required_empty_value_ok COMMAND required_example do --name=)
 
@@ -934,7 +953,7 @@ add_executable(silence_errors_example examples/silence_errors_example.cpp)
 target_link_libraries(silence_errors_example PRIVATE clasp)
 
 add_test(NAME silence_errors_unknown_command COMMAND silence_errors_example nope)
-set_tests_properties(silence_errors_unknown_command PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "Error:|Run 'app")
+set_tests_properties(silence_errors_unknown_command PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION [==[[[:space:]]|[[:graph:]]]==])
 
 add_executable(map_example examples/map_example.cpp)
 target_link_libraries(map_example PRIVATE clasp)

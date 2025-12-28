@@ -1879,12 +1879,13 @@ private:
     }
 
     int fail(std::string message, bool showUsage) const {
-        if (!silenceErrors_ && !message.empty()) {
+        const bool printedError = !silenceErrors_ && !message.empty();
+        if (printedError) {
             err() << "Error: " << message;
             if (message.back() != '\n') err() << "\n";
         }
         if (showUsage && !silenceUsage_) {
-            err() << "\n";
+            if (printedError) err() << "\n";
             printUsageTo(err());
         }
         return 1;
