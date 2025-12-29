@@ -1,5 +1,6 @@
 #ifndef CLASP_HPP
 #define CLASP_HPP
+#include "color.hpp"
 #include "command.hpp"
 #include "flag.hpp"
 #include "value.hpp"

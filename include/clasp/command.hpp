@@ -24,6 +24,7 @@
 #include <variant>
 #include <vector>
 
+#include "color.hpp"
 #include "flag.hpp"
 #include "parser.hpp"
 #include "utils.hpp"
@@ -77,6 +78,44 @@ public:
 
     Command& setErr(std::ostream& os) {
         err_ = &os;
+        return *this;
+    }
+
+    // Optional: enable colored terminal output for built-in help/usage/errors.
+    // If `addFlags` is true, adds persistent flags:
+    //   --color       (auto|always|never)
+    //   --color-theme (vscode|sublime|iterm2)
+    Command& enableColor(ColorMode defaultMode = ColorMode::Auto,
+                         ColorThemeName defaultTheme = ColorThemeName::Vscode,
+                         bool addFlags = true) {
+        colorEnabled_ = true;
+        colorFlagsInstalled_ = addFlags;
+        colorDefaultMode_ = defaultMode;
+        colorDefaultTheme_ = defaultTheme;
+        colorRuntimeMode_ = defaultMode;
+        colorRuntimeTheme_ = defaultTheme;
+
+        if (addFlags) {
+            withPersistentFlag("--color",
+                               "",
+                               "color",
+                               "Colorize output (auto|always|never)",
+                               std::string(color::modeName(defaultMode)));
+            withPersistentFlag("--color-theme",
+                               "",
+                               "colorTheme",
+                               "Color theme (vscode|sublime|iterm2)",
+                               std::string(color::themeName(defaultTheme)));
+
+            (void)registerFlagCompletion("--color",
+                                         [](Command&, const Parser&, const std::vector<std::string>&, std::string_view) {
+                                             return std::vector<std::string>{"auto", "always", "never"};
+                                         });
+            (void)registerFlagCompletion("--color-theme",
+                                         [](Command&, const Parser&, const std::vector<std::string>&, std::string_view) {
+                                             return std::vector<std::string>{"vscode", "sublime", "iterm2"};
+                                         });
+        }
         return *this;
     }
 
@@ -869,6 +908,9 @@ public:
 
     int run(int argc, char** argv) {
         auto resolution = resolveForExecution(argc, argv);
+        if (auto err = applyColorFromRawArgs(argc, argv)) {
+            return resolution.cmd->fail(std::move(*err), /*showUsage=*/true);
+        }
         if (resolution.helpRequested) {
             return execHelp(*resolution.helpBase, resolution.helpPath);
         }
@@ -896,6 +938,12 @@ public:
         Parser parser(static_cast<int>(argvVec.size()), argvPtrs.data(), effectiveFlags, parseOpts);
         if (!parser.ok()) {
             auto msg = parser.error();
+            if (const auto* fe = resolution.cmd->resolvedFlagErrorFunc()) msg = (*fe)(*resolution.cmd, msg);
+            return resolution.cmd->fail(std::move(msg), /*showUsage=*/true);
+        }
+
+        if (auto err = applyColorFromParser(parser)) {
+            auto msg = std::move(*err);
             if (const auto* fe = resolution.cmd->resolvedFlagErrorFunc()) msg = (*fe)(*resolution.cmd, msg);
             return resolution.cmd->fail(std::move(msg), /*showUsage=*/true);
         }
@@ -977,6 +1025,9 @@ public:
     }
 
     void printHelp() const {
+        const auto stream = streamFor(out());
+        const bool styled = shouldUseColor(stream);
+
         if (const auto* hf = resolvedHelpFunc()) {
             (*hf)(*this, out());
             return;
@@ -987,89 +1038,22 @@ public:
                 *tpl,
                 {
                     {"CommandPath", commandPath()},
-                    {"UsageLine", buildUsageLine()},
-                    {"ShortSection", buildShortSection()},
-                    {"ExamplesSection", buildExamplesSection()},
-                    {"CommandsSection", buildCommandsSection()},
-                    {"FlagsSection", buildFlagsSection()},
-                    {"GlobalFlagsSection", buildGlobalFlagsSection()},
+                    {"UsageLine", buildUsageLine(stream, styled)},
+                    {"ShortSection", buildShortSection(stream, styled)},
+                    {"ExamplesSection", buildExamplesSection(stream, styled)},
+                    {"CommandsSection", buildCommandsSection(stream, styled)},
+                    {"FlagsSection", buildFlagsSection(stream, styled)},
+                    {"GlobalFlagsSection", buildGlobalFlagsSection(stream, styled)},
                 });
             return;
         }
 
-        printUsageTo(out());
-
-        const auto cmdShort = short_.empty() ? long_ : short_;
-        if (!cmdShort.empty()) out() << "\n" << cmdShort << "\n";
-
-        if (!example_.empty()) {
-            out() << "\nExamples:\n";
-            std::istringstream iss(example_);
-            std::string line;
-            while (std::getline(iss, line)) out() << "  " << line << "\n";
-        }
-
-        const auto visibleSubcommands = listVisibleSubcommands();
-        const bool showCommands = !visibleSubcommands.empty() || (isRoot() && suggestions_);
-        if (showCommands) {
-            out() << "\nCommands:\n";
-            if (isRoot() && suggestions_ && resolvedAddHelpCommand()) {
-                out() << "  " << resolvedHelpCommandName() << " - Help about any command\n";
-            }
-            if (isRoot() && suggestions_ && !resolvedVersion().empty()) out() << "  version - Print the version number\n";
-
-            if (groups_.empty()) {
-                for (const auto* sub : visibleSubcommands) {
-                    out() << "  " << sub->name_ << " - " << sub->short_ << "\n";
-                }
-            } else {
-                std::unordered_map<std::string, std::vector<const Command*>> byGroup;
-                std::vector<const Command*> ungrouped;
-                ungrouped.reserve(visibleSubcommands.size());
-
-                for (const auto* sub : visibleSubcommands) {
-                    if (sub->groupId_.empty()) {
-                        ungrouped.push_back(sub);
-                        continue;
-                    }
-                    bool known = false;
-                    for (const auto& g : groups_) {
-                        if (g.id == sub->groupId_) {
-                            known = true;
-                            break;
-                        }
-                    }
-                    if (!known) {
-                        ungrouped.push_back(sub);
-                        continue;
-                    }
-                    byGroup[sub->groupId_].push_back(sub);
-                }
-
-                for (const auto* sub : ungrouped) {
-                    out() << "  " << sub->name_ << " - " << sub->short_ << "\n";
-                }
-
-                for (const auto& g : groups_) {
-                    const auto it = byGroup.find(g.id);
-                    if (it == byGroup.end() || it->second.empty()) continue;
-                    out() << "\n" << g.title << ":\n";
-                    for (const auto* sub : it->second) {
-                        out() << "  " << sub->name_ << " - " << sub->short_ << "\n";
-                    }
-                }
-            }
-        }
-
-        const auto [localFlags, globalFlags] = flagsForHelp();
-        if (!localFlags.empty()) {
-            out() << "\nFlags:\n";
-            for (const auto* f : localFlags) out() << "  " << formatFlagForHelp(*f) << "\n";
-        }
-        if (!globalFlags.empty()) {
-            out() << "\nGlobal Flags:\n";
-            for (const auto* f : globalFlags) out() << "  " << formatFlagForHelp(*f) << "\n";
-        }
+        printUsageTo(out(), styled);
+        out() << buildShortSection(stream, styled);
+        out() << buildExamplesSection(stream, styled);
+        out() << buildCommandsSection(stream, styled);
+        out() << buildFlagsSection(stream, styled);
+        out() << buildGlobalFlagsSection(stream, styled);
     }
 
     const std::string& name() const { return name_; }
@@ -1094,7 +1078,7 @@ public:
         }
 
         os << "## Usage\n\n```text\n";
-        printUsageTo(os);
+        printUsageTo(os, /*styled=*/false);
         os << "```\n";
 
         const auto visibleSubcommands = listVisibleSubcommands();
@@ -1420,19 +1404,25 @@ private:
     bool runnable() const { return static_cast<bool>(action_) || static_cast<bool>(actionE_); }
 
     void printUsageTo(std::ostream& os) const {
+        printUsageTo(os, /*styled=*/true);
+    }
+
+    void printUsageTo(std::ostream& os, bool styled) const {
         if (const auto* uf = resolvedUsageFunc()) {
             (*uf)(*this, os);
             return;
         }
         if (const auto* tpl = resolvedUsageTemplate()) {
+            const auto stream = streamFor(os);
             os << renderTemplate(*tpl,
                                  {
                                      {"CommandPath", commandPath()},
-                                     {"UsageLine", buildUsageLine()},
+                                     {"UsageLine", buildUsageLine(stream, styled)},
                                  });
             return;
         }
-        os << buildUsageLine();
+        const auto stream = streamFor(os);
+        os << buildUsageLine(stream, styled);
     }
 
     bool isRoot() const { return parent_ == nullptr; }
@@ -1461,26 +1451,39 @@ private:
         return out;
     }
 
-    std::string buildUsageLine() const {
+    std::string buildUsageLine(color::Stream stream, bool styled) const {
+        if (!styled) {
+            std::ostringstream oss;
+            oss << "Usage: " << commandPath();
+            if (!listVisibleSubcommands().empty() || (isRoot() && suggestions_)) {
+                oss << " [command]";
+            }
+            if (!resolvedDisableFlagsInUseLine()) {
+                oss << " [flags]";
+            }
+            oss << "\n";
+            return oss.str();
+        }
+
         std::ostringstream oss;
-        oss << "Usage: " << commandPath();
+        oss << paint(ColorRole::Section, "Usage:", stream) << " " << paint(ColorRole::Command, commandPath(), stream);
         if (!listVisibleSubcommands().empty() || (isRoot() && suggestions_)) {
-            oss << " [command]";
+            oss << " " << paint(ColorRole::Meta, "[command]", stream);
         }
         if (!resolvedDisableFlagsInUseLine()) {
-            oss << " [flags]";
+            oss << " " << paint(ColorRole::Meta, "[flags]", stream);
         }
         oss << "\n";
         return oss.str();
     }
 
-    std::string buildShortSection() const {
+    std::string buildShortSection(color::Stream, bool) const {
         const auto cmdShort = short_.empty() ? long_ : short_;
         if (cmdShort.empty()) return {};
         return "\n" + cmdShort + "\n";
     }
 
-    std::string buildExamplesSection() const {
+    std::string buildExamplesSection(color::Stream, bool) const {
         if (example_.empty()) return {};
         std::ostringstream oss;
         oss << "\nExamples:\n";
@@ -1490,21 +1493,35 @@ private:
         return oss.str();
     }
 
-    std::string buildCommandsSection() const {
+    std::string buildCommandsSection(color::Stream stream, bool styled) const {
         const auto visibleSubcommands = listVisibleSubcommands();
         const bool showCommands = !visibleSubcommands.empty() || (isRoot() && suggestions_);
         if (!showCommands) return {};
 
         std::ostringstream oss;
-        oss << "\nCommands:\n";
-        if (isRoot() && suggestions_ && resolvedAddHelpCommand()) {
-            oss << "  " << resolvedHelpCommandName() << " - Help about any command\n";
+        if (!styled) {
+            oss << "\nCommands:\n";
+            if (isRoot() && suggestions_ && resolvedAddHelpCommand()) {
+                oss << "  " << resolvedHelpCommandName() << " - Help about any command\n";
+            }
+            if (isRoot() && suggestions_ && !resolvedVersion().empty()) oss << "  version - Print the version number\n";
+        } else {
+            oss << "\n" << paint(ColorRole::Section, "Commands:", stream) << "\n";
+            if (isRoot() && suggestions_ && resolvedAddHelpCommand()) {
+                oss << "  " << paint(ColorRole::Command, resolvedHelpCommandName(), stream) << " - Help about any command\n";
+            }
+            if (isRoot() && suggestions_ && !resolvedVersion().empty()) {
+                oss << "  " << paint(ColorRole::Command, "version", stream) << " - Print the version number\n";
+            }
         }
-        if (isRoot() && suggestions_ && !resolvedVersion().empty()) oss << "  version - Print the version number\n";
 
         if (groups_.empty()) {
             for (const auto* sub : visibleSubcommands) {
-                oss << "  " << sub->name_ << " - " << sub->short_ << "\n";
+                if (!styled) {
+                    oss << "  " << sub->name_ << " - " << sub->short_ << "\n";
+                } else {
+                    oss << "  " << paint(ColorRole::Command, sub->name_, stream) << " - " << sub->short_ << "\n";
+                }
             }
             return oss.str();
         }
@@ -1533,39 +1550,254 @@ private:
         }
 
         for (const auto* sub : ungrouped) {
-            oss << "  " << sub->name_ << " - " << sub->short_ << "\n";
+            if (!styled) {
+                oss << "  " << sub->name_ << " - " << sub->short_ << "\n";
+            } else {
+                oss << "  " << paint(ColorRole::Command, sub->name_, stream) << " - " << sub->short_ << "\n";
+            }
         }
 
         for (const auto& g : groups_) {
             const auto it = byGroup.find(g.id);
             if (it == byGroup.end() || it->second.empty()) continue;
-            oss << "\n" << g.title << ":\n";
+            if (!styled) {
+                oss << "\n" << g.title << ":\n";
+            } else {
+                oss << "\n" << paint(ColorRole::Section, g.title + ":", stream) << "\n";
+            }
             for (const auto* sub : it->second) {
-                oss << "  " << sub->name_ << " - " << sub->short_ << "\n";
+                if (!styled) {
+                    oss << "  " << sub->name_ << " - " << sub->short_ << "\n";
+                } else {
+                    oss << "  " << paint(ColorRole::Command, sub->name_, stream) << " - " << sub->short_ << "\n";
+                }
             }
         }
 
         return oss.str();
     }
 
-    std::string buildFlagsSection() const {
+    std::string buildFlagsSection(color::Stream stream, bool styled) const {
         const auto [localFlags, globalFlags] = flagsForHelp();
         if (localFlags.empty()) return {};
         std::ostringstream oss;
-        oss << "\nFlags:\n";
-        for (const auto* f : localFlags) oss << "  " << formatFlagForHelp(*f) << "\n";
+        if (!styled) {
+            oss << "\nFlags:\n";
+        } else {
+            oss << "\n" << paint(ColorRole::Section, "Flags:", stream) << "\n";
+        }
+        for (const auto* f : localFlags) oss << "  " << formatFlagForHelp(*f, stream, styled) << "\n";
         (void)globalFlags;
         return oss.str();
     }
 
-    std::string buildGlobalFlagsSection() const {
+    std::string buildGlobalFlagsSection(color::Stream stream, bool styled) const {
         const auto [localFlags, globalFlags] = flagsForHelp();
         if (globalFlags.empty()) return {};
         std::ostringstream oss;
-        oss << "\nGlobal Flags:\n";
-        for (const auto* f : globalFlags) oss << "  " << formatFlagForHelp(*f) << "\n";
+        if (!styled) {
+            oss << "\nGlobal Flags:\n";
+        } else {
+            oss << "\n" << paint(ColorRole::Section, "Global Flags:", stream) << "\n";
+        }
+        for (const auto* f : globalFlags) oss << "  " << formatFlagForHelp(*f, stream, styled) << "\n";
         (void)localFlags;
         return oss.str();
+    }
+
+private:
+    static std::string toLowerAscii(std::string s) {
+        for (auto& ch : s) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        return s;
+    }
+
+    static color::Stream streamFor(const std::ostream& os) {
+        if (&os == &std::cout) return color::Stream::Stdout;
+        if (&os == &std::cerr) return color::Stream::Stderr;
+        return color::Stream::Other;
+    }
+
+    const Command* resolvedColorOwner() const {
+        for (auto* c = this; c; c = c->parent_) {
+            if (c->colorEnabled_) return c;
+        }
+        return nullptr;
+    }
+
+    Command* resolvedColorOwnerMutable() {
+        for (auto* c = this; c; c = c->parent_) {
+            if (c->colorEnabled_) return c;
+        }
+        return nullptr;
+    }
+
+    bool shouldUseColor(color::Stream stream) const {
+        const auto* owner = resolvedColorOwner();
+        if (!owner) return false;
+        if (owner->colorRuntimeMode_ == ColorMode::Never) return false;
+        if (owner->colorRuntimeMode_ == ColorMode::Always) {
+            (void)color::enableVirtualTerminalProcessing(stream);
+            return true;
+        }
+        if (color::envNoColor()) return false;
+        if (color::envTermDumb()) return false;
+        if (!color::isTty(stream)) return false;
+        if (!color::enableVirtualTerminalProcessing(stream)) return false;
+        return true;
+    }
+
+    std::string paint(ColorRole role, std::string_view text, color::Stream stream) const {
+        if (!shouldUseColor(stream)) return std::string(text);
+        const auto* owner = resolvedColorOwner();
+        if (!owner) return std::string(text);
+        const auto& theme = color::builtinTheme(owner->colorRuntimeTheme_);
+        std::string_view code;
+        switch (role) {
+            case ColorRole::Section: code = theme.section; break;
+            case ColorRole::Command: code = theme.command; break;
+            case ColorRole::Flag: code = theme.flag; break;
+            case ColorRole::Type: code = theme.type; break;
+            case ColorRole::Meta: code = theme.meta; break;
+            case ColorRole::Error: code = theme.error; break;
+        }
+        if (code.empty()) return std::string(text);
+        return std::string(code) + std::string(text) + theme.reset;
+    }
+
+    std::optional<std::string> applyColorFromParser(const Parser& parser) {
+        auto* owner = resolvedColorOwnerMutable();
+        if (!owner) return std::nullopt;
+        owner->colorRuntimeMode_ = owner->colorDefaultMode_;
+        owner->colorRuntimeTheme_ = owner->colorDefaultTheme_;
+        if (!owner->colorFlagsInstalled_) return std::nullopt;
+
+        if (parser.hasFlag("--color")) {
+            const auto raw = toLowerAscii(parser.getFlag<std::string>("--color", "auto"));
+            const auto m = color::parseMode(raw);
+            if (!m.has_value()) return std::string("invalid value for --color: ") + raw + " (expected auto|always|never)";
+            owner->colorRuntimeMode_ = *m;
+        }
+
+        if (parser.hasFlag("--color-theme")) {
+            const auto raw = toLowerAscii(parser.getFlag<std::string>("--color-theme", std::string(color::themeName(owner->colorDefaultTheme_))));
+            const auto t = color::parseTheme(raw);
+            if (!t.has_value()) return std::string("invalid value for --color-theme: ") + raw + " (expected vscode|sublime|iterm2)";
+            owner->colorRuntimeTheme_ = *t;
+        }
+
+        return std::nullopt;
+    }
+
+    std::optional<std::string> applyColorFromRawArgs(int argc, char** argv) {
+        auto* owner = resolvedColorOwnerMutable();
+        if (!owner || !owner->colorFlagsInstalled_) return std::nullopt;
+        owner->colorRuntimeMode_ = owner->colorDefaultMode_;
+        owner->colorRuntimeTheme_ = owner->colorDefaultTheme_;
+
+        auto takeValue = [&](int& i) -> std::optional<std::string> {
+            if (i + 1 >= argc) return std::nullopt;
+            std::string next = argv[i + 1];
+            if (next == "--") return std::nullopt;
+            if (isFlagToken(next)) return std::nullopt;
+            ++i;
+            return next;
+        };
+
+        for (int i = 1; i < argc; ++i) {
+            std::string token = argv[i];
+            if (token == "--") break;
+
+            if (token.rfind("--color=", 0) == 0) {
+                const auto raw = toLowerAscii(token.substr(std::string("--color=").size()));
+                const auto m = color::parseMode(raw);
+                if (!m.has_value()) return std::string("invalid value for --color: ") + raw + " (expected auto|always|never)";
+                owner->colorRuntimeMode_ = *m;
+                continue;
+            }
+            if (token == "--color") {
+                const auto v = takeValue(i);
+                if (!v.has_value()) return std::string("flag needs an argument: --color");
+                const auto raw = toLowerAscii(*v);
+                const auto m = color::parseMode(raw);
+                if (!m.has_value()) return std::string("invalid value for --color: ") + raw + " (expected auto|always|never)";
+                owner->colorRuntimeMode_ = *m;
+                continue;
+            }
+
+            if (token.rfind("--color-theme=", 0) == 0) {
+                const auto raw = toLowerAscii(token.substr(std::string("--color-theme=").size()));
+                const auto t = color::parseTheme(raw);
+                if (!t.has_value()) return std::string("invalid value for --color-theme: ") + raw + " (expected vscode|sublime|iterm2)";
+                owner->colorRuntimeTheme_ = *t;
+                continue;
+            }
+            if (token == "--color-theme") {
+                const auto v = takeValue(i);
+                if (!v.has_value()) return std::string("flag needs an argument: --color-theme");
+                const auto raw = toLowerAscii(*v);
+                const auto t = color::parseTheme(raw);
+                if (!t.has_value()) return std::string("invalid value for --color-theme: ") + raw + " (expected vscode|sublime|iterm2)";
+                owner->colorRuntimeTheme_ = *t;
+                continue;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::string formatFlagForHelp(const Flag& f, color::Stream stream, bool styled) const {
+        auto defaultForHelp = [](const Flag& flag) -> std::optional<std::string> {
+            const auto& v = flag.defaultValue();
+
+            // Cobra/pflag typically doesn't show "(default false)" for bool flags.
+            if (std::holds_alternative<bool>(v)) {
+                if (!std::get<bool>(v)) return std::nullopt;
+                return "true";
+            }
+
+            return std::visit(
+                [](const auto& x) -> std::optional<std::string> {
+                    using T = std::decay_t<decltype(x)>;
+                    if constexpr (std::is_same_v<T, std::string>) {
+                        if (x.empty()) return std::nullopt;
+                        return std::string("\"") + escapeDoubleQuotes(x) + "\"";
+                    } else if constexpr (std::is_same_v<T, std::chrono::milliseconds>) {
+                        if (x.count() == 0) return std::nullopt;
+                        return std::to_string(x.count()) + "ms";
+                    } else {
+                        std::ostringstream oss;
+                        oss << x;
+                        return oss.str();
+                    }
+                },
+                v);
+        };
+
+        auto describeFlagForHelp = [&](const Flag& flag) -> std::string {
+            std::string desc = flag.description();
+            if (!flag.deprecated().empty()) desc += " (deprecated: " + flag.deprecated() + ")";
+            if (flag.required()) desc += " (required)";
+            if (auto def = defaultForHelp(flag)) {
+                if (!desc.empty()) desc.push_back(' ');
+                desc += "(default: " + *def + ")";
+            }
+            return desc;
+        };
+
+        std::string out;
+        if (!f.shortName().empty()) {
+            out += styled ? paint(ColorRole::Flag, f.shortName(), stream) : f.shortName();
+            out += ", ";
+        }
+        out += styled ? paint(ColorRole::Flag, f.longName(), stream) : f.longName();
+
+        if (auto ty = flagTypeForHelp(f)) {
+            out.push_back(' ');
+            out += styled ? paint(ColorRole::Type, *ty, stream) : *ty;
+        }
+
+        std::string desc = describeFlagForHelp(f);
+        if (!desc.empty()) out += " - " + desc;
+        return out;
     }
 
     static std::string renderTemplate(std::string_view tpl,
@@ -1652,59 +1884,6 @@ private:
                 return std::nullopt;
             },
             dv);
-    }
-
-    std::string formatFlagForHelp(const Flag& f) const {
-        auto defaultForHelp = [](const Flag& flag) -> std::optional<std::string> {
-            const auto& v = flag.defaultValue();
-
-            // Cobra/pflag typically doesn't show "(default false)" for bool flags.
-            if (std::holds_alternative<bool>(v)) {
-                if (!std::get<bool>(v)) return std::nullopt;
-                return "true";
-            }
-
-            return std::visit(
-                [](const auto& x) -> std::optional<std::string> {
-                    using T = std::decay_t<decltype(x)>;
-                    if constexpr (std::is_same_v<T, std::string>) {
-                        if (x.empty()) return std::nullopt;
-                        return std::string("\"") + escapeDoubleQuotes(x) + "\"";
-                    } else if constexpr (std::is_same_v<T, std::chrono::milliseconds>) {
-                        if (x.count() == 0) return std::nullopt;
-                        return std::to_string(x.count()) + "ms";
-                    } else {
-                        std::ostringstream oss;
-                        oss << x;
-                        return oss.str();
-                    }
-                },
-                v);
-        };
-
-        auto describeFlagForHelp = [&](const Flag& flag) -> std::string {
-            std::string desc = flag.description();
-            if (!flag.deprecated().empty()) desc += " (deprecated: " + flag.deprecated() + ")";
-            if (flag.required()) desc += " (required)";
-            if (auto def = defaultForHelp(flag)) {
-                if (!desc.empty()) desc.push_back(' ');
-                desc += "(default: " + *def + ")";
-            }
-            return desc;
-        };
-
-        std::string names;
-        if (!f.shortName().empty()) names += f.shortName() + ", ";
-        names += f.longName();
-
-        if (auto ty = flagTypeForHelp(f)) {
-            names.push_back(' ');
-            names += *ty;
-        }
-
-        std::string desc = describeFlagForHelp(f);
-        if (!desc.empty()) names += " - " + desc;
-        return names;
     }
 
     std::pair<std::vector<const Flag*>, std::vector<const Flag*>> flagsForHelp() const {
@@ -1881,12 +2060,13 @@ private:
     int fail(std::string message, bool showUsage) const {
         const bool printedError = !silenceErrors_ && !message.empty();
         if (printedError) {
-            err() << "Error: " << message;
+            const auto stream = streamFor(err());
+            err() << paint(ColorRole::Error, "Error:", stream) << " " << message;
             if (message.back() != '\n') err() << "\n";
         }
         if (showUsage && !silenceUsage_) {
             if (printedError) err() << "\n";
-            printUsageTo(err());
+            printUsageTo(err(), /*styled=*/true);
         }
         return 1;
     }
@@ -1901,7 +2081,8 @@ private:
             }
         }
         if (silenceErrors_) return 1;
-        err() << "Error: " << msg << "\n";
+        const auto stream = streamFor(err());
+        err() << paint(ColorRole::Error, "Error:", stream) << " " << msg << "\n";
         err() << "Run '" << commandPath() << " --help' for usage.\n";
         return 1;
     }
@@ -2514,6 +2695,12 @@ private:
     std::string configFileFlag_;
     std::optional<std::vector<std::string>> argsOverride_;
     std::optional<std::any> contextOverride_;
+    bool colorEnabled_{false};
+    bool colorFlagsInstalled_{false};
+    ColorMode colorDefaultMode_{ColorMode::Auto};
+    ColorMode colorRuntimeMode_{ColorMode::Auto};
+    ColorThemeName colorDefaultTheme_{ColorThemeName::Vscode};
+    ColorThemeName colorRuntimeTheme_{ColorThemeName::Vscode};
     std::ostream* out_{nullptr};
     std::ostream* err_{nullptr};
 };

@@ -39,6 +39,7 @@ endif()
 add_library(clasp
         src/clasp.cpp
         src/command.cpp
+        src/color.cpp
         src/flag.cpp
 )
 

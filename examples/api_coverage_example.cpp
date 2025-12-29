@@ -24,6 +24,8 @@ struct SimpleValue final : clasp::Value {
 int main() {
     clasp::Command root("app", "API coverage");
 
+    root.enableColor();
+
     root.disableFlagParsing(false)
         .allowUnknownFlags(false)
         .shortFlagGrouping(true)
@@ -83,4 +85,3 @@ int main() {
     std::cout << "ok\n";
     return 0;
 }
-
