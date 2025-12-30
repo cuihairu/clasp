@@ -4,7 +4,7 @@ Goal: implement a C++17 CLI framework that mirrors Go cobra's behavior and ergon
 
 ## Status (2025-12-25)
 
-- Feature checklist below (P0–P3) is implemented and covered by CTest (162 tests passing in `CMakeLists.txt`).
+- Feature checklist below (P0–P3) is implemented and covered by CTest (219 tests passing in `CMakeLists.txt`).
 - Compatibility scope is defined in `COMPAT.md`; CI runs CMake/CTest on Ubuntu/macOS/Windows.
 
 ## Open Items (2025-12-26)

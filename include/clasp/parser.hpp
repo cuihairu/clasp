@@ -774,20 +774,24 @@ private:
         return out;
     }
 
-    enum class Kind { Bool, Int, Int64, Uint64, Float, Double, Duration, String, Unknown };
+    enum class Kind { Bool, Int, Int64, Uint32, Uint64, Float, Double, Duration, String, Unknown };
 
     static Kind kindFromDefault(const FlagValue& v) {
-        switch (v.index()) {
-        case 0: return Kind::Bool;
-        case 1: return Kind::Int;    // int
-        case 2: return Kind::Int64;  // int64
-        case 3: return Kind::Uint64; // uint64
-        case 4: return Kind::Float;  // float
-        case 5: return Kind::Double; // double
-        case 6: return Kind::Duration; // duration
-        case 7: return Kind::String; // std::string
-        default: return Kind::Unknown;
-        }
+        return std::visit(
+            [](const auto& x) -> Kind {
+                using T = std::decay_t<decltype(x)>;
+                if constexpr (std::is_same_v<T, bool>) return Kind::Bool;
+                if constexpr (std::is_same_v<T, int>) return Kind::Int;
+                if constexpr (std::is_same_v<T, std::int64_t>) return Kind::Int64;
+                if constexpr (std::is_same_v<T, std::uint32_t>) return Kind::Uint32;
+                if constexpr (std::is_same_v<T, std::uint64_t>) return Kind::Uint64;
+                if constexpr (std::is_same_v<T, float>) return Kind::Float;
+                if constexpr (std::is_same_v<T, double>) return Kind::Double;
+                if constexpr (std::is_same_v<T, std::chrono::milliseconds>) return Kind::Duration;
+                if constexpr (std::is_same_v<T, std::string>) return Kind::String;
+                return Kind::Unknown;
+            },
+            v);
     }
 
     static bool isTruthyAnnotation(std::string_view v) {
@@ -1283,6 +1287,11 @@ private:
             valid = tryParseSignedInt<std::int64_t>(value, parsed);
             break;
         }
+        case Kind::Uint32: {
+            std::uint32_t parsed{};
+            valid = tryParseUnsignedInt<std::uint32_t>(value, parsed);
+            break;
+        }
         case Kind::Uint64: {
             std::uint64_t parsed{};
             if (bytesKeys_.find(key) != bytesKeys_.end()) {
@@ -1327,7 +1336,9 @@ private:
                 using T = std::decay_t<decltype(x)>;
                 if constexpr (std::is_same_v<T, bool>) return x ? "true" : "false";
                 if constexpr (std::is_same_v<T, int>) return std::to_string(x);
+                if constexpr (std::is_same_v<T, std::int32_t>) return std::to_string(x);
                 if constexpr (std::is_same_v<T, std::int64_t>) return std::to_string(x);
+                if constexpr (std::is_same_v<T, std::uint32_t>) return std::to_string(x);
                 if constexpr (std::is_same_v<T, std::uint64_t>) return std::to_string(x);
                 if constexpr (std::is_same_v<T, float>) return std::to_string(x);
                 if constexpr (std::is_same_v<T, double>) return std::to_string(x);

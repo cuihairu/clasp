@@ -70,7 +70,7 @@ This section is a practical mapping from commonly used Cobra/pflag concepts to C
 | Key normalization | Supported | `normalizeFlagKeys()`; `examples/normalize_example.cpp` |
 | Repeated flags | Supported | Multiple occurrences preserved; `examples/repeat_example.cpp` |
 | `NoOptDefVal` | Supported | `markFlagNoOptDefaultValue()`; `examples/noopt_example.cpp` |
-| Built-in types | Supported | `bool/int/int64/uint64/float/double/duration/string`; `examples/types_example.cpp` |
+| Built-in types | Supported | `bool/int/int64/uint32/uint64/float/double/duration/string`; `examples/types_example.cpp` |
 | Extra helpers: `count` | Supported | `withCountFlag()` + `Parser::getCount()`; `examples/count_example.cpp` |
 | Extra helpers: bytes | Supported | `withBytesFlag()`; `examples/bytes_example.cpp` |
 | Extra helpers: IP/CIDR | Supported | `withIPFlag()` / `withCIDRFlag()`; `examples/net_example.cpp` |
@@ -130,7 +130,7 @@ requires adding tests and tightening the contract.
   - `setVersionTemplate` supports: `{{.Version}}`, `{{.CommandPath}}`, `{{.Name}}`.
   - No conditionals/loops/pipelines/custom funcs like Cobra’s Go templates.
 - **Built-in flags**: Clasp always recognizes `--help/-h` and `--version` as built-ins, even if not explicitly declared.
-- **Type surface**: built-in flag value types are limited to `bool/int/int64/uint64/float/double/duration/string` (+ `bytes`, `count`,
+- **Type surface**: built-in flag value types are limited to `bool/int/int64/uint32/uint64/float/double/duration/string` (+ `bytes`, `count`,
   `ip`, `ipmask`, `cidr`, `ipnet`, and `url` helpers implemented via annotations). Broader pflag type parity is out of scope unless added
   intentionally.
 - **Completion fidelity**: file/dir filtering is directive-driven; exact behavior depends on the shell completion runtime.

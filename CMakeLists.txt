@@ -751,8 +751,32 @@ set_tests_properties(flag_convert_bool_false PROPERTIES PASS_REGULAR_EXPRESSION 
 add_test(NAME flag_convert_int COMMAND flag_convert_example int 42)
 set_tests_properties(flag_convert_int PROPERTIES PASS_REGULAR_EXPRESSION "int=42")
 
+add_test(NAME flag_convert_int64 COMMAND flag_convert_example int64 -5)
+set_tests_properties(flag_convert_int64 PROPERTIES PASS_REGULAR_EXPRESSION "int64=-5")
+
+add_test(NAME flag_convert_uint32_dec COMMAND flag_convert_example uint32 9)
+set_tests_properties(flag_convert_uint32_dec PROPERTIES PASS_REGULAR_EXPRESSION "uint32=9")
+
+add_test(NAME flag_convert_uint32_hex COMMAND flag_convert_example uint32 0x10)
+set_tests_properties(flag_convert_uint32_hex PROPERTIES PASS_REGULAR_EXPRESSION "uint32=16")
+
+add_test(NAME flag_convert_uint64_dec COMMAND flag_convert_example uint64 7)
+set_tests_properties(flag_convert_uint64_dec PROPERTIES PASS_REGULAR_EXPRESSION "uint64=7")
+
+add_test(NAME flag_convert_uint64_hex COMMAND flag_convert_example uint64 0x10)
+set_tests_properties(flag_convert_uint64_hex PROPERTIES PASS_REGULAR_EXPRESSION "uint64=16")
+
 add_test(NAME flag_convert_float COMMAND flag_convert_example float 1.5)
 set_tests_properties(flag_convert_float PROPERTIES PASS_REGULAR_EXPRESSION "float=1\\.500000")
+
+add_test(NAME flag_convert_double COMMAND flag_convert_example double 1.5)
+set_tests_properties(flag_convert_double PROPERTIES PASS_REGULAR_EXPRESSION "double=1\\.500000")
+
+add_test(NAME flag_convert_duration_seconds COMMAND flag_convert_example duration 2s)
+set_tests_properties(flag_convert_duration_seconds PROPERTIES PASS_REGULAR_EXPRESSION "duration_ms=2000")
+
+add_test(NAME flag_convert_duration_composite COMMAND flag_convert_example duration 1m30s)
+set_tests_properties(flag_convert_duration_composite PROPERTIES PASS_REGULAR_EXPRESSION "duration_ms=90000")
 
 add_test(NAME flag_convert_string COMMAND flag_convert_example string hello)
 set_tests_properties(flag_convert_string PROPERTIES PASS_REGULAR_EXPRESSION "string=hello")

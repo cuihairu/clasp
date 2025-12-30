@@ -1878,6 +1878,7 @@ private:
                 if constexpr (std::is_same_v<T, std::chrono::milliseconds>) return "duration";
                 if constexpr (std::is_same_v<T, int>) return "int";
                 if constexpr (std::is_same_v<T, std::int64_t>) return "int64";
+                if constexpr (std::is_same_v<T, std::uint32_t>) return "uint32";
                 if constexpr (std::is_same_v<T, std::uint64_t>) return "uint64";
                 if constexpr (std::is_same_v<T, float>) return "float32";
                 if constexpr (std::is_same_v<T, double>) return "float64";

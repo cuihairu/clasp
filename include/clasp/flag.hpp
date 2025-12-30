@@ -10,7 +10,15 @@
 #include <variant>
 
 namespace clasp {
-using FlagValue = std::variant<bool, int, std::int64_t, std::uint64_t, float, double, std::chrono::milliseconds, std::string>;
+using FlagValue = std::variant<bool,
+                              int,
+                              std::int64_t,
+                              std::uint32_t,
+                              std::uint64_t,
+                              float,
+                              double,
+                              std::chrono::milliseconds,
+                              std::string>;
 
 class Flag {
 public:

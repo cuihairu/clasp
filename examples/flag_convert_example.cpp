@@ -1,12 +1,14 @@
 #include "clasp/flag.hpp"
 
+#include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <string>
 
 static void usage() {
-    std::cerr << "Usage: flag_convert_example <bool|int|float|string> [value]\n";
+    std::cerr << "Usage: flag_convert_example <bool|int|int64|uint32|uint64|float|double|duration|string> [value]\n";
 }
 
 int main(int argc, char** argv) {
@@ -29,9 +31,34 @@ int main(int argc, char** argv) {
             std::cout << "int=" << v << "\n";
             return 0;
         }
+        if (type == "int64") {
+            const auto v = std::get<std::int64_t>(clasp::Flag::convertToFlagValue<std::int64_t>(value));
+            std::cout << "int64=" << v << "\n";
+            return 0;
+        }
+        if (type == "uint32") {
+            const auto v = std::get<std::uint32_t>(clasp::Flag::convertToFlagValue<std::uint32_t>(value));
+            std::cout << "uint32=" << v << "\n";
+            return 0;
+        }
+        if (type == "uint64") {
+            const auto v = std::get<std::uint64_t>(clasp::Flag::convertToFlagValue<std::uint64_t>(value));
+            std::cout << "uint64=" << v << "\n";
+            return 0;
+        }
         if (type == "float") {
             const auto v = std::get<float>(clasp::Flag::convertToFlagValue<float>(value));
             std::cout << std::fixed << std::setprecision(6) << "float=" << v << "\n";
+            return 0;
+        }
+        if (type == "double") {
+            const auto v = std::get<double>(clasp::Flag::convertToFlagValue<double>(value));
+            std::cout << std::fixed << std::setprecision(6) << "double=" << v << "\n";
+            return 0;
+        }
+        if (type == "duration") {
+            const auto v = std::get<std::chrono::milliseconds>(clasp::Flag::convertToFlagValue<std::chrono::milliseconds>(value));
+            std::cout << "duration_ms=" << v.count() << "\n";
             return 0;
         }
         if (type == "string") {
@@ -47,4 +74,3 @@ int main(int argc, char** argv) {
     usage();
     return 2;
 }
-
