@@ -40,7 +40,7 @@ public:
     [[nodiscard]] const std::string& shortName() const { return shortName_; }
     [[nodiscard]] const std::string& description() const { return description_; }
     [[nodiscard]] const std::string& varName() const { return varName_; }
-    [[nodiscard]] FlagValue defaultValue() const { return defaultValue_; }
+    [[nodiscard]] const FlagValue& defaultValue() const { return defaultValue_; }
 
     [[nodiscard]] bool required() const { return required_; }
     [[nodiscard]] bool hidden() const { return hidden_; }

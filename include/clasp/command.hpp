@@ -1027,6 +1027,7 @@ public:
     void printHelp() const {
         const auto stream = streamFor(out());
         const bool styled = shouldUseColor(stream);
+        const auto renderState = makeHelpRenderState();
 
         if (const auto* hf = resolvedHelpFunc()) {
             (*hf)(*this, out());
@@ -1034,26 +1035,32 @@ public:
         }
 
         if (const auto* tpl = resolvedHelpTemplate()) {
-            out() << renderTemplate(
-                *tpl,
-                {
-                    {"CommandPath", commandPath()},
-                    {"UsageLine", buildUsageLine(stream, styled)},
-                    {"ShortSection", buildShortSection(stream, styled)},
-                    {"ExamplesSection", buildExamplesSection(stream, styled)},
-                    {"CommandsSection", buildCommandsSection(stream, styled)},
-                    {"FlagsSection", buildFlagsSection(stream, styled)},
-                    {"GlobalFlagsSection", buildGlobalFlagsSection(stream, styled)},
-                });
+            const auto path = commandPath();
+            const auto usageLine = buildUsageLine(stream, styled, renderState.visibleSubcommands);
+            const auto shortSection = buildShortSection(stream, styled);
+            const auto examplesSection = buildExamplesSection(stream, styled);
+            const auto commandsSection = buildCommandsSection(stream, styled, renderState.visibleSubcommands);
+            const auto flagsSection = buildFlagsSection(stream, styled, renderState.flags);
+            const auto globalFlagsSection = buildGlobalFlagsSection(stream, styled, renderState.flags);
+            out() << renderTemplate(*tpl, [&](std::string_view key) -> std::optional<std::string_view> {
+                if (key == "CommandPath") return path;
+                if (key == "UsageLine") return usageLine;
+                if (key == "ShortSection") return shortSection;
+                if (key == "ExamplesSection") return examplesSection;
+                if (key == "CommandsSection") return commandsSection;
+                if (key == "FlagsSection") return flagsSection;
+                if (key == "GlobalFlagsSection") return globalFlagsSection;
+                return std::nullopt;
+            });
             return;
         }
 
-        printUsageTo(out(), styled);
+        printUsageTo(out(), styled, renderState.visibleSubcommands);
         out() << buildShortSection(stream, styled);
         out() << buildExamplesSection(stream, styled);
-        out() << buildCommandsSection(stream, styled);
-        out() << buildFlagsSection(stream, styled);
-        out() << buildGlobalFlagsSection(stream, styled);
+        out() << buildCommandsSection(stream, styled, renderState.visibleSubcommands);
+        out() << buildFlagsSection(stream, styled, renderState.flags);
+        out() << buildGlobalFlagsSection(stream, styled, renderState.flags);
     }
 
     const std::string& name() const { return name_; }
@@ -1325,11 +1332,13 @@ private:
         if (v.empty()) return {};
         const auto* tpl = resolvedVersionTemplate();
         if (!tpl) return v;
-        std::unordered_map<std::string, std::string> vars;
-        vars.emplace("Version", v);
-        vars.emplace("CommandPath", commandPath());
-        vars.emplace("Name", name_);
-        return renderTemplate(*tpl, vars);
+        const auto path = commandPath();
+        return renderTemplate(*tpl, [&](std::string_view key) -> std::optional<std::string_view> {
+            if (key == "Version") return v;
+            if (key == "CommandPath") return path;
+            if (key == "Name") return std::string_view(name_);
+            return std::nullopt;
+        });
     }
 
     bool resolvedAllowUnknownFlags() const {
@@ -1408,21 +1417,28 @@ private:
     }
 
     void printUsageTo(std::ostream& os, bool styled) const {
+        const auto visibleSubcommands = listVisibleSubcommands();
+        printUsageTo(os, styled, visibleSubcommands);
+    }
+
+    void printUsageTo(std::ostream& os, bool styled, const std::vector<const Command*>& visibleSubcommands) const {
         if (const auto* uf = resolvedUsageFunc()) {
             (*uf)(*this, os);
             return;
         }
         if (const auto* tpl = resolvedUsageTemplate()) {
             const auto stream = streamFor(os);
-            os << renderTemplate(*tpl,
-                                 {
-                                     {"CommandPath", commandPath()},
-                                     {"UsageLine", buildUsageLine(stream, styled)},
-                                 });
+            const auto path = commandPath();
+            const auto usageLine = buildUsageLine(stream, styled, visibleSubcommands);
+            os << renderTemplate(*tpl, [&](std::string_view key) -> std::optional<std::string_view> {
+                if (key == "CommandPath") return path;
+                if (key == "UsageLine") return usageLine;
+                return std::nullopt;
+            });
             return;
         }
         const auto stream = streamFor(os);
-        os << buildUsageLine(stream, styled);
+        os << buildUsageLine(stream, styled, visibleSubcommands);
     }
 
     bool isRoot() const { return parent_ == nullptr; }
@@ -1451,11 +1467,23 @@ private:
         return out;
     }
 
-    std::string buildUsageLine(color::Stream stream, bool styled) const {
+    struct HelpRenderState {
+        std::vector<const Command*> visibleSubcommands;
+        std::pair<std::vector<const Flag*>, std::vector<const Flag*>> flags;
+    };
+
+    HelpRenderState makeHelpRenderState() const {
+        HelpRenderState state;
+        state.visibleSubcommands = listVisibleSubcommands();
+        state.flags = flagsForHelp();
+        return state;
+    }
+
+    std::string buildUsageLine(color::Stream stream, bool styled, const std::vector<const Command*>& visibleSubcommands) const {
         if (!styled) {
             std::ostringstream oss;
             oss << "Usage: " << commandPath();
-            if (!listVisibleSubcommands().empty() || (isRoot() && suggestions_)) {
+            if (!visibleSubcommands.empty() || (isRoot() && suggestions_)) {
                 oss << " [command]";
             }
             if (!resolvedDisableFlagsInUseLine()) {
@@ -1467,7 +1495,7 @@ private:
 
         std::ostringstream oss;
         oss << paint(ColorRole::Section, "Usage:", stream) << " " << paint(ColorRole::Command, commandPath(), stream);
-        if (!listVisibleSubcommands().empty() || (isRoot() && suggestions_)) {
+        if (!visibleSubcommands.empty() || (isRoot() && suggestions_)) {
             oss << " " << paint(ColorRole::Meta, "[command]", stream);
         }
         if (!resolvedDisableFlagsInUseLine()) {
@@ -1493,8 +1521,7 @@ private:
         return oss.str();
     }
 
-    std::string buildCommandsSection(color::Stream stream, bool styled) const {
-        const auto visibleSubcommands = listVisibleSubcommands();
+    std::string buildCommandsSection(color::Stream stream, bool styled, const std::vector<const Command*>& visibleSubcommands) const {
         const bool showCommands = !visibleSubcommands.empty() || (isRoot() && suggestions_);
         if (!showCommands) return {};
 
@@ -1577,8 +1604,10 @@ private:
         return oss.str();
     }
 
-    std::string buildFlagsSection(color::Stream stream, bool styled) const {
-        const auto [localFlags, globalFlags] = flagsForHelp();
+    std::string buildFlagsSection(color::Stream stream,
+                                  bool styled,
+                                  const std::pair<std::vector<const Flag*>, std::vector<const Flag*>>& sections) const {
+        const auto& localFlags = sections.first;
         if (localFlags.empty()) return {};
         std::ostringstream oss;
         if (!styled) {
@@ -1587,12 +1616,13 @@ private:
             oss << "\n" << paint(ColorRole::Section, "Flags:", stream) << "\n";
         }
         for (const auto* f : localFlags) oss << "  " << formatFlagForHelp(*f, stream, styled) << "\n";
-        (void)globalFlags;
         return oss.str();
     }
 
-    std::string buildGlobalFlagsSection(color::Stream stream, bool styled) const {
-        const auto [localFlags, globalFlags] = flagsForHelp();
+    std::string buildGlobalFlagsSection(color::Stream stream,
+                                        bool styled,
+                                        const std::pair<std::vector<const Flag*>, std::vector<const Flag*>>& sections) const {
+        const auto& globalFlags = sections.second;
         if (globalFlags.empty()) return {};
         std::ostringstream oss;
         if (!styled) {
@@ -1601,7 +1631,6 @@ private:
             oss << "\n" << paint(ColorRole::Section, "Global Flags:", stream) << "\n";
         }
         for (const auto* f : globalFlags) oss << "  " << formatFlagForHelp(*f, stream, styled) << "\n";
-        (void)localFlags;
         return oss.str();
     }
 
@@ -1800,8 +1829,8 @@ private:
         return out;
     }
 
-    static std::string renderTemplate(std::string_view tpl,
-                                      const std::unordered_map<std::string, std::string>& vars) {
+    template <typename Lookup>
+    static std::string renderTemplate(std::string_view tpl, Lookup&& lookup) {
         std::string out;
         out.reserve(tpl.size());
 
@@ -1820,8 +1849,7 @@ private:
             }
 
             const auto key = tpl.substr(start + 3, end - (start + 3));
-            const auto it = vars.find(std::string(key));
-            if (it != vars.end()) out.append(it->second);
+            if (auto value = lookup(key)) out.append(*value);
             i = end + 2;
         }
         return out;
@@ -1855,7 +1883,7 @@ private:
         const auto& dv = f.defaultValue();
         if (std::holds_alternative<bool>(dv)) return std::nullopt; // Cobra-style: omit bool type.
 
-        const auto ann = f.annotations();
+        const auto& ann = f.annotations();
         const auto bytesIt = ann.find("bytes");
         if (bytesIt != ann.end() && (bytesIt->second == "true" || bytesIt->second == "1" || bytesIt->second == "yes")) return "bytes";
         const auto it = ann.find("count");

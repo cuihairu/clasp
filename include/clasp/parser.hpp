@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdlib>
 
+#include "detail/value_parse.hpp"
 #include "flag.hpp"
 #include "utils.hpp"
 
@@ -550,14 +551,6 @@ private:
                s == "TRUE" || s == "FALSE" || s == "on" || s == "off" || s == "yes" || s == "no";
     }
 
-    static std::string_view trimWs(std::string_view s) {
-        std::size_t start = 0;
-        while (start < s.size() && std::isspace(static_cast<unsigned char>(s[start]))) ++start;
-        std::size_t end = s.size();
-        while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1]))) --end;
-        return s.substr(start, end - start);
-    }
-
     std::string normalizeKey(std::string k) const {
         if (options_.normalizeKey) k = options_.normalizeKey(std::move(k));
         const auto it = aliases_.find(k);
@@ -580,20 +573,20 @@ private:
         } else if constexpr (std::is_same_v<T, std::string>) {
             return s;
         } else if constexpr (std::is_same_v<T, std::chrono::milliseconds>) {
-            return parseDuration(s, defaultValue);
+            return detail::parseDuration(s, defaultValue);
         } else if constexpr (std::is_integral_v<T>) {
             if constexpr (std::is_signed_v<T>) {
                 T out{};
-                if (!tryParseSignedInt<T>(s, out)) return defaultValue;
+                if (!detail::tryParseSignedInt<T>(s, out)) return defaultValue;
                 return out;
             } else {
                 T out{};
-                if (!tryParseUnsignedInt<T>(s, out)) return defaultValue;
+                if (!detail::tryParseUnsignedInt<T>(s, out)) return defaultValue;
                 return out;
             }
         } else if constexpr (std::is_floating_point_v<T>) {
             T out{};
-            if (!tryParseFloat<T>(s, out)) return defaultValue;
+            if (!detail::tryParseFloat<T>(s, out)) return defaultValue;
             return out;
         } else {
             std::istringstream iss(s);
@@ -608,170 +601,6 @@ private:
         if (s == "1" || s == "true" || s == "True" || s == "TRUE" || s == "on" || s == "yes") return true;
         if (s == "0" || s == "false" || s == "False" || s == "FALSE" || s == "off" || s == "no") return false;
         return defaultValue;
-    }
-
-    static bool tryParseBool(std::string_view s, bool& out) {
-        const auto t = trimWs(s);
-        if (t.empty()) return false;
-        if (t == "1" || t == "true" || t == "True" || t == "TRUE" || t == "on" || t == "yes") {
-            out = true;
-            return true;
-        }
-        if (t == "0" || t == "false" || t == "False" || t == "FALSE" || t == "off" || t == "no") {
-            out = false;
-            return true;
-        }
-        return false;
-    }
-
-    template <typename T>
-    static bool tryParseSignedInt(std::string_view s, T& out) {
-        static_assert(std::numeric_limits<T>::is_integer && std::numeric_limits<T>::is_signed, "signed integer required");
-        const auto t = trimWs(s);
-        if (t.empty()) return false;
-        const std::string tmp(t);
-        char* end = nullptr;
-        errno = 0;
-        const long long v = std::strtoll(tmp.c_str(), &end, 0);
-        if (errno != 0) return false;
-        if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
-        if (v < static_cast<long long>(std::numeric_limits<T>::min()) || v > static_cast<long long>(std::numeric_limits<T>::max())) {
-            return false;
-        }
-        out = static_cast<T>(v);
-        return true;
-    }
-
-    template <typename T>
-    static bool tryParseUnsignedInt(std::string_view s, T& out) {
-        static_assert(std::numeric_limits<T>::is_integer && !std::numeric_limits<T>::is_signed, "unsigned integer required");
-        const auto t = trimWs(s);
-        if (t.empty()) return false;
-        if (!t.empty() && t.front() == '-') return false;
-        const std::string tmp(t);
-        char* end = nullptr;
-        errno = 0;
-        const unsigned long long v = std::strtoull(tmp.c_str(), &end, 0);
-        if (errno != 0) return false;
-        if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
-        if (v > static_cast<unsigned long long>(std::numeric_limits<T>::max())) return false;
-        out = static_cast<T>(v);
-        return true;
-    }
-
-    template <typename T>
-    static bool tryParseFloat(std::string_view s, T& out) {
-        static_assert(std::is_floating_point_v<T>, "floating point required");
-        const auto t = trimWs(s);
-        if (t.empty()) return false;
-        const std::string tmp(t);
-        char* end = nullptr;
-        errno = 0;
-        if constexpr (std::is_same_v<T, float>) {
-            const float v = std::strtof(tmp.c_str(), &end);
-            if (errno != 0) return false;
-            if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
-            out = v;
-            return true;
-        } else {
-            const double v = std::strtod(tmp.c_str(), &end);
-            if (errno != 0) return false;
-            if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
-            out = static_cast<T>(v);
-            return true;
-        }
-    }
-
-    static bool tryParseDuration(std::string_view s, std::chrono::milliseconds& out) {
-        const auto sv = trimWs(s);
-        if (sv.empty()) return false;
-
-        std::size_t pos = 0;
-        int sign = 1;
-        if (sv[pos] == '+' || sv[pos] == '-') {
-            if (sv[pos] == '-') sign = -1;
-            ++pos;
-        }
-        if (pos >= sv.size()) return false;
-
-        // Go-style: unitless "0" is allowed.
-        if (sv.substr(pos) == "0") {
-            out = std::chrono::milliseconds(0);
-            return true;
-        }
-
-        double totalMs = 0.0;
-        while (pos < sv.size()) {
-            const std::size_t numStart = pos;
-            bool seenDigit = false;
-            bool seenDot = false;
-            for (; pos < sv.size(); ++pos) {
-                const char ch = sv[pos];
-                if (std::isdigit(static_cast<unsigned char>(ch))) {
-                    seenDigit = true;
-                    continue;
-                }
-                if (ch == '.' && !seenDot) {
-                    seenDot = true;
-                    continue;
-                }
-                break;
-            }
-            if (!seenDigit) return false;
-            const std::size_t numEnd = pos;
-            if (pos >= sv.size()) return false; // unit required
-
-            double multiplier = 0.0; // ms
-            std::string_view unit;
-            const auto rest = sv.substr(pos);
-            if (rest.rfind("ns", 0) == 0) {
-                unit = "ns";
-                multiplier = 0.000001;
-            } else if (rest.rfind("us", 0) == 0) {
-                unit = "us";
-                multiplier = 0.001;
-            } else if (rest.rfind("µs", 0) == 0) {
-                unit = "µs";
-                multiplier = 0.001;
-            } else if (rest.rfind("ms", 0) == 0) {
-                unit = "ms";
-                multiplier = 1.0;
-            } else if (rest.rfind("s", 0) == 0) {
-                unit = "s";
-                multiplier = 1000.0;
-            } else if (rest.rfind("m", 0) == 0) {
-                unit = "m";
-                multiplier = 60.0 * 1000.0;
-            } else if (rest.rfind("h", 0) == 0) {
-                unit = "h";
-                multiplier = 60.0 * 60.0 * 1000.0;
-            } else {
-                return false;
-            }
-
-            double value = 0.0;
-            try {
-                value = std::stod(std::string(sv.substr(numStart, numEnd - numStart)));
-            } catch (...) {
-                return false;
-            }
-
-            totalMs += value * multiplier;
-            pos += unit.size();
-        }
-
-        totalMs *= static_cast<double>(sign);
-        if (totalMs > static_cast<double>(std::numeric_limits<std::int64_t>::max())) return false;
-        if (totalMs < static_cast<double>(std::numeric_limits<std::int64_t>::min())) return false;
-        const auto asInt = static_cast<std::int64_t>(totalMs >= 0 ? (totalMs + 0.5) : (totalMs - 0.5));
-        out = std::chrono::milliseconds(asInt);
-        return true;
-    }
-
-    static std::chrono::milliseconds parseDuration(const std::string& s, std::chrono::milliseconds defaultValue) {
-        std::chrono::milliseconds out{};
-        if (!tryParseDuration(s, out)) return defaultValue;
-        return out;
     }
 
     enum class Kind { Bool, Int, Int64, Uint32, Uint64, Float, Double, Duration, String, Unknown };
@@ -806,13 +635,13 @@ private:
             return out;
         };
 
-        const auto sv = trimWs(s);
+        const auto sv = detail::trimWs(s);
         if (sv.empty()) return false;
         if (sv.front() == '-') return false;
 
         // First, allow base-0 integer forms (e.g. 0x10, 077) with no unit.
         std::uint64_t parsed{};
-        if (tryParseUnsignedInt<std::uint64_t>(sv, parsed)) {
+        if (detail::tryParseUnsignedInt<std::uint64_t>(sv, parsed)) {
             out = parsed;
             return true;
         }
@@ -826,7 +655,7 @@ private:
         if (!end || end == start) return false;
 
         std::string_view rest(start + (end - start));
-        rest = trimWs(rest);
+        rest = detail::trimWs(rest);
 
         std::uint64_t multiplier = 1;
         if (!rest.empty()) {
@@ -864,7 +693,7 @@ private:
     };
 
     static bool tryParseIPv4(std::string_view s, ParsedIP& out) {
-        const auto sv = trimWs(s);
+        const auto sv = detail::trimWs(s);
         if (sv.empty()) return false;
         if (sv.find(':') != std::string_view::npos) return false;
 
@@ -895,7 +724,7 @@ private:
     }
 
     static bool tryParseHextet(std::string_view s, std::uint16_t& out) {
-        const auto sv = trimWs(s);
+        const auto sv = detail::trimWs(s);
         if (sv.empty() || sv.size() > 4) return false;
         std::uint32_t v = 0;
         for (const char ch : sv) {
@@ -927,7 +756,7 @@ private:
     }
 
     static bool tryParseIPv6(std::string_view s, ParsedIP& out) {
-        const auto sv = trimWs(s);
+        const auto sv = detail::trimWs(s);
         if (sv.empty()) return false;
         if (sv.find('%') != std::string_view::npos) return false; // zone IDs not supported
 
@@ -1089,7 +918,7 @@ private:
     }
 
     static bool tryParseIPMask(std::string_view s, std::string& canonical) {
-        const auto sv = trimWs(s);
+        const auto sv = detail::trimWs(s);
         if (sv.empty()) {
             canonical.clear();
             return true;
@@ -1109,12 +938,12 @@ private:
     }
 
     static bool tryParseCIDR(std::string_view s, std::string& canonical) {
-        const auto sv = trimWs(s);
+        const auto sv = detail::trimWs(s);
         const auto slash = sv.find('/');
         if (slash == std::string_view::npos) return false;
 
-        const auto ipPart = trimWs(sv.substr(0, slash));
-        const auto prefixPart = trimWs(sv.substr(slash + 1));
+        const auto ipPart = detail::trimWs(sv.substr(0, slash));
+        const auto prefixPart = detail::trimWs(sv.substr(slash + 1));
         if (ipPart.empty() || prefixPart.empty()) return false;
 
         ParsedIP ip{};
@@ -1161,7 +990,7 @@ private:
             return out;
         };
 
-        const auto sv = trimWs(s);
+        const auto sv = detail::trimWs(s);
         if (sv.empty()) {
             canonical.clear();
             return true;
@@ -1273,23 +1102,23 @@ private:
             break;
         case Kind::Bool: {
             bool parsed{};
-            valid = tryParseBool(value, parsed);
+            valid = detail::tryParseBool(value, parsed);
             if (valid) value = parsed ? "true" : "false";
             break;
         }
         case Kind::Int: {
             int parsed{};
-            valid = tryParseSignedInt<int>(value, parsed);
+            valid = detail::tryParseSignedInt<int>(value, parsed);
             break;
         }
         case Kind::Int64: {
             std::int64_t parsed{};
-            valid = tryParseSignedInt<std::int64_t>(value, parsed);
+            valid = detail::tryParseSignedInt<std::int64_t>(value, parsed);
             break;
         }
         case Kind::Uint32: {
             std::uint32_t parsed{};
-            valid = tryParseUnsignedInt<std::uint32_t>(value, parsed);
+            valid = detail::tryParseUnsignedInt<std::uint32_t>(value, parsed);
             break;
         }
         case Kind::Uint64: {
@@ -1298,23 +1127,23 @@ private:
                 valid = tryParseBytes(value, parsed);
                 if (valid) value = std::to_string(parsed);
             } else {
-                valid = tryParseUnsignedInt<std::uint64_t>(value, parsed);
+                valid = detail::tryParseUnsignedInt<std::uint64_t>(value, parsed);
             }
             break;
         }
         case Kind::Float: {
             float parsed{};
-            valid = tryParseFloat<float>(value, parsed);
+            valid = detail::tryParseFloat<float>(value, parsed);
             break;
         }
         case Kind::Double: {
             double parsed{};
-            valid = tryParseFloat<double>(value, parsed);
+            valid = detail::tryParseFloat<double>(value, parsed);
             break;
         }
         case Kind::Duration: {
             std::chrono::milliseconds parsed{};
-            valid = tryParseDuration(value, parsed);
+            valid = detail::tryParseDuration(value, parsed);
             break;
         }
         default:
