@@ -629,13 +629,13 @@ add_executable(types_example examples/types_example.cpp)
 target_link_libraries(types_example PRIVATE clasp)
 
 add_test(NAME types_defaults COMMAND types_example)
-set_tests_properties(types_defaults PROPERTIES PASS_REGULAR_EXPRESSION "i64=-1.*u64=0.*pi=3\\.14.*timeout_ms=1500")
+set_tests_properties(types_defaults PROPERTIES PASS_REGULAR_EXPRESSION "i64=-1.*u32=0.*u64=0.*pi=3\\.14.*timeout_ms=1500")
 
-add_test(NAME types_parse_values COMMAND types_example --i64 -5 --u64 7 --pi 2.5 --timeout 2s)
-set_tests_properties(types_parse_values PROPERTIES PASS_REGULAR_EXPRESSION "i64=-5.*u64=7.*pi=2\\.5.*timeout_ms=2000")
+add_test(NAME types_parse_values COMMAND types_example --i64 -5 --u32 9 --u64 7 --pi 2.5 --timeout 2s)
+set_tests_properties(types_parse_values PROPERTIES PASS_REGULAR_EXPRESSION "i64=-5.*u32=9.*u64=7.*pi=2\\.5.*timeout_ms=2000")
 
-add_test(NAME types_parse_hex_values COMMAND types_example --i64 0x10 --u64 0xff)
-set_tests_properties(types_parse_hex_values PROPERTIES PASS_REGULAR_EXPRESSION "i64=16.*u64=255")
+add_test(NAME types_parse_hex_values COMMAND types_example --i64 0x10 --u32 0x10 --u64 0xff)
+set_tests_properties(types_parse_hex_values PROPERTIES PASS_REGULAR_EXPRESSION "i64=16.*u32=16.*u64=255")
 
 add_test(NAME types_parse_duration_compound COMMAND types_example --timeout 1s500ms)
 set_tests_properties(types_parse_duration_compound PROPERTIES PASS_REGULAR_EXPRESSION "timeout_ms=1500")
@@ -648,6 +648,9 @@ set_tests_properties(types_invalid_i64_trailing PROPERTIES PASS_REGULAR_EXPRESSI
 
 add_test(NAME types_invalid_u64_negative COMMAND types_example --u64 -1)
 set_tests_properties(types_invalid_u64_negative PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "-1" for "--u64"]==])
+
+add_test(NAME types_invalid_u32_negative COMMAND types_example --u32 -1)
+set_tests_properties(types_invalid_u32_negative PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "-1" for "--u32"]==])
 
 add_test(NAME types_invalid_pi_trailing COMMAND types_example --pi 3.14x)
 set_tests_properties(types_invalid_pi_trailing PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "3.14x" for "--pi"]==])
@@ -729,6 +732,9 @@ target_link_libraries(flag_convert_example PRIVATE clasp)
 
 add_test(NAME flag_convert_bool_empty COMMAND flag_convert_example bool)
 set_tests_properties(flag_convert_bool_empty PROPERTIES PASS_REGULAR_EXPRESSION "bool=false")
+
+add_test(NAME flag_convert_bool_whitespace COMMAND flag_convert_example bool "   ")
+set_tests_properties(flag_convert_bool_whitespace PROPERTIES PASS_REGULAR_EXPRESSION "bool=false")
 
 add_test(NAME flag_convert_bool_true COMMAND flag_convert_example bool true)
 set_tests_properties(flag_convert_bool_true PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")

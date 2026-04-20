@@ -180,7 +180,7 @@ namespace clasp {
 
 template <>
 FlagValue Flag::convertToFlagValue<bool>(const std::string& str) {
-    if (str.empty()) return false;
+    if (trimWs(str).empty()) return false;
     bool out = false;
     if (!tryParseBool(str, out)) throw std::invalid_argument("invalid bool");
     return out;
