@@ -55,6 +55,7 @@ set_target_properties(clasp PROPERTIES
   EXPORT_NAME clasp
   VERSION ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
+  WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
 add_library(clasp::clasp ALIAS clasp)

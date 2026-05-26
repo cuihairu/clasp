@@ -1,0 +1,4 @@
+clasp provides CMake targets:
+
+  find_package(clasp CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE clasp::clasp)
