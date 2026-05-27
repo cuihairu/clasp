@@ -2,6 +2,7 @@
 #define CLASP_COLOR_HPP
 
 #include <cstdlib>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -42,6 +43,26 @@ struct ColorTheme {
 
 namespace color {
 
+namespace detail {
+
+inline std::optional<std::string> getEnv(std::string_view name) {
+#if defined(_WIN32)
+    std::string key(name);
+    char* buffer = nullptr;
+    std::size_t len = 0;
+    if (_dupenv_s(&buffer, &len, key.c_str()) != 0 || buffer == nullptr) return std::nullopt;
+    std::string value(buffer);
+    std::free(buffer);
+    return value;
+#else
+    std::string key(name);
+    if (const char* value = std::getenv(key.c_str())) return std::string(value);
+    return std::nullopt;
+#endif
+}
+
+} // namespace detail
+
 enum class Stream {
     Stdout,
     Stderr,
@@ -56,12 +77,12 @@ bool enableVirtualTerminalProcessing(Stream stream);
 
 inline bool envNoColor() {
     // https://no-color.org/
-    return std::getenv("NO_COLOR") != nullptr;
+    return detail::getEnv("NO_COLOR").has_value();
 }
 
 inline bool envTermDumb() {
-    const char* term = std::getenv("TERM");
-    return term != nullptr && std::string_view(term) == "dumb";
+    const auto term = detail::getEnv("TERM");
+    return term.has_value() && std::string_view(*term) == "dumb";
 }
 
 inline std::string ansiRgbFg(std::uint8_t r, std::uint8_t g, std::uint8_t b) {

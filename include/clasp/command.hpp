@@ -3559,9 +3559,9 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
     // Env overrides config.
     for (const auto& [flag, env] : effectiveEnvBindings()) {
         if (env.empty()) continue;
-        if (const char* v = std::getenv(env.c_str())) {
-            if (*v == '\0') continue;
-            external[flag] = v;
+        if (const auto v = color::detail::getEnv(env)) {
+            if (v->empty()) continue;
+            external[flag] = *v;
             externalMulti.erase(flag);
         }
     }
