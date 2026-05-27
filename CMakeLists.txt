@@ -960,6 +960,12 @@ target_link_libraries(api_coverage_example PRIVATE clasp)
 add_test(NAME api_coverage COMMAND api_coverage_example)
 set_tests_properties(api_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
+add_executable(color_coverage_example examples/color_coverage_example.cpp)
+target_link_libraries(color_coverage_example PRIVATE clasp)
+
+add_test(NAME color_coverage COMMAND color_coverage_example)
+set_tests_properties(color_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
 add_executable(parser_external_example examples/parser_external_example.cpp)
 target_link_libraries(parser_external_example PRIVATE clasp)
 
