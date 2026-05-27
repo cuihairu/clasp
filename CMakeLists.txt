@@ -978,6 +978,12 @@ target_link_libraries(completion_coverage_example PRIVATE clasp)
 add_test(NAME completion_coverage COMMAND completion_coverage_example)
 set_tests_properties(completion_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
+add_executable(value_parse_coverage_example examples/value_parse_coverage_example.cpp)
+target_link_libraries(value_parse_coverage_example PRIVATE clasp)
+
+add_test(NAME value_parse_coverage COMMAND value_parse_coverage_example)
+set_tests_properties(value_parse_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
 add_executable(parser_external_example examples/parser_external_example.cpp)
 target_link_libraries(parser_external_example PRIVATE clasp)
 
