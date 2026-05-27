@@ -12,13 +12,15 @@
 
 - **Command and Subcommand Handling**: Easily define and manage commands with subcommands and associated actions.
 - **Argument Parsing**: Supports both positional and named arguments with type safety.
-- **Flag Management**: Persistent/local flags, required/hidden/deprecated, groups, repeated flags, optional values (NoOptDefVal), and extra helpers like bytes/count/IP/CIDR/IPNet/IPMask/URL.
+- **Flag Management**: Persistent/local flags, required/hidden/deprecated, groups, repeated flags, pflag-style optional values (`NoOptDefVal`), and extra helpers like bytes/count/IP/CIDR/IPNet/IPMask/URL.
 - **Optional Colored Output**: Opt-in ANSI color for built-in help/usage/errors, with built-in themes (`vscode`, `sublime`, `iterm2`) and `--color=auto|always|never`.
 - **Cobra-Like Ergonomics**: Hooks, aliases, suggestions, `TraverseChildren`, sorted help output, examples, and custom help/usage/version templates.
 - **Help and Usage Generation**: Automatically generate help text and usage instructions based on defined commands and flags.
 - **Shell Completion**: bash/zsh/fish/powershell completion generation + `__complete` directives and configurable completion command names.
 - **Config Integration**: env binding and config file merge (supports `.env`-style, `.json`, `.toml`, `.yaml`).
 - **Extensibility**: Flexible enough to be extended for more complex CLI needs.
+
+Flag parsing is intentionally pflag-like: `--k=v`, `-k=v`, short grouping (`-abc`), bool negation (`--no-foo`), repeated occurrences, and optional values are all supported. When command traversal is enabled, Clasp keeps subcommand discovery separate from optional flag values, so a token that names a subcommand is not consumed as the value for a `NoOptDefVal` flag.
 
 ## Installation
 

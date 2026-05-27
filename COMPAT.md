@@ -29,7 +29,7 @@ These are treated as compatibility commitments; changes should include an exampl
 - **Hooks**: persistent and local hooks (ordering and inheritance).
 - **Args validation**: NoArgs/Exact/Min/Max/Range-style behavior (via validators).
 - **Flags**: persistent vs local inheritance; required/hidden/deprecated; group constraints; repeated flags.
-- **Parsing ergonomics**: `--k=v`, `-k v`, `-k=v`, `-abc` short grouping, `-ovalue` shorthand value, `--no-foo` bool negation, `--` end-of-flags.
+- **Parsing ergonomics**: `--k=v`, `-k v`, `-k=v`, `-abc` short grouping, `-ovalue` shorthand value, `--no-foo` bool negation, `NoOptDefVal`, `--` end-of-flags.
 - **Help/usage/version**: `--help/-h`, `help [cmd]`, default values display, stable sorting (with opt-out), examples, version output.
 - **Completion**: bash/zsh/fish/powershell script generation, `__complete` callbacks, directives (keep-order, no-file-comp, file-ext, dirs).
 - **External sources merge**: precedence `flag > env > config > default` for declared bindings.
@@ -69,7 +69,7 @@ This section is a practical mapping from commonly used Cobra/pflag concepts to C
 | Allow unknown flags | Supported | `allowUnknownFlags()`; `examples/parser_knobs_example.cpp` |
 | Key normalization | Supported | `normalizeFlagKeys()`; `examples/normalize_example.cpp` |
 | Repeated flags | Supported | Multiple occurrences preserved; `examples/repeat_example.cpp` |
-| `NoOptDefVal` | Supported | `markFlagNoOptDefaultValue()`; `examples/noopt_example.cpp` |
+| `NoOptDefVal` | Supported | `markFlagNoOptDefaultValue()`; command scanning preserves following subcommand tokens; `examples/noopt_example.cpp` |
 | Built-in types | Supported | `bool/int/int64/uint32/uint64/float/double/duration/string`; `examples/types_example.cpp` |
 | Extra helpers: `count` | Supported | `withCountFlag()` + `Parser::getCount()`; `examples/count_example.cpp` |
 | Extra helpers: bytes | Supported | `withBytesFlag()`; `examples/bytes_example.cpp` |

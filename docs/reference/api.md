@@ -5,6 +5,7 @@
 - 构造：`Command(name, short, long?)`
 - 子命令：`addCommand(cmd)`
 - flags：`withFlag/withPersistentFlag`
+- pflag 语义：`markFlagNoOptDefaultValue()`、`shortFlagGrouping()`、`boolNegation()`
 - hooks：`preRun/preRunE/postRun/postRunE` + persistent variants
 - args：`args(validator)`
 - 执行：`run(argc, argv)` / `setArgs(vec)` + `execute()`

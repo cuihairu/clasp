@@ -18,6 +18,7 @@
 ## NoOptDefVal（可选值）
 
 通过 `markFlagNoOptDefaultValue("--mode", "auto")`，允许 `--mode` 在不带参数时取默认值。
+在开启命令遍历时，后续 token 如果是子命令名，不会被当作这个 flag 的值吞掉。
 
 ## pflag 风格的 slice/map 取值
 

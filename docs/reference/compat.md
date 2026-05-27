@@ -9,8 +9,8 @@
 - 命令树：子命令、aliases、hidden/deprecated、groups、suggestions
 - hooks：persistent + local（继承与顺序）
 - args validators：NoArgs/Exact/Min/Max/Range
-- flags：persistent vs local、required/hidden/deprecated、group constraints、重复 flags
-- 解析语义：`--k=v`、`-k v`、`-k=v`、`-abc`、`-ovalue`、`--no-foo`、`--`
+- flags：persistent vs local、required/hidden/deprecated、group constraints、重复 flags、NoOptDefVal
+- 解析语义：`--k=v`、`-k v`、`-k=v`、`-abc`、`-ovalue`、`--no-foo`、`NoOptDefVal`、`--`
 - help/usage/version：`--help/-h`、`help [cmd]`、default values 展示、排序开关、examples
 - completion：bash/zsh/fish/powershell + `__complete` candidates + directives
 - 外部源合并：`flag > env > config > default`
