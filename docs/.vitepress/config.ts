@@ -16,8 +16,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Guide', link: '/guide/' },
-          { text: 'Reference', link: '/reference/' },
-          { text: 'GitHub', link: 'https://github.com/cuihairu/clasp' }
+          { text: 'Reference', link: '/reference/' }
         ],
         sidebar: {
           '/guide/': [
@@ -67,8 +66,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: '指南', link: '/zh/guide/' },
-          { text: '参考', link: '/zh/reference/' },
-          { text: 'GitHub', link: 'https://github.com/cuihairu/clasp' }
+          { text: '参考', link: '/zh/reference/' }
         ],
         sidebar: {
           '/zh/guide/': [
