@@ -33,9 +33,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v6
-
       - name: Setup MSVC dev cmd
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
@@ -66,9 +63,6 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
       - uses: actions/checkout@v6
-
-      - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v6
 
       - name: Install lcov
         shell: bash
