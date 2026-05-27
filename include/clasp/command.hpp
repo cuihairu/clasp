@@ -1204,6 +1204,13 @@ private:
         return s.size() >= 2 && s[0] == '-' && s != "-";
     }
 
+    static bool isShortGroupToken(const std::string& s) {
+        if (s.size() < 3) return false;
+        if (s.rfind("--", 0) == 0) return false;
+        if (s.find('=') != std::string::npos) return false;
+        return s[0] == '-' && s[1] != '-';
+    }
+
     static std::string normalizeFlagName(std::string n) {
         if (n.rfind("--", 0) == 0 || n.rfind("-", 0) == 0) return n;
         return std::string("--") + n;
@@ -2157,6 +2164,7 @@ private:
 
         struct FlagInfo {
             bool isBool{false};
+            bool hasNoOptDefault{false};
         };
 
         auto flagInfoLocal = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
@@ -2168,15 +2176,15 @@ private:
                     const auto it = f.annotations().find("count");
                     const bool isCount =
                         (it != f.annotations().end() && (it->second == "true" || it->second == "1" || it->second == "yes"));
-                    return FlagInfo{isBool || isCount};
+                    return FlagInfo{isBool || isCount, f.noOptDefaultValue().has_value()};
                 }
             }
-            if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true};
+            if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true, false};
             return std::nullopt;
         };
 
         auto flagInfoSubtree = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
-            if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true};
+            if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true, false};
             const auto normalized = at->normalizeFlagKeyForLookup(key);
 
             bool found = false;
@@ -2201,7 +2209,7 @@ private:
 
             visit(at);
             if (!found) return std::nullopt;
-            return FlagInfo{!anyNonBool};
+            return FlagInfo{!anyNonBool, false};
         };
 
         auto flagInfo = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
@@ -2211,13 +2219,6 @@ private:
 
         auto isFlagTokenLocal = [](const std::string& s) {
             return s.size() >= 2 && s[0] == '-' && s != "-";
-        };
-
-        auto isShortGroupToken = [](const std::string& s) {
-            if (s.size() < 3) return false;
-            if (s.rfind("--", 0) == 0) return false;
-            if (s.find('=') != std::string::npos) return false;
-            return s[0] == '-' && s[1] != '-';
         };
 
         auto skipFlagValueIfNeeded = [&](Command* at, const std::string& token, std::size_t& i) {
@@ -2232,6 +2233,10 @@ private:
                     const auto info = flagInfo(at, key);
                     if (!info.has_value()) return;
                     if (info->isBool) continue;
+                    if (info->hasNoOptDefault && pos + 1 == token.size() && i + 1 < words.size() &&
+                        at->findSubcommand(words[i + 1])) {
+                        return;
+                    }
                     if (pos + 1 == token.size() && i + 1 < words.size()) ++i;
                     return;
                 }
@@ -2241,6 +2246,7 @@ private:
             const auto info = flagInfo(at, token);
             if (!info.has_value()) return;
             if (info->isBool) return;
+            if (info->hasNoOptDefault && i + 1 < words.size() && at->findSubcommand(words[i + 1])) return;
             if (i + 1 < words.size()) ++i;
         };
 
@@ -2523,6 +2529,7 @@ private:
 
         struct FlagInfo {
             bool isBool{false};
+            bool hasNoOptDefault{false};
         };
 
         auto flagInfoLocal = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
@@ -2534,10 +2541,10 @@ private:
                     const auto it = f.annotations().find("count");
                     const bool isCount =
                         (it != f.annotations().end() && (it->second == "true" || it->second == "1" || it->second == "yes"));
-                    return FlagInfo{isBool || isCount};
+                    return FlagInfo{isBool || isCount, f.noOptDefaultValue().has_value()};
                 }
             }
-            if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true};
+            if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true, false};
             return std::nullopt;
         };
 
@@ -2567,7 +2574,7 @@ private:
 
             visit(at);
             if (!found) return std::nullopt;
-            return FlagInfo{!anyNonBool};
+            return FlagInfo{!anyNonBool, false};
         };
 
         auto flagInfo = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
@@ -2581,7 +2588,7 @@ private:
 
             if (at->resolvedBoolNegation() && token.rfind("--no-", 0) == 0) return;
 
-            if (at->resolvedShortFlagGrouping() && token.size() >= 3 && token[0] == '-' && token[1] != '-') {
+            if (at->resolvedShortFlagGrouping() && isShortGroupToken(token)) {
                 // Short group: -abc
                 for (std::size_t pos = 1; pos < token.size(); ++pos) {
                     const std::string key = std::string("-") + token[pos];
@@ -2589,6 +2596,9 @@ private:
                     if (!info.has_value()) return;
                     if (info->isBool) continue;
                     // Value is either the remainder of this token (-ovalue) or the next arg (-o value).
+                    if (info->hasNoOptDefault && pos + 1 == token.size() && i + 1 < argc && at->findSubcommand(argv[i + 1])) {
+                        return;
+                    }
                     if (pos + 1 == token.size() && i + 1 < argc) ++i;
                     return;
                 }
@@ -2598,6 +2608,7 @@ private:
             const auto info = flagInfo(at, token);
             if (!info.has_value()) return;
             if (info->isBool) return;
+            if (info->hasNoOptDefault && i + 1 < argc && at->findSubcommand(argv[i + 1])) return;
             if (i + 1 < argc) ++i;
         };
 

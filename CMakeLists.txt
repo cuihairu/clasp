@@ -614,6 +614,9 @@ set_tests_properties(noopt_value_omitted PROPERTIES PASS_REGULAR_EXPRESSION "mod
 add_test(NAME noopt_value_provided COMMAND noopt_example --mode manual)
 set_tests_properties(noopt_value_provided PROPERTIES PASS_REGULAR_EXPRESSION "mode=manual")
 
+add_test(NAME noopt_before_subcommand COMMAND noopt_example --mode show)
+set_tests_properties(noopt_before_subcommand PROPERTIES PASS_REGULAR_EXPRESSION "mode=auto")
+
 add_executable(repeat_example examples/repeat_example.cpp)
 target_link_libraries(repeat_example PRIVATE clasp)
 
