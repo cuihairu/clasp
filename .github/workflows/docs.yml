@@ -38,12 +38,12 @@ jobs:
         working-directory: docs
         run: |
           npm run build
-          touch .vuepress/dist/.nojekyll
+          touch .vitepress/dist/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vuepress/dist
+          path: docs/.vitepress/dist
 
   deploy:
     needs: build
