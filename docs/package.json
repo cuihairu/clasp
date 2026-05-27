@@ -1,11 +1,13 @@
 {
   "name": "clasp-docs",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vuepress dev .",
-    "build": "vuepress build ."
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
   },
   "devDependencies": {
-    "vuepress": "^1.9.10"
+    "vitepress": "^1.0.0"
   }
 }

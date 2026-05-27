@@ -1,14 +1,14 @@
-# Config（env/config 合并）
+# Config (env/config Merging)
 
-Clasp 提供 viper-like 的“外部源”合并：`flag > env > config > default`。
+Clasp provides viper-like "external source" merging: `flag > env > config > default`.
 
-## 绑定 env
+## Binding env
 
-使用 `bindEnv("--flag", "ENV_NAME")`。
+Use `bindEnv("--flag", "ENV_NAME")`.
 
-## 配置文件
+## Config Files
 
-- 指定配置文件：`configFile("path")`
-- 提供 `--config` 之类的配置文件 flag：`configFileFlag("config")`
+- Specify config file: `configFile("path")`
+- Provide a config file flag like `--config`: `configFileFlag("config")`
 
-支持 `.env` 风格、JSON/TOML/YAML（见 `examples/config_*`）。
+Supports `.env` style, JSON/TOML/YAML (see `examples/config_*`).

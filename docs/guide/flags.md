@@ -1,28 +1,28 @@
-# Flags（pflag-like 解析）
+# Flags (pflag-like Parsing)
 
-## 声明与类型
+## Declaration and Types
 
-使用 `withFlag(long, short, var, desc, defaultValue)` 声明 flag。内置值类型以 C++ 类型为准：
+Use `withFlag(long, short, var, desc, defaultValue)` to declare flags. Built-in value types follow C++ types:
 
 - `bool/int/int64/uint64/float/double/std::chrono::milliseconds/std::string`
-- 额外 helpers：`withCountFlag()`、`withBytesFlag()`、`withIPFlag/withCIDRFlag/withIPNetFlag/withIPMaskFlag/withURLFlag()`
+- Extra helpers: `withCountFlag()`, `withBytesFlag()`, `withIPFlag/withCIDRFlag/withIPNetFlag/withIPMaskFlag/withURLFlag()`
 
-## 常见解析语义
+## Common Parsing Semantics
 
-- `--k=v`、`-k=v`、`-k v`
-- `-abc`（short grouping，可配置）
-- `--no-foo`（bool negation，可配置）
-- `--` 结束 flag 解析
-- 重复 flag：多次出现时保留 occurrence 顺序
+- `--k=v`, `-k=v`, `-k v`
+- `-abc` (short grouping, configurable)
+- `--no-foo` (bool negation, configurable)
+- `--` ends flag parsing
+- Repeated flags: preserves occurrence order when specified multiple times
 
-## NoOptDefVal（可选值）
+## NoOptDefVal (Optional Values)
 
-通过 `markFlagNoOptDefaultValue("--mode", "auto")`，允许 `--mode` 在不带参数时取默认值。
-在开启命令遍历时，后续 token 如果是子命令名，不会被当作这个 flag 的值吞掉。
+Use `markFlagNoOptDefaultValue("--mode", "auto")` to allow `--mode` to take a default value when specified without an argument.
+When command traversal is enabled, subsequent tokens that are subcommand names will not be consumed as the value for this flag.
 
-## pflag 风格的 slice/map 取值
+## pflag-style Slice/Map Values
 
-Clasp 不强制“typed slice/map flags”，但提供解析辅助（基于重复值/逗号分隔）：
+Clasp doesn't enforce "typed slice/map flags", but provides parsing helpers (based on repeated values/comma separation):
 
 - `Parser::getStringSlice/getIntSlice/...`
 - `Parser::getStringToString/getStringToInt/...`

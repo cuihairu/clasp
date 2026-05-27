@@ -1,17 +1,17 @@
 # Examples
 
-所有 examples 都在仓库根目录的 `examples/`，并通过 CTest 执行（`CMakeLists.txt`）。
+All examples are in `examples/` at the repository root and executed via CTest (`CMakeLists.txt`).
 
-## 推荐路径
+## Recommended Path
 
-- 从 `basic_example` 开始：命令树、flags、help/version。
-- 需要对齐 parsing 细节：看 `parser_knobs_example` / `repeat_example` / `noopt_example`。
-- 需要 completion：看 `completion_example` / `dynamic_completion_example` / `directive_example`。
-- 需要 env/config 合并：看 `config_*` / `external_typed_example`。
+- Start with `basic_example`: command tree, flags, help/version.
+- For parsing details: see `parser_knobs_example` / `repeat_example` / `noopt_example`.
+- For completion: see `completion_example` / `dynamic_completion_example` / `directive_example`.
+- For env/config merging: see `config_*` / `external_typed_example`.
 
-## 示例索引
+## Example Index
 
-> 下面的文件名均位于 `examples/`。
+> Filenames below are located in `examples/`.
 
 - `basic_example.cpp`: Basic command + flags + alias + version/help.
 - `args_example.cpp`: Args validators (`NoArgs/ExactArgs/RangeArgs`) + `SilenceUsage` / `SilenceErrors`.

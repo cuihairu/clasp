@@ -1,6 +1,6 @@
-# 快速开始
+# Getting Started
 
-## 构建与测试
+## Building and Testing
 
 ```bash
 cmake -S . -B build
@@ -9,7 +9,7 @@ ctest --test-dir build --output-on-failure
 cmake --install build
 ```
 
-只想构建库（不构建 examples/CTest）：
+To build only the library (without examples/CTest):
 
 ```bash
 cmake -S . -B build -DCLASP_BUILD_EXAMPLES=OFF
@@ -17,7 +17,7 @@ cmake --build build --parallel
 cmake --install build
 ```
 
-## 最小示例
+## Minimal Example
 
 ```cpp
 #include "clasp/clasp.hpp"
@@ -40,9 +40,9 @@ int main(int argc, char** argv) {
 }
 ```
 
-## CMake 集成
+## CMake Integration
 
-安装后：
+After installation:
 
 ```cmake
 find_package(clasp CONFIG REQUIRED)

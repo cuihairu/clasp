@@ -1,14 +1,14 @@
-# Completion（补全）
+# Completion
 
-## 生成脚本
+## Generating Scripts
 
-Clasp 支持 bash/zsh/fish/powershell completion 脚本生成（对应 `examples/completion_example.cpp`）。
+Clasp supports bash/zsh/fish/powershell completion script generation (see `examples/completion_example.cpp`).
 
-## 动态补全（__complete）
+## Dynamic Completion (__complete)
 
-- positional：`validArgs()` / `validArgsFunction()`
-- flag value：`registerFlagCompletion("--flag", func)`
+- Positional: `validArgs()` / `validArgsFunction()`
+- Flag value: `registerFlagCompletion("--flag", func)`
 
-## 指令（directives）
+## Directives
 
-支持 Cobra-like directives（例如 no-file-comp、keep-order、文件扩展名过滤、目录过滤等）。
+Supports Cobra-like directives (e.g., no-file-comp, keep-order, file extension filtering, directory filtering, etc.).

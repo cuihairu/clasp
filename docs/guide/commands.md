@@ -1,24 +1,24 @@
-# Commands（命令树）
+# Commands (Command Tree)
 
-## 子命令与别名
+## Subcommands and Aliases
 
-- `addCommand(Command)`：挂子命令
-- `aliases({...}) / addAlias()`：命令别名
+- `addCommand(Command)`: Add subcommands
+- `aliases({...}) / addAlias()`: Command aliases
 
-## Hooks（生命周期）
+## Hooks (Lifecycle)
 
-Clasp 提供 Cobra-like hooks：
+Clasp provides Cobra-like hooks:
 
 - `preRun/preRunE/postRun/postRunE`
-- `persistentPreRun/persistentPreRunE/persistentPostRun/persistentPostRunE`（向下继承）
+- `persistentPreRun/persistentPreRunE/persistentPostRun/persistentPostRunE` (inherited by child commands)
 
-## Args 校验
+## Args Validation
 
-通过 `cmd.args(validator)`：
+Use `cmd.args(validator)`:
 
 - `NoArgs()` / `ExactArgs(n)` / `MinimumNArgs(n)` / `MaximumNArgs(n)` / `RangeArgs(min,max)`
 
-## 执行模式
+## Execution Modes
 
-- CLI 入口：`run(argc, argv)`
-- 程序内执行：`setArgs(vector<string>)` + `execute()`（适合测试/嵌入式场景）
+- CLI entry: `run(argc, argv)`
+- In-process execution: `setArgs(vector<string>)` + `execute()` (suitable for testing/embedded scenarios)

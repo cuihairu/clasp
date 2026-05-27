@@ -1,23 +1,23 @@
-# API 速查
+# API Quick Reference
 
 ## Command
 
-- 构造：`Command(name, short, long?)`
-- 子命令：`addCommand(cmd)`
-- flags：`withFlag/withPersistentFlag`
-- pflag 语义：`markFlagNoOptDefaultValue()`、`shortFlagGrouping()`、`boolNegation()`
-- hooks：`preRun/preRunE/postRun/postRunE` + persistent variants
-- args：`args(validator)`
-- 执行：`run(argc, argv)` / `setArgs(vec)` + `execute()`
-- 输出控制：`silenceUsage/silenceErrors`、`setOut/setErr`
-- help/usage/version：`setHelpTemplate/setUsageTemplate/setVersionTemplate`、`setHelpFunc/setUsageFunc`
-- completion：`enableCompletion(...)`、`validArgs/validArgsFunction/registerFlagCompletion`
+- Construction: `Command(name, short, long?)`
+- Subcommands: `addCommand(cmd)`
+- Flags: `withFlag/withPersistentFlag`
+- pflag semantics: `markFlagNoOptDefaultValue()`, `shortFlagGrouping()`, `boolNegation()`
+- Hooks: `preRun/preRunE/postRun/postRunE` + persistent variants
+- Args: `args(validator)`
+- Execution: `run(argc, argv)` / `setArgs(vec)` + `execute()`
+- Output control: `silenceUsage/silenceErrors`, `setOut/setErr`
+- help/usage/version: `setHelpTemplate/setUsageTemplate/setVersionTemplate`, `setHelpFunc/setUsageFunc`
+- Completion: `enableCompletion(...)`, `validArgs/validArgsFunction/registerFlagCompletion`
 
 ## Parser
 
-- 标量：`getFlag<T>("--flag", default)`
-- occurrences：`occurrences("--flag")`
-- pflag helpers：`getStringSlice/getIntSlice/...`、`getStringToInt/...`
+- Scalars: `getFlag<T>("--flag", default)`
+- Occurrences: `occurrences("--flag")`
+- pflag helpers: `getStringSlice/getIntSlice/...`, `getStringToInt/...`
 
 ## Value
 
