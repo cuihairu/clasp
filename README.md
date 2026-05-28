@@ -17,7 +17,7 @@
 - **Cobra-Like Ergonomics**: Hooks, aliases, suggestions, `TraverseChildren`, sorted help output, examples, and custom help/usage/version templates.
 - **Help and Usage Generation**: Automatically generate help text and usage instructions based on defined commands and flags.
 - **Shell Completion**: bash/zsh/fish/powershell completion generation + `__complete` directives and configurable completion command names.
-- **Config Integration**: env binding and config file merge (supports `.env`-style, `.json`, `.toml`, `.yaml`).
+- **Config Integration**: env binding and config file merge (`.env`-style key=value, `.ini`/`.cfg` with `[section]` mapping, and basic nested-object flatten for `.json`/`.toml`/`.yaml`). Unknown extensions are rejected.
 - **Extensibility**: Flexible enough to be extended for more complex CLI needs.
 
 Flag parsing is intentionally pflag-like: `--k=v`, `-k=v`, short grouping (`-abc`), bool negation (`--no-foo`), repeated occurrences, and optional values are all supported. When command traversal is enabled, Clasp keeps subcommand discovery separate from optional flag values, so a token that names a subcommand is not consumed as the value for a `NoOptDefVal` flag.

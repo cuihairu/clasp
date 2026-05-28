@@ -396,6 +396,58 @@ set_tests_properties(config_list_from_toml PROPERTIES PASS_REGULAR_EXPRESSION "t
 add_test(NAME config_list_cli_overrides COMMAND config_list_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_list.json --tag x)
 set_tests_properties(config_list_cli_overrides PROPERTIES PASS_REGULAR_EXPRESSION "tags=x")
 
+add_executable(config_ini_example examples/config_ini_example.cpp)
+target_link_libraries(config_ini_example PRIVATE clasp)
+
+add_test(NAME config_from_ini COMMAND config_ini_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.ini)
+set_tests_properties(config_from_ini PROPERTIES PASS_REGULAR_EXPRESSION "message=fromini.*nested_mode=deep")
+
+# .cfg extension should use INI parser too
+add_test(NAME config_from_cfg COMMAND config_ini_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.ini)
+set_tests_properties(config_from_cfg PROPERTIES PASS_REGULAR_EXPRESSION "message=fromini.*nested_mode=deep")
+
+# --- Config edge-case tests ---
+
+# Unknown extension should be rejected
+add_test(NAME config_unknown_ext COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_unknown.xyz)
+set_tests_properties(config_unknown_ext PROPERTIES PASS_REGULAR_EXPRESSION "unsupported config file format")
+
+# Malformed JSON should report parse error
+add_test(NAME config_bad_json COMMAND config_json_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_bad.json)
+set_tests_properties(config_bad_json PROPERTIES PASS_REGULAR_EXPRESSION "failed to parse json config file")
+
+# Malformed TOML should report parse error
+add_test(NAME config_bad_toml COMMAND config_toml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_bad.toml)
+set_tests_properties(config_bad_toml PROPERTIES PASS_REGULAR_EXPRESSION "failed to parse toml config file")
+
+# YAML subset parser: unsupported features (inline arrays) are silently ignored, only scalar values kept
+add_test(NAME config_yaml_subset_ignores_inline_array COMMAND config_yaml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_bad.yaml)
+set_tests_properties(config_yaml_subset_ignores_inline_array PROPERTIES PASS_REGULAR_EXPRESSION "message=ok nested_mode=none")
+
+# Empty config files should not crash — env-like
+add_test(NAME config_empty_env COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.env)
+set_tests_properties(config_empty_env PROPERTIES PASS_REGULAR_EXPRESSION "default")
+
+# Empty config files should not crash — JSON (empty object, no keys override)
+add_test(NAME config_empty_json COMMAND config_json_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.json)
+set_tests_properties(config_empty_json PROPERTIES PASS_REGULAR_EXPRESSION "message=\n")
+
+# Empty config files should not crash — TOML (no keys, defaults preserved)
+add_test(NAME config_empty_toml COMMAND config_toml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.toml)
+set_tests_properties(config_empty_toml PROPERTIES PASS_REGULAR_EXPRESSION "message=default nested_mode=none")
+
+# Empty config files should not crash — YAML (no keys, defaults preserved)
+add_test(NAME config_empty_yaml COMMAND config_yaml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.yaml)
+set_tests_properties(config_empty_yaml PROPERTIES PASS_REGULAR_EXPRESSION "message=default nested_mode=none")
+
+# Empty config files should not crash — INI (no keys, defaults preserved)
+add_test(NAME config_empty_ini COMMAND config_ini_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.ini)
+set_tests_properties(config_empty_ini PROPERTIES PASS_REGULAR_EXPRESSION "message=default nested_mode=none")
+
+# Non-existent config file should report open error
+add_test(NAME config_missing_file COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/nonexistent.env)
+set_tests_properties(config_missing_file PROPERTIES PASS_REGULAR_EXPRESSION "failed to open config file")
+
 add_executable(traverse_example examples/traverse_example.cpp)
 target_link_libraries(traverse_example PRIVATE clasp)
 

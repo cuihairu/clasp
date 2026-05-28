@@ -3408,6 +3408,46 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
         return out;
     };
 
+    auto parseIniFlatten = [&](std::istream& in) -> std::optional<FlatRaw> {
+        FlatRaw out;
+        std::string sectionPrefix;
+
+        std::string line;
+        while (std::getline(in, line)) {
+            const auto t = trim(line);
+            if (t.empty()) continue;
+            if (t.front() == '#' || t.front() == ';') continue;
+
+            if (t.front() == '[') {
+                const auto close = t.find(']');
+                if (close == std::string_view::npos) continue;
+                const auto inner = trim(t.substr(1, close - 1));
+                sectionPrefix = std::string(inner);
+                continue;
+            }
+
+            auto eq = t.find('=');
+            if (eq == std::string_view::npos) eq = t.find(':');
+            if (eq == std::string_view::npos) continue;
+
+            const auto key = trim(t.substr(0, eq));
+            if (key.empty()) continue;
+
+            auto value = std::string(trim(t.substr(eq + 1)));
+            if (value.size() >= 2 &&
+                ((value.front() == '"' && value.back() == '"') ||
+                 (value.front() == '\'' && value.back() == '\''))) {
+                value = value.substr(1, value.size() - 2);
+            }
+
+            const std::string fullKey =
+                sectionPrefix.empty() ? std::string(key) : (sectionPrefix + "." + std::string(key));
+            out.scalar[fullKey] = std::move(value);
+        }
+
+        return out;
+    };
+
     auto parseYamlFlatten = [&](std::istream& in) -> std::optional<FlatRaw> {
         FlatRaw out;
 
@@ -3531,8 +3571,16 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
             } else {
                 return std::string("failed to parse toml config file: ") + configPath;
             }
-        } else {
+        } else if (endsWith(configPath, ".ini") || endsWith(configPath, ".cfg")) {
+            if (auto parsed = parseIniFlatten(in)) {
+                raw = std::move(*parsed);
+            } else {
+                return std::string("failed to parse ini config file: ") + configPath;
+            }
+        } else if (endsWith(configPath, ".env") || configPath.find('.') == std::string::npos) {
             raw.scalar = parseEnvLike(in);
+        } else {
+            return std::string("unsupported config file format: ") + configPath;
         }
 
         std::unordered_map<std::string, std::string> keyToLong;
