@@ -1036,6 +1036,137 @@ target_link_libraries(value_parse_coverage_example PRIVATE clasp)
 add_test(NAME value_parse_coverage COMMAND value_parse_coverage_example)
 set_tests_properties(value_parse_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
+# --- Execute coverage tests ---
+
+add_executable(execute_coverage_example examples/execute_coverage_example.cpp)
+target_link_libraries(execute_coverage_example PRIVATE clasp)
+
+add_test(NAME exec_basic_action COMMAND execute_coverage_example sub --name hello)
+set_tests_properties(exec_basic_action PROPERTIES PASS_REGULAR_EXPRESSION "action:hello")
+
+add_test(NAME exec_unknown_command COMMAND execute_coverage_example nope)
+set_tests_properties(exec_unknown_command PROPERTIES PASS_REGULAR_EXPRESSION "unknown command")
+
+add_test(NAME exec_unknown_flag COMMAND execute_coverage_example sub --bogus x)
+set_tests_properties(exec_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION "unknown flag")
+
+add_test(NAME exec_missing_required COMMAND execute_coverage_example sub)
+set_tests_properties(exec_missing_required PROPERTIES PASS_REGULAR_EXPRESSION "required flag")
+
+add_test(NAME exec_help_output COMMAND execute_coverage_example help sub)
+set_tests_properties(exec_help_output PROPERTIES PASS_REGULAR_EXPRESSION "Usage:")
+
+add_test(NAME exec_version_output COMMAND execute_coverage_example --version)
+set_tests_properties(exec_version_output PROPERTIES PASS_REGULAR_EXPRESSION "1\\.0\\.0")
+
+add_test(NAME exec_alias COMMAND execute_coverage_example s --name hi)
+set_tests_properties(exec_alias PROPERTIES PASS_REGULAR_EXPRESSION "action:hi")
+
+add_test(NAME exec_deprecated_warn COMMAND execute_coverage_example sub --name ok --old val)
+set_tests_properties(exec_deprecated_warn PROPERTIES PASS_REGULAR_EXPRESSION "deprecated")
+
+add_test(NAME exec_hook_order COMMAND execute_coverage_example sub --name x)
+set_tests_properties(exec_hook_order PROPERTIES PASS_REGULAR_EXPRESSION "ppre:.*pre:.*action:.*post:.*ppost")
+
+add_test(NAME exec_hook_error COMMAND execute_coverage_example err)
+set_tests_properties(exec_hook_error PROPERTIES PASS_REGULAR_EXPRESSION "hook failed")
+
+add_test(NAME exec_bool_negation COMMAND execute_coverage_example sub --name x --no-debug)
+set_tests_properties(exec_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "debug=0")
+
+add_test(NAME exec_flag_groups_exclusive COMMAND execute_coverage_example sub2 --a v --c v)
+set_tests_properties(exec_flag_groups_exclusive PROPERTIES PASS_REGULAR_EXPRESSION "mutually exclusive")
+
+add_test(NAME exec_flag_groups_one_required COMMAND execute_coverage_example sub2)
+set_tests_properties(exec_flag_groups_one_required PROPERTIES PASS_REGULAR_EXPRESSION "at least one")
+
+add_test(NAME exec_flag_groups_together COMMAND execute_coverage_example sub2 --a v --user u)
+set_tests_properties(exec_flag_groups_together PROPERTIES PASS_REGULAR_EXPRESSION "must be set together")
+
+add_test(NAME exec_traverse_children COMMAND execute_coverage_example trav --name global sub)
+set_tests_properties(exec_traverse_children PROPERTIES PASS_REGULAR_EXPRESSION "trav name=global")
+
+add_test(NAME exec_silence_usage COMMAND execute_coverage_example quiet nope)
+set_tests_properties(exec_silence_usage PROPERTIES FAIL_REGULAR_EXPRESSION "Usage:")
+
+add_test(NAME exec_disable_flag_parsing COMMAND execute_coverage_example raw --flag value)
+set_tests_properties(exec_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION "raw:--flag,value")
+
+add_test(NAME exec_allow_unknown COMMAND execute_coverage_example flex --name x --bogus val)
+set_tests_properties(exec_allow_unknown PROPERTIES PASS_REGULAR_EXPRESSION "ok name=x")
+
+add_test(NAME exec_count_flag COMMAND execute_coverage_example sub --name x -vvv)
+set_tests_properties(exec_count_flag PROPERTIES PASS_REGULAR_EXPRESSION "verbose=3")
+
+add_test(NAME exec_repeat_flag COMMAND execute_coverage_example sub --name x --tag a --tag b)
+set_tests_properties(exec_repeat_flag PROPERTIES PASS_REGULAR_EXPRESSION "tags=a,b")
+
+add_test(NAME exec_positionals COMMAND execute_coverage_example sub --name x arg1 arg2)
+set_tests_properties(exec_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos:arg1,arg2")
+
+add_test(NAME exec_suggestions COMMAND execute_coverage_example sbu)
+set_tests_properties(exec_suggestions PROPERTIES PASS_REGULAR_EXPRESSION "Did you mean")
+
+# --- Parser coverage tests ---
+
+add_executable(parser_coverage_example examples/parser_coverage_example.cpp)
+target_link_libraries(parser_coverage_example PRIVATE clasp)
+
+add_test(NAME parser_occurrences COMMAND parser_coverage_example -vvv)
+set_tests_properties(parser_occurrences PROPERTIES PASS_REGULAR_EXPRESSION "occ=3")
+
+add_test(NAME parser_explicit_value COMMAND parser_coverage_example --name explicit)
+set_tests_properties(parser_explicit_value PROPERTIES PASS_REGULAR_EXPRESSION "explicit=yes")
+
+add_test(NAME parser_default_not_explicit COMMAND parser_coverage_example)
+set_tests_properties(parser_default_not_explicit PROPERTIES PASS_REGULAR_EXPRESSION "explicit=no default=no")
+
+add_test(NAME parser_flag_values_split COMMAND parser_coverage_example --list a,b,c)
+set_tests_properties(parser_flag_values_split PROPERTIES PASS_REGULAR_EXPRESSION "split=3")
+
+add_test(NAME parser_positionals COMMAND parser_coverage_example --name x arg1 arg2)
+set_tests_properties(parser_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos=arg1,arg2")
+
+add_test(NAME parser_flag_map COMMAND parser_coverage_example --map k1=v1,k2=v2)
+set_tests_properties(parser_flag_map PROPERTIES PASS_REGULAR_EXPRESSION "map_k1=v1")
+
+add_test(NAME parser_has_value COMMAND parser_coverage_example --name x)
+set_tests_properties(parser_has_value PROPERTIES PASS_REGULAR_EXPRESSION "has_name=yes has_missing=no")
+
+add_test(NAME parser_get_slice COMMAND parser_coverage_example --name x)
+set_tests_properties(parser_get_slice PROPERTIES PASS_REGULAR_EXPRESSION "slice=1")
+
+# --- Template coverage tests ---
+
+add_executable(template_coverage_example examples/template_coverage_example.cpp)
+target_link_libraries(template_coverage_example PRIVATE clasp)
+
+add_test(NAME template_version COMMAND template_coverage_example --version)
+set_tests_properties(template_version PROPERTIES PASS_REGULAR_EXPRESSION "AppVersion:1\\.0\\.0")
+
+add_test(NAME template_help COMMAND template_coverage_example --help)
+set_tests_properties(template_help PROPERTIES PASS_REGULAR_EXPRESSION "CUSTOM_HELP")
+
+# --- Hook coverage tests ---
+
+add_executable(hook_coverage_example examples/hook_coverage_example.cpp)
+target_link_libraries(hook_coverage_example PRIVATE clasp)
+
+add_test(NAME hook_order COMMAND hook_coverage_example run)
+set_tests_properties(hook_order PROPERTIES PASS_REGULAR_EXPRESSION "ppre:.*pre:.*action:.*post:.*ppost")
+
+add_test(NAME hook_pre_run_e COMMAND hook_coverage_example err-pre)
+set_tests_properties(hook_pre_run_e PROPERTIES PASS_REGULAR_EXPRESSION "pre-run error")
+
+add_test(NAME hook_post_run_e COMMAND hook_coverage_example err-post)
+set_tests_properties(hook_post_run_e PROPERTIES PASS_REGULAR_EXPRESSION "post-run error")
+
+add_test(NAME hook_persistent_pre_e COMMAND hook_coverage_example err-ppre sub)
+set_tests_properties(hook_persistent_pre_e PROPERTIES PASS_REGULAR_EXPRESSION "persistent pre error")
+
+add_test(NAME hook_persistent_post_e COMMAND hook_coverage_example err-ppost sub)
+set_tests_properties(hook_persistent_post_e PROPERTIES PASS_REGULAR_EXPRESSION "persistent post error")
+
 add_executable(parser_external_example examples/parser_external_example.cpp)
 target_link_libraries(parser_external_example PRIVATE clasp)
 
