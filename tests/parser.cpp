@@ -56,6 +56,54 @@ int main(int argc, char** argv) {
         auto nameSlice = parser.getSlice<std::string>("--name");
         if (!nameSlice.empty()) std::cout << "slice=" << nameSlice.size() << "\n";
 
+        // Test additional Parser methods for coverage
+        std::unordered_map<std::string, std::string> extVals;
+        extVals["--name"] = "external";
+        parser.setExternalValues(std::move(extVals));
+
+        std::unordered_map<std::string, std::string> extVals2;
+        extVals2["--count"] = "5";
+        auto err = parser.setExternalValuesChecked(std::move(extVals2));
+        (void)err;
+
+        auto counts = parser.getFlagValuesAs<int>("--count");
+        if (!counts.empty()) std::cout << "counts_as=" << counts.size() << "\n";
+
+        auto boolSlice = parser.getBoolSlice("--list", ',');
+        (void)boolSlice;
+        auto intSlice = parser.getIntSlice("--list", ',');
+        (void)intSlice;
+        auto u32Slice = parser.getUint32Slice("--list", ',');
+        (void)u32Slice;
+        auto floatSlice = parser.getFloatSlice("--list", ',');
+        (void)floatSlice;
+        auto doubleSlice = parser.getDoubleSlice("--list", ',');
+        (void)doubleSlice;
+        auto durSlice = parser.getDurationSlice("--list", ',');
+        (void)durSlice;
+
+        auto boolArr = parser.getBoolArray("--list");
+        (void)boolArr;
+        auto u32Arr = parser.getUint32Array("--list");
+        (void)u32Arr;
+        auto u64Arr = parser.getUint64Array("--list");
+        (void)u64Arr;
+        auto floatArr = parser.getFloatArray("--list");
+        (void)floatArr;
+        auto doubleArr = parser.getDoubleArray("--list");
+        (void)doubleArr;
+        auto durArr = parser.getDurationArray("--list");
+        (void)durArr;
+
+        auto strMap = parser.getStringToString("--map", ',', '=');
+        (void)strMap;
+        auto u64Map = parser.getStringToUint64("--map", ',', '=');
+        (void)u64Map;
+        auto doubleMap = parser.getStringToDouble("--map", ',', '=');
+        (void)doubleMap;
+        auto durMap = parser.getStringToDuration("--map", ',', '=');
+        (void)durMap;
+
         return 0;
     });
 

@@ -85,7 +85,11 @@ void testDurationParsing() {
     std::chrono::milliseconds d6;
     tryParseDuration("invalid", d6);
 
-    (void)d1; (void)d2; (void)d3; (void)d4; (void)d5; (void)d6;
+    // Test parseDuration (non-try version with default value)
+    auto pd1 = clasp::detail::parseDuration("500ms", std::chrono::milliseconds{999});
+    auto pd2 = clasp::detail::parseDuration("invalid", std::chrono::milliseconds{999});
+
+    (void)d1; (void)d2; (void)d3; (void)d4; (void)d5; (void)d6; (void)pd1; (void)pd2;
 }
 
 void testInt64Parsing() {

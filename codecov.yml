@@ -10,6 +10,7 @@ coverage:
 
 ignore:
   - "build/**"
+  - "tests/**"
   - "examples/**"
 
 fixes:
