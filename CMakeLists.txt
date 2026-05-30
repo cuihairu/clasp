@@ -1043,12 +1043,6 @@ target_link_libraries(api_test PRIVATE clasp)
 add_test(NAME api_coverage COMMAND api_test)
 set_tests_properties(api_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
-add_executable(color_test tests/color.cpp)
-target_link_libraries(color_test PRIVATE clasp)
-
-add_test(NAME color_coverage COMMAND color_test)
-set_tests_properties(color_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
-
 add_executable(command_test tests/command.cpp)
 target_link_libraries(command_test PRIVATE clasp)
 
@@ -1060,12 +1054,6 @@ target_link_libraries(completion_test PRIVATE clasp)
 
 add_test(NAME completion_coverage COMMAND completion_test)
 set_tests_properties(completion_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
-
-add_executable(value_parse_test tests/value_parse.cpp)
-target_link_libraries(value_parse_test PRIVATE clasp)
-
-add_test(NAME value_parse_coverage COMMAND value_parse_test)
-set_tests_properties(value_parse_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
 # --- Execute coverage tests ---
 
@@ -1226,6 +1214,37 @@ target_link_libraries(command_misc_test PRIVATE clasp)
 add_test(NAME command_misc_run COMMAND command_misc_test)
 set_tests_properties(command_misc_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
+# --- Value parse coverage tests ---
+
+add_executable(value_parse_test tests/value_parse.cpp)
+target_link_libraries(value_parse_test PRIVATE clasp)
+
+add_test(NAME value_parse_run COMMAND value_parse_test)
+set_tests_properties(value_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+# --- Color coverage tests ---
+
+add_executable(color_test tests/color.cpp)
+target_link_libraries(color_test PRIVATE clasp)
+
+add_test(NAME color_run COMMAND color_test)
+set_tests_properties(color_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+# --- Parser edge coverage tests ---
+
+add_executable(parser_edge_test tests/parser_edge.cpp)
+target_link_libraries(parser_edge_test PRIVATE clasp)
+
+add_test(NAME parser_edge_run COMMAND parser_edge_test)
+set_tests_properties(parser_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+# --- Command edge coverage tests ---
+
+add_executable(command_edge_test tests/command_edge.cpp)
+target_link_libraries(command_edge_test PRIVATE clasp)
+
+add_test(NAME command_edge_run COMMAND command_edge_test)
+set_tests_properties(command_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
 # --- Hook coverage tests ---
 
