@@ -1210,6 +1210,22 @@ target_link_libraries(special_flags_test PRIVATE clasp)
 add_test(NAME special_flags_run COMMAND special_flags_test)
 set_tests_properties(special_flags_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
 
+# --- Parser misc coverage tests ---
+
+add_executable(parser_misc_test tests/parser_misc.cpp)
+target_link_libraries(parser_misc_test PRIVATE clasp)
+
+add_test(NAME parser_misc_run COMMAND parser_misc_test)
+set_tests_properties(parser_misc_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+# --- Command misc coverage tests ---
+
+add_executable(command_misc_test tests/command_misc.cpp)
+target_link_libraries(command_misc_test PRIVATE clasp)
+
+add_test(NAME command_misc_run COMMAND command_misc_test)
+set_tests_properties(command_misc_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
 
 # --- Hook coverage tests ---
 
