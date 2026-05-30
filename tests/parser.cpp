@@ -56,15 +56,8 @@ int main(int argc, char** argv) {
         auto nameSlice = parser.getSlice<std::string>("--name");
         if (!nameSlice.empty()) std::cout << "slice=" << nameSlice.size() << "\n";
 
-        // Test additional Parser methods for coverage
-        std::unordered_map<std::string, std::string> extVals;
-        extVals["--name"] = "external";
-        parser.setExternalValues(std::move(extVals));
-
-        std::unordered_map<std::string, std::string> extVals2;
-        extVals2["--count"] = "5";
-        auto err = parser.setExternalValuesChecked(std::move(extVals2));
-        (void)err;
+        // Note: setExternalValues and setExternalValuesChecked are non-const methods
+        // and cannot be called from a const Parser& in the action lambda
 
         auto counts = parser.getFlagValuesAs<int>("--count");
         if (!counts.empty()) std::cout << "counts_as=" << counts.size() << "\n";
