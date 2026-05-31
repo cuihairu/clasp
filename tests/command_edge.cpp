@@ -6,6 +6,13 @@
 
 namespace {
 
+int g_failures = 0;
+
+void expect(bool cond, const char* label) {
+    std::cout << label << ": " << (cond ? "pass" : "fail") << std::endl;
+    if (!cond) ++g_failures;
+}
+
 void testActionE() {
     // Test actionE (Action with error return)
     {
@@ -20,7 +27,7 @@ void testActionE() {
 
         const char* argv[] = {"app", "--name", "value"};
         auto result = root.run(3, const_cast<char**>(argv));
-        std::cout << "actionE success: " << (result == 0 && actionCalled ? "pass" : "fail") << std::endl;
+        expect(result == 0 && actionCalled, "actionE success");
     }
 
     // Test actionE with error
@@ -36,7 +43,7 @@ void testActionE() {
 
         const char* argv[] = {"app2", "--name", "value"};
         auto result = root.run(3, const_cast<char**>(argv));
-        std::cout << "actionE error: " << (result != 0 && actionCalled ? "pass" : "fail") << std::endl;
+        expect(result != 0 && actionCalled, "actionE error");
     }
 }
 
@@ -58,7 +65,7 @@ void testHooks() {
 
         const char* argv[] = {"app"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "preRun hook: " << (preRunCalled && actionCalled ? "pass" : "fail") << std::endl;
+        expect(preRunCalled && actionCalled, "preRun hook");
     }
 
     // Test postRun hook
@@ -78,7 +85,7 @@ void testHooks() {
 
         const char* argv[] = {"app2"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "postRun hook: " << (postRunCalled && actionCalled ? "pass" : "fail") << std::endl;
+        expect(postRunCalled && actionCalled, "postRun hook");
     }
 
     // Test persistentPreRun hook (inherited by subcommands)
@@ -99,7 +106,7 @@ void testHooks() {
 
         const char* argv[] = {"app3", "sub"};
         root.run(2, const_cast<char**>(argv));
-        std::cout << "persistentPreRun hook: " << (persistentPreRunCalled ? "pass" : "fail") << std::endl;
+        expect(persistentPreRunCalled, "persistentPreRun hook");
     }
 }
 
@@ -120,7 +127,7 @@ void testHookE() {
 
         const char* argv[] = {"app"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "preRunE success: " << (preRunECalled ? "pass" : "fail") << std::endl;
+        expect(preRunECalled, "preRunE success");
     }
 
     // Test postRunE hook
@@ -139,7 +146,7 @@ void testHookE() {
 
         const char* argv[] = {"app2"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "postRunE: " << (postRunECalled ? "pass" : "fail") << std::endl;
+        expect(postRunECalled, "postRunE");
     }
 }
 
@@ -151,7 +158,7 @@ void testVersion() {
 
         const char* argv[] = {"app", "--version"};
         auto result = root.run(2, const_cast<char**>(argv));
-        std::cout << "version flag: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "version flag");
     }
 
     // Test custom version template
@@ -162,7 +169,7 @@ void testVersion() {
 
         const char* argv[] = {"app2", "--version"};
         auto result = root.run(2, const_cast<char**>(argv));
-        std::cout << "version template: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "version template");
     }
 }
 
@@ -180,7 +187,7 @@ void testDeprecated() {
 
         const char* argv[] = {"app"};
         auto result = root.run(1, const_cast<char**>(argv));
-        std::cout << "deprecated command: " << (result == 0 && actionCalled ? "pass" : "fail") << std::endl;
+        expect(result == 0 && actionCalled, "deprecated command");
     }
 }
 
@@ -200,7 +207,7 @@ void testHidden() {
 
         const char* argv[] = {"app", "hidden_cmd"};
         auto result = root.run(2, const_cast<char**>(argv));
-        std::cout << "hidden command: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "hidden command");
     }
 }
 
@@ -220,6 +227,7 @@ void testValidArgs() {
 
         const char* argv[] = {"app", "arg1"};
         root.run(2, const_cast<char**>(argv));
+        expect(actionCalled, "valid args match");
     }
 
     // Test validArgsFunction (dynamic completion)
@@ -237,7 +245,7 @@ void testValidArgs() {
 
         const char* argv[] = {"app2"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "validArgsFunction: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "validArgsFunction");
     }
 }
 
@@ -245,20 +253,18 @@ void testFlagCompletion() {
     // Test registerFlagCompletion
     {
         clasp::Command root("app", "Test flag completion");
+        root.enableCompletion();
         root.withFlag("--log-level", "-l", "level", "Log Level", std::string("info"));
-        root.registerFlagCompletion("--log-level", [](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&, std::string_view) {
+        bool completionCalled = false;
+        root.registerFlagCompletion("--log-level", [&](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&, std::string_view) {
+            completionCalled = true;
             return std::vector<std::string>{"debug", "info", "warn", "error"};
         });
 
-        bool actionCalled = false;
-        root.action([&](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
-            actionCalled = true;
-            return 0;
-        });
-
-        const char* argv[] = {"app", "--log-level", "debug"};
-        root.run(3, const_cast<char**>(argv));
-        std::cout << "flag completion: " << (actionCalled ? "pass" : "fail") << std::endl;
+        const char* argv[] = {"app", "__completeNoDesc", "--log-level", "d"};
+        auto result = root.run(4, const_cast<char**>(argv));
+        expect(result == 0, "flag completion run");
+        expect(completionCalled, "flag completion");
     }
 }
 
@@ -270,9 +276,9 @@ void testMarkFlagMethods() {
         root.markFlagRequired("--required");
 
         // This should fail because required flag is missing
-        const char* argv[] = {"app"};
+        const char* argv[] = {"app"}; 
         auto result = root.run(1, const_cast<char**>(argv));
-        std::cout << "markFlagRequired missing: " << (result != 0 ? "pass" : "fail") << std::endl;
+        expect(result != 0, "markFlagRequired missing");
     }
 
     // Test with required flag present
@@ -283,7 +289,7 @@ void testMarkFlagMethods() {
 
         const char* argv[] = {"app2", "--required", "value"};
         auto result = root.run(3, const_cast<char**>(argv));
-        std::cout << "markFlagRequired present: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "markFlagRequired present");
     }
 
     // Test markFlagHidden
@@ -295,13 +301,14 @@ void testMarkFlagMethods() {
         bool actionCalled = false;
         root.action([&](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
             auto secret = parser.getFlag<std::string>("--secret", "");
-            std::cout << "markFlagHidden: " << (secret == "value" ? "pass" : "fail") << std::endl;
+            expect(secret == "value", "markFlagHidden");
             actionCalled = true;
             return 0;
         });
 
         const char* argv[] = {"app3", "--secret", "value"};
         root.run(3, const_cast<char**>(argv));
+        expect(actionCalled, "markFlagHidden action");
     }
 }
 
@@ -320,7 +327,7 @@ void testMarkFlagAnnotation() {
 
         const char* argv[] = {"app", "--custom", "test"};
         root.run(3, const_cast<char**>(argv));
-        std::cout << "markFlagAnnotation: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "markFlagAnnotation");
     }
 }
 
@@ -339,7 +346,7 @@ void testMarkFlagFilename() {
 
         const char* argv[] = {"app", "--config", "test.yaml"};
         root.run(3, const_cast<char**>(argv));
-        std::cout << "markFlagFilename: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "markFlagFilename");
     }
 
     // Test markFlagDirname
@@ -356,7 +363,7 @@ void testMarkFlagFilename() {
 
         const char* argv[] = {"app2", "--dir", "/path"};
         root.run(3, const_cast<char**>(argv));
-        std::cout << "markFlagDirname: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "markFlagDirname");
     }
 }
 
@@ -377,6 +384,7 @@ void testMarkFlagNoOptDefaultValue() {
 
         const char* argv[] = {"app", "--optional"};
         root.run(2, const_cast<char**>(argv));
+        expect(actionCalled, "noOptDefault present");
     }
 }
 
@@ -390,7 +398,7 @@ void testFlagGroupConstraints() {
 
         const char* argv[] = {"app"};
         auto result = root.run(1, const_cast<char**>(argv));
-        std::cout << "mutually exclusive none: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "mutually exclusive none");
     }
 
     // Test markFlagsMutuallyExclusive (pass case - one set)
@@ -402,7 +410,7 @@ void testFlagGroupConstraints() {
 
         const char* argv[] = {"app2", "--opt1"};
         auto result = root.run(2, const_cast<char**>(argv));
-        std::cout << "mutually exclusive one: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "mutually exclusive one");
     }
 
     // Test markFlagsOneRequired (pass case - one set)
@@ -414,7 +422,7 @@ void testFlagGroupConstraints() {
 
         const char* argv[] = {"app3", "--opt1"};
         auto result = root.run(2, const_cast<char**>(argv));
-        std::cout << "one required: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "one required");
     }
 
     // Test markFlagsRequiredTogether (pass case - none set)
@@ -426,7 +434,7 @@ void testFlagGroupConstraints() {
 
         const char* argv[] = {"app4"};
         auto result = root.run(1, const_cast<char**>(argv));
-        std::cout << "required together none: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "required together none");
     }
 
     // Test markFlagsRequiredTogether (pass case - all set)
@@ -438,7 +446,7 @@ void testFlagGroupConstraints() {
 
         const char* argv[] = {"app5", "--opt1", "--opt2"};
         auto result = root.run(3, const_cast<char**>(argv));
-        std::cout << "required together all: " << (result == 0 ? "pass" : "fail") << std::endl;
+        expect(result == 0, "required together all");
     }
 }
 
@@ -456,7 +464,7 @@ void testExample() {
 
         const char* argv[] = {"app"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "example: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "example");
     }
 
     // Test examples alias
@@ -472,7 +480,7 @@ void testExample() {
 
         const char* argv[] = {"app2"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "examples: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "examples");
     }
 }
 
@@ -492,7 +500,7 @@ void testSuggestions() {
         // Typo: --verbos instead of --verbose
         const char* argv[] = {"app", "--verbos"};
         auto result = root.run(2, const_cast<char**>(argv));
-        std::cout << "suggestions distance: " << (result != 0 ? "pass" : "fail") << std::endl;
+        expect(result != 0, "suggestions distance");
     }
 
     // Test suggestions disable
@@ -509,7 +517,7 @@ void testSuggestions() {
 
         const char* argv[] = {"app2", "--verbos"};
         auto result = root.run(2, const_cast<char**>(argv));
-        std::cout << "suggestions disable: " << (result != 0 ? "pass" : "fail") << std::endl;
+        expect(result != 0, "suggestions disable");
     }
 }
 
@@ -528,7 +536,7 @@ void testAddGroup() {
 
         const char* argv[] = {"app"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "addGroup: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "addGroup");
     }
 }
 
@@ -546,7 +554,7 @@ void testGroupId() {
 
         const char* argv[] = {"app"};
         root.run(1, const_cast<char**>(argv));
-        std::cout << "groupId: " << (actionCalled ? "pass" : "fail") << std::endl;
+        expect(actionCalled, "groupId");
     }
 }
 
@@ -604,6 +612,8 @@ int main() {
     std::cout << "\n=== Testing GroupId ===" << std::endl;
     testGroupId();
 
-    std::cout << "\nok\n";
-    return 0;
+    if (g_failures == 0) {
+        std::cout << "\nok\n";
+    }
+    return g_failures == 0 ? 0 : 1;
 }

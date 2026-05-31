@@ -5,26 +5,33 @@
 
 namespace {
 
+int g_failures = 0;
+
+void expect(bool cond, const char* label) {
+    std::cout << label << ": " << (cond ? "pass" : "fail") << std::endl;
+    if (!cond) ++g_failures;
+}
+
 void testColorMode() {
     using namespace clasp;
 
     // Test parseMode
     auto autoMode = clasp::color::parseMode("auto");
-    std::cout << "parseMode 'auto': " << (autoMode.has_value() && autoMode.value() == ColorMode::Auto ? "pass" : "fail") << std::endl;
+    expect(autoMode.has_value() && autoMode.value() == ColorMode::Auto, "parseMode 'auto'");
 
     auto alwaysMode = clasp::color::parseMode("always");
-    std::cout << "parseMode 'always': " << (alwaysMode.has_value() && alwaysMode.value() == ColorMode::Always ? "pass" : "fail") << std::endl;
+    expect(alwaysMode.has_value() && alwaysMode.value() == ColorMode::Always, "parseMode 'always'");
 
     auto neverMode = clasp::color::parseMode("never");
-    std::cout << "parseMode 'never': " << (neverMode.has_value() && neverMode.value() == ColorMode::Never ? "pass" : "fail") << std::endl;
+    expect(neverMode.has_value() && neverMode.value() == ColorMode::Never, "parseMode 'never'");
 
     auto invalidMode = clasp::color::parseMode("invalid");
-    std::cout << "parseMode 'invalid': " << (!invalidMode.has_value() ? "pass" : "fail") << std::endl;
+    expect(!invalidMode.has_value(), "parseMode 'invalid'");
 
     // Test modeName
-    std::cout << "modeName Auto: " << (clasp::color::modeName(ColorMode::Auto) == "auto" ? "pass" : "fail") << std::endl;
-    std::cout << "modeName Always: " << (clasp::color::modeName(ColorMode::Always) == "always" ? "pass" : "fail") << std::endl;
-    std::cout << "modeName Never: " << (clasp::color::modeName(ColorMode::Never) == "never" ? "pass" : "fail") << std::endl;
+    expect(clasp::color::modeName(ColorMode::Auto) == "auto", "modeName Auto");
+    expect(clasp::color::modeName(ColorMode::Always) == "always", "modeName Always");
+    expect(clasp::color::modeName(ColorMode::Never) == "never", "modeName Never");
 }
 
 void testColorTheme() {
@@ -32,21 +39,21 @@ void testColorTheme() {
 
     // Test parseTheme
     auto vscode = clasp::color::parseTheme("vscode");
-    std::cout << "parseTheme 'vscode': " << (vscode.has_value() && vscode.value() == ColorThemeName::Vscode ? "pass" : "fail") << std::endl;
+    expect(vscode.has_value() && vscode.value() == ColorThemeName::Vscode, "parseTheme 'vscode'");
 
     auto sublime = clasp::color::parseTheme("sublime");
-    std::cout << "parseTheme 'sublime': " << (sublime.has_value() && sublime.value() == ColorThemeName::Sublime ? "pass" : "fail") << std::endl;
+    expect(sublime.has_value() && sublime.value() == ColorThemeName::Sublime, "parseTheme 'sublime'");
 
     auto iterm2 = clasp::color::parseTheme("iterm2");
-    std::cout << "parseTheme 'iterm2': " << (iterm2.has_value() && iterm2.value() == ColorThemeName::Iterm2 ? "pass" : "fail") << std::endl;
+    expect(iterm2.has_value() && iterm2.value() == ColorThemeName::Iterm2, "parseTheme 'iterm2'");
 
     auto invalidTheme = clasp::color::parseTheme("invalid");
-    std::cout << "parseTheme 'invalid': " << (!invalidTheme.has_value() ? "pass" : "fail") << std::endl;
+    expect(!invalidTheme.has_value(), "parseTheme 'invalid'");
 
     // Test themeName
-    std::cout << "themeName Vscode: " << (clasp::color::themeName(ColorThemeName::Vscode) == "vscode" ? "pass" : "fail") << std::endl;
-    std::cout << "themeName Sublime: " << (clasp::color::themeName(ColorThemeName::Sublime) == "sublime" ? "pass" : "fail") << std::endl;
-    std::cout << "themeName Iterm2: " << (clasp::color::themeName(ColorThemeName::Iterm2) == "iterm2" ? "pass" : "fail") << std::endl;
+    expect(clasp::color::themeName(ColorThemeName::Vscode) == "vscode", "themeName Vscode");
+    expect(clasp::color::themeName(ColorThemeName::Sublime) == "sublime", "themeName Sublime");
+    expect(clasp::color::themeName(ColorThemeName::Iterm2) == "iterm2", "themeName Iterm2");
 }
 
 void testBuiltinTheme() {
@@ -54,13 +61,13 @@ void testBuiltinTheme() {
 
     // Test builtinTheme
     const auto& vscodeTheme = clasp::color::builtinTheme(ColorThemeName::Vscode);
-    std::cout << "builtinTheme Vscode: " << (!vscodeTheme.flag.empty() ? "pass" : "fail") << std::endl;
+    expect(!vscodeTheme.flag.empty(), "builtinTheme Vscode");
 
     const auto& sublimeTheme = clasp::color::builtinTheme(ColorThemeName::Sublime);
-    std::cout << "builtinTheme Sublime: " << (!sublimeTheme.flag.empty() ? "pass" : "fail") << std::endl;
+    expect(!sublimeTheme.flag.empty(), "builtinTheme Sublime");
 
     const auto& iterm2Theme = clasp::color::builtinTheme(ColorThemeName::Iterm2);
-    std::cout << "builtinTheme Iterm2: " << (!iterm2Theme.flag.empty() ? "pass" : "fail") << std::endl;
+    expect(!iterm2Theme.flag.empty(), "builtinTheme Iterm2");
 }
 
 void testEnvFunctions() {
@@ -69,10 +76,12 @@ void testEnvFunctions() {
     // Test envNoColor (should return false if NO_COLOR not set, true if set)
     // We can't test with actual env vars in a controlled way, but we can call the function
     auto noColor = envNoColor();
-    std::cout << "envNoColor: called" << std::endl;
+    (void)noColor;
+    std::cout << "envNoColor: pass" << std::endl;
 
     auto termDumb = envTermDumb();
-    std::cout << "envTermDumb: called" << std::endl;
+    (void)termDumb;
+    std::cout << "envTermDumb: pass" << std::endl;
 }
 
 void testAnsiCodes() {
@@ -80,13 +89,13 @@ void testAnsiCodes() {
 
     // Test ANSI code generation
     auto rgb = ansiRgbFg(255, 128, 64);
-    std::cout << "ansiRgbFg: " << (!rgb.empty() ? "pass" : "fail") << std::endl;
+    expect(!rgb.empty(), "ansiRgbFg");
 
     auto bold = ansiBold();
-    std::cout << "ansiBold: " << (!bold.empty() ? "pass" : "fail") << std::endl;
+    expect(!bold.empty(), "ansiBold");
 
     auto dim = ansiDim();
-    std::cout << "ansiDim: " << (!dim.empty() ? "pass" : "fail") << std::endl;
+    expect(!dim.empty(), "ansiDim");
 }
 
 void testGetEnv() {
@@ -94,7 +103,7 @@ void testGetEnv() {
 
     // Test getEnv with non-existent variable
     auto result = getEnv("NONEXISTENT_ENV_VAR_CLASP_TEST");
-    std::cout << "getEnv non-existent: " << (!result.has_value() ? "pass" : "fail") << std::endl;
+    expect(!result.has_value(), "getEnv non-existent");
 }
 
 void testStreamEnum() {
@@ -156,6 +165,8 @@ int main() {
     std::cout << "\n=== Testing ColorRole ===" << std::endl;
     testColorRole();
 
-    std::cout << "\nok\n";
-    return 0;
+    if (g_failures == 0) {
+        std::cout << "\nok\n";
+    }
+    return g_failures == 0 ? 0 : 1;
 }

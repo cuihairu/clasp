@@ -1220,7 +1220,7 @@ add_executable(value_parse_test tests/value_parse.cpp)
 target_link_libraries(value_parse_test PRIVATE clasp)
 
 add_test(NAME value_parse_run COMMAND value_parse_test)
-set_tests_properties(value_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+set_tests_properties(value_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
 # --- Color coverage tests ---
 
@@ -1228,7 +1228,7 @@ add_executable(color_test tests/color.cpp)
 target_link_libraries(color_test PRIVATE clasp)
 
 add_test(NAME color_run COMMAND color_test)
-set_tests_properties(color_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+set_tests_properties(color_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
 # --- Parser edge coverage tests ---
 
@@ -1236,7 +1236,7 @@ add_executable(parser_edge_test tests/parser_edge.cpp)
 target_link_libraries(parser_edge_test PRIVATE clasp)
 
 add_test(NAME parser_edge_run COMMAND parser_edge_test)
-set_tests_properties(parser_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+set_tests_properties(parser_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
 # --- Command edge coverage tests ---
 
@@ -1244,7 +1244,7 @@ add_executable(command_edge_test tests/command_edge.cpp)
 target_link_libraries(command_edge_test PRIVATE clasp)
 
 add_test(NAME command_edge_run COMMAND command_edge_test)
-set_tests_properties(command_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+set_tests_properties(command_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
 # --- Hook coverage tests ---
 
