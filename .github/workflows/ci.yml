@@ -107,7 +107,7 @@ jobs:
           files: coverage.info
           disable_search: true
           plugins: noop
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
       - name: Upload to Codecov (OIDC)
@@ -118,5 +118,5 @@ jobs:
           files: coverage.info
           disable_search: true
           plugins: noop
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
