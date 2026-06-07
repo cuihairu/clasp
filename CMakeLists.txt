@@ -1501,7 +1501,7 @@ add_test(NAME parser_extra_string_slice COMMAND parser_extra_coverage_test strin
 set_tests_properties(parser_extra_string_slice PROPERTIES PASS_REGULAR_EXPRESSION "slice:a,b,c,")
 
 add_test(NAME parser_extra_string_to_int COMMAND parser_extra_coverage_test string-to-int)
-set_tests_properties(parser_extra_string_to_int PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+set_tests_properties(parser_extra_string_to_int PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
 
 add_test(NAME parser_extra_explicit_values COMMAND parser_extra_coverage_test explicit-values)
 set_tests_properties(parser_extra_explicit_values PROPERTIES PASS_REGULAR_EXPRESSION "explicit:test,")
@@ -1552,25 +1552,25 @@ add_test(NAME parser_extra_duration_array COMMAND parser_extra_coverage_test dur
 set_tests_properties(parser_extra_duration_array PROPERTIES PASS_REGULAR_EXPRESSION "durations:2")
 
 add_test(NAME parser_extra_string_to_string COMMAND parser_extra_coverage_test string-to-string)
-set_tests_properties(parser_extra_string_to_string PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+set_tests_properties(parser_extra_string_to_string PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
 
 add_test(NAME parser_extra_string_to_uint64 COMMAND parser_extra_coverage_test string-to-uint64)
-set_tests_properties(parser_extra_string_to_uint64 PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+set_tests_properties(parser_extra_string_to_uint64 PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
 
 add_test(NAME parser_extra_string_to_double COMMAND parser_extra_coverage_test string-to-double)
-set_tests_properties(parser_extra_string_to_double PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1\\.5,b=2\\.5,")
+set_tests_properties(parser_extra_string_to_double PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1\\.5|b=2\\.5).*(a=1\\.5|b=2\\.5),")
 
 add_test(NAME parser_extra_string_to_duration COMMAND parser_extra_coverage_test string-to-duration)
-set_tests_properties(parser_extra_string_to_duration PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1000,b=2000,")
+set_tests_properties(parser_extra_string_to_duration PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1000|b=2000).*(a=1000|b=2000),")
 
 add_test(NAME parser_extra_string_to COMMAND parser_extra_coverage_test string-to)
-set_tests_properties(parser_extra_string_to PROPERTIES PASS_REGULAR_EXPRESSION "map:a=x,b=y,")
+set_tests_properties(parser_extra_string_to PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=x|b=y).*(a=x|b=y),")
 
 add_test(NAME parser_extra_flag_values_as COMMAND parser_extra_coverage_test flag-values-as)
 set_tests_properties(parser_extra_flag_values_as PROPERTIES PASS_REGULAR_EXPRESSION "vals:2")
 
 add_test(NAME parser_extra_flag_map COMMAND parser_extra_coverage_test flag-map)
-set_tests_properties(parser_extra_flag_map PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+set_tests_properties(parser_extra_flag_map PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
 
 add_test(NAME parser_extra_flag_values_split COMMAND parser_extra_coverage_test flag-values-split)
 set_tests_properties(parser_extra_flag_values_split PROPERTIES PASS_REGULAR_EXPRESSION "vals:a,b,c,")

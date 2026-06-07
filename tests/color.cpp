@@ -146,8 +146,13 @@ void testEnableVt() {
     bool stderrVt = enableVirtualTerminalProcessing(Stream::Stderr);
     (void)stderrVt;
 
+    // On non-Windows, enableVirtualTerminalProcessing always returns true
     bool otherVt = enableVirtualTerminalProcessing(Stream::Other);
+#if defined(_WIN32)
     expect(!otherVt, "enableVt Other is false");
+#else
+    expect(otherVt, "enableVt Other is true (non-Windows)");
+#endif
 }
 
 void testColorRole() {
