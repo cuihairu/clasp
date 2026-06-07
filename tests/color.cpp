@@ -122,6 +122,34 @@ void testStreamEnum() {
     std::cout << "Stream enum: pass" << std::endl;
 }
 
+void testIsTty() {
+    using namespace clasp::color;
+
+    // Call isTty for all stream types to exercise color.cpp
+    bool stdoutTty = isTty(Stream::Stdout);
+    (void)stdoutTty;
+
+    bool stderrTty = isTty(Stream::Stderr);
+    (void)stderrTty;
+
+    bool otherTty = isTty(Stream::Other);
+    expect(!otherTty, "isTty Other is false");
+}
+
+void testEnableVt() {
+    using namespace clasp::color;
+
+    // Call enableVirtualTerminalProcessing for all stream types
+    bool stdoutVt = enableVirtualTerminalProcessing(Stream::Stdout);
+    (void)stdoutVt;
+
+    bool stderrVt = enableVirtualTerminalProcessing(Stream::Stderr);
+    (void)stderrVt;
+
+    bool otherVt = enableVirtualTerminalProcessing(Stream::Other);
+    expect(!otherVt, "enableVt Other is false");
+}
+
 void testColorRole() {
     using namespace clasp;
 
@@ -164,6 +192,12 @@ int main() {
 
     std::cout << "\n=== Testing ColorRole ===" << std::endl;
     testColorRole();
+
+    std::cout << "\n=== Testing IsTty ===" << std::endl;
+    testIsTty();
+
+    std::cout << "\n=== Testing EnableVt ===" << std::endl;
+    testEnableVt();
 
     if (g_failures == 0) {
         std::cout << "\nok\n";

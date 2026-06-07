@@ -1246,6 +1246,190 @@ target_link_libraries(command_edge_test PRIVATE clasp)
 add_test(NAME command_edge_run COMMAND command_edge_test)
 set_tests_properties(command_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
+# --- Command coverage tests for simplified flag methods ---
+
+add_executable(command_coverage_test tests/command_coverage.cpp)
+target_link_libraries(command_coverage_test PRIVATE clasp)
+
+add_test(NAME command_coverage_run COMMAND command_coverage_test)
+set_tests_properties(command_coverage_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+# --- Run coverage tests ---
+
+add_executable(run_coverage_test tests/run_coverage.cpp)
+target_link_libraries(run_coverage_test PRIVATE clasp)
+
+add_test(NAME run_help COMMAND run_coverage_test help)
+set_tests_properties(run_help PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_help_sub COMMAND run_coverage_test help-sub)
+set_tests_properties(run_help_sub PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_version COMMAND run_coverage_test version)
+set_tests_properties(run_version PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_version_cmd COMMAND run_coverage_test version-cmd)
+set_tests_properties(run_version_cmd PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_unknown_cmd COMMAND run_coverage_test unknown-cmd)
+set_tests_properties(run_unknown_cmd PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_unknown_flag COMMAND run_coverage_test unknown-flag)
+set_tests_properties(run_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_missing_required COMMAND run_coverage_test missing-required)
+set_tests_properties(run_missing_required PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_action COMMAND run_coverage_test action)
+set_tests_properties(run_action PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+add_test(NAME run_sub_action COMMAND run_coverage_test sub-action)
+set_tests_properties(run_sub_action PROPERTIES PASS_REGULAR_EXPRESSION "sub action")
+
+add_test(NAME run_hooks COMMAND run_coverage_test hooks)
+set_tests_properties(run_hooks PROPERTIES PASS_REGULAR_EXPRESSION "ppre.*pre.*action.*post.*ppost")
+
+add_test(NAME run_hook_error COMMAND run_coverage_test hook-error)
+set_tests_properties(run_hook_error PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME run_custom_help COMMAND run_coverage_test custom-help)
+set_tests_properties(run_custom_help PROPERTIES PASS_REGULAR_EXPRESSION "Custom help for app")
+
+add_test(NAME run_custom_usage COMMAND run_coverage_test custom-usage)
+set_tests_properties(run_custom_usage PROPERTIES PASS_REGULAR_EXPRESSION "Custom usage for app")
+
+add_test(NAME run_custom_flag_error COMMAND run_coverage_test custom-flag-error)
+set_tests_properties(run_custom_flag_error PROPERTIES PASS_REGULAR_EXPRESSION "Custom error.*unknown flag")
+
+add_test(NAME run_version_template COMMAND run_coverage_test version-template)
+set_tests_properties(run_version_template PROPERTIES PASS_REGULAR_EXPRESSION "app v1.0.0")
+
+add_test(NAME run_help_template COMMAND run_coverage_test help-template)
+set_tests_properties(run_help_template PROPERTIES PASS_REGULAR_EXPRESSION "CUSTOM_HELP")
+
+add_test(NAME run_usage_template COMMAND run_coverage_test usage-template)
+set_tests_properties(run_usage_template PROPERTIES PASS_REGULAR_EXPRESSION "CUSTOM_USAGE")
+
+add_test(NAME run_examples COMMAND run_coverage_test examples)
+set_tests_properties(run_examples PROPERTIES PASS_REGULAR_EXPRESSION "Examples:")
+
+add_test(NAME run_groups COMMAND run_coverage_test groups)
+set_tests_properties(run_groups PROPERTIES PASS_REGULAR_EXPRESSION "Core Commands")
+
+add_test(NAME run_aliases COMMAND run_coverage_test aliases)
+set_tests_properties(run_aliases PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+add_test(NAME run_end_of_flags COMMAND run_coverage_test end-of-flags)
+set_tests_properties(run_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION "action:default")
+
+add_test(NAME run_bool_negation COMMAND run_coverage_test bool-negation)
+set_tests_properties(run_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "verbose:false")
+
+add_test(NAME run_short_flag_grouping COMMAND run_coverage_test short-flag-grouping)
+set_tests_properties(run_short_flag_grouping PROPERTIES PASS_REGULAR_EXPRESSION "verbose:true.*quiet:true")
+
+add_test(NAME run_normalize_flag_keys COMMAND run_coverage_test normalize-flag-keys)
+set_tests_properties(run_normalize_flag_keys PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+add_test(NAME run_config_file COMMAND run_coverage_test config-file)
+set_tests_properties(run_config_file PROPERTIES PASS_REGULAR_EXPRESSION "failed to open config file")
+
+add_test(NAME run_env_binding COMMAND run_coverage_test env-binding)
+set_tests_properties(run_env_binding PROPERTIES PASS_REGULAR_EXPRESSION "action:default")
+
+add_test(NAME run_suggestions COMMAND run_coverage_test suggestions)
+set_tests_properties(run_suggestions PROPERTIES PASS_REGULAR_EXPRESSION "Did you mean")
+
+add_test(NAME run_no_suggest COMMAND run_coverage_test no-suggest)
+set_tests_properties(run_no_suggest PROPERTIES PASS_REGULAR_EXPRESSION "unknown command")
+
+add_test(NAME run_disable_flag_parsing COMMAND run_coverage_test disable-flag-parsing)
+set_tests_properties(run_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION "args:.*--name.*test.*-v")
+
+add_test(NAME run_allow_unknown_flags COMMAND run_coverage_test allow-unknown-flags)
+set_tests_properties(run_allow_unknown_flags PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+add_test(NAME run_traverse_children COMMAND run_coverage_test traverse-children)
+set_tests_properties(run_traverse_children PROPERTIES PASS_REGULAR_EXPRESSION "sub:test")
+
+add_test(NAME run_silence_usage COMMAND run_coverage_test silence-usage)
+set_tests_properties(run_silence_usage PROPERTIES FAIL_REGULAR_EXPRESSION "Usage:")
+
+add_test(NAME run_silence_errors COMMAND run_coverage_test silence-errors)
+set_tests_properties(run_silence_errors PROPERTIES FAIL_REGULAR_RESPONSE "Error:")
+
+add_test(NAME run_deprecated_cmd COMMAND run_coverage_test deprecated-cmd)
+set_tests_properties(run_deprecated_cmd PROPERTIES PASS_REGULAR_RESPONSE "deprecated")
+
+add_test(NAME run_deprecated_flag COMMAND run_coverage_test deprecated-flag)
+set_tests_properties(run_deprecated_flag PROPERTIES PASS_REGULAR_RESPONSE "deprecated")
+
+add_test(NAME run_flag_groups COMMAND run_coverage_test flag-groups)
+set_tests_properties(run_flag_groups PROPERTIES PASS_REGULAR_RESPONSE "mutually exclusive")
+
+add_test(NAME run_required_together COMMAND run_coverage_test required-together)
+set_tests_properties(run_required_together PROPERTIES PASS_REGULAR_RESPONSE "must be set together")
+
+add_test(NAME run_one_required COMMAND run_coverage_test one-required)
+set_tests_properties(run_one_required PROPERTIES PASS_REGULAR_RESPONSE "at least one")
+
+add_test(NAME run_args_validation COMMAND run_coverage_test args-validation)
+set_tests_properties(run_args_validation PROPERTIES PASS_REGULAR_RESPONSE "accepts 2 arg")
+
+add_test(NAME run_args_range COMMAND run_coverage_test args-range)
+set_tests_properties(run_args_range PROPERTIES PASS_REGULAR_RESPONSE "accepts between")
+
+add_test(NAME run_valid_args COMMAND run_coverage_test valid-args)
+set_tests_properties(run_valid_args PROPERTIES PASS_REGULAR_RESPONSE ".*")
+
+add_test(NAME run_completion COMMAND run_coverage_test completion)
+set_tests_properties(run_completion PROPERTIES PASS_REGULAR_RESPONSE "--name")
+
+add_test(NAME run_count_flag COMMAND run_coverage_test count-flag)
+set_tests_properties(run_count_flag PROPERTIES PASS_REGULAR_RESPONSE "verbose:3")
+
+add_test(NAME run_bytes_flag COMMAND run_coverage_test bytes-flag)
+set_tests_properties(run_bytes_flag PROPERTIES PASS_REGULAR_RESPONSE "size:1024")
+
+add_test(NAME run_ip_flag COMMAND run_coverage_test ip-flag)
+set_tests_properties(run_ip_flag PROPERTIES PASS_REGULAR_RESPONSE "host:192.168.1.1")
+
+add_test(NAME run_url_flag COMMAND run_coverage_test url-flag)
+set_tests_properties(run_url_flag PROPERTIES PASS_REGULAR_RESPONSE "url:http://example.com")
+
+add_test(NAME run_duration_flag COMMAND run_coverage_test duration-flag)
+set_tests_properties(run_duration_flag PROPERTIES PASS_REGULAR_RESPONSE "timeout:2000")
+
+add_test(NAME run_float_flag COMMAND run_coverage_test float-flag)
+set_tests_properties(run_float_flag PROPERTIES PASS_REGULAR_RESPONSE "ratio:1.5")
+
+add_test(NAME run_string_slice COMMAND run_coverage_test string-slice)
+set_tests_properties(run_string_slice PROPERTIES PASS_REGULAR_RESPONSE "tags:a,b,c,")
+
+add_test(NAME run_map_flag COMMAND run_coverage_test map-flag)
+set_tests_properties(run_map_flag PROPERTIES PASS_REGULAR_RESPONSE "labels:.*a=1.*b=2")
+
+add_test(NAME run_repeat_flag COMMAND run_coverage_test repeat-flag)
+set_tests_properties(run_repeat_flag PROPERTIES PASS_REGULAR_RESPONSE "tag:b")
+
+add_test(NAME run_no_args COMMAND run_coverage_test no-args)
+set_tests_properties(run_no_args PROPERTIES PASS_REGULAR_RESPONSE "action")
+
+add_test(NAME run_positionals COMMAND run_coverage_test positionals)
+set_tests_properties(run_positionals PROPERTIES PASS_REGULAR_RESPONSE "pos:arg1,arg2,")
+
+add_test(NAME run_color_help COMMAND run_coverage_test color-help)
+set_tests_properties(run_color_help PROPERTIES PASS_REGULAR_RESPONSE "Usage:.*app")
+
+add_test(NAME run_color_version COMMAND run_coverage_test color-version)
+set_tests_properties(run_color_version PROPERTIES PASS_REGULAR_RESPONSE "1\\.0\\.0")
+
+add_test(NAME run_color_help_sub COMMAND run_coverage_test color-help-sub)
+set_tests_properties(run_color_help_sub PROPERTIES PASS_REGULAR_RESPONSE "Usage:.*sub")
+
+add_test(NAME run_color_flag COMMAND run_coverage_test color-flag)
+set_tests_properties(run_color_flag PROPERTIES PASS_REGULAR_RESPONSE "Usage:.*app")
+
 # --- Hook coverage tests ---
 
 add_executable(hook_test tests/hook.cpp)
@@ -1304,5 +1488,175 @@ set_tests_properties(map_single PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=1,b
 
 add_test(NAME map_repeat_overrides COMMAND map_example --label a=1 --label a=9)
 set_tests_properties(map_repeat_overrides PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=9")
+
+# --- Parser extra coverage tests ---
+
+add_executable(parser_extra_coverage_test tests/parser_extra_coverage.cpp)
+target_link_libraries(parser_extra_coverage_test PRIVATE clasp)
+
+add_test(NAME parser_extra_run COMMAND parser_extra_coverage_test)
+set_tests_properties(parser_extra_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+add_test(NAME parser_extra_string_slice COMMAND parser_extra_coverage_test string-slice)
+set_tests_properties(parser_extra_string_slice PROPERTIES PASS_REGULAR_EXPRESSION "slice:a,b,c,")
+
+add_test(NAME parser_extra_string_to_int COMMAND parser_extra_coverage_test string-to-int)
+set_tests_properties(parser_extra_string_to_int PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+
+add_test(NAME parser_extra_explicit_values COMMAND parser_extra_coverage_test explicit-values)
+set_tests_properties(parser_extra_explicit_values PROPERTIES PASS_REGULAR_EXPRESSION "explicit:test,")
+
+add_test(NAME parser_extra_has_explicit COMMAND parser_extra_coverage_test has-explicit)
+set_tests_properties(parser_extra_has_explicit PROPERTIES PASS_REGULAR_EXPRESSION "name:yes.*count:no")
+
+add_test(NAME parser_extra_occurrences COMMAND parser_extra_coverage_test occurrences)
+set_tests_properties(parser_extra_occurrences PROPERTIES PASS_REGULAR_EXPRESSION "occ:3")
+
+add_test(NAME parser_extra_get_slice COMMAND parser_extra_coverage_test get-slice)
+set_tests_properties(parser_extra_get_slice PROPERTIES PASS_REGULAR_EXPRESSION "slice:3")
+
+add_test(NAME parser_extra_bool_slice COMMAND parser_extra_coverage_test bool-slice)
+set_tests_properties(parser_extra_bool_slice PROPERTIES PASS_REGULAR_EXPRESSION "bools:3")
+
+add_test(NAME parser_extra_int_slice COMMAND parser_extra_coverage_test int-slice)
+set_tests_properties(parser_extra_int_slice PROPERTIES PASS_REGULAR_EXPRESSION "ints:3")
+
+add_test(NAME parser_extra_uint32_slice COMMAND parser_extra_coverage_test uint32-slice)
+set_tests_properties(parser_extra_uint32_slice PROPERTIES PASS_REGULAR_EXPRESSION "u32s:3")
+
+add_test(NAME parser_extra_float_slice COMMAND parser_extra_coverage_test float-slice)
+set_tests_properties(parser_extra_float_slice PROPERTIES PASS_REGULAR_EXPRESSION "floats:2")
+
+add_test(NAME parser_extra_double_slice COMMAND parser_extra_coverage_test double-slice)
+set_tests_properties(parser_extra_double_slice PROPERTIES PASS_REGULAR_EXPRESSION "doubles:2")
+
+add_test(NAME parser_extra_duration_slice COMMAND parser_extra_coverage_test duration-slice)
+set_tests_properties(parser_extra_duration_slice PROPERTIES PASS_REGULAR_EXPRESSION "durations:2")
+
+add_test(NAME parser_extra_bool_array COMMAND parser_extra_coverage_test bool-array)
+set_tests_properties(parser_extra_bool_array PROPERTIES PASS_REGULAR_EXPRESSION "bools:2")
+
+add_test(NAME parser_extra_uint32_array COMMAND parser_extra_coverage_test uint32-array)
+set_tests_properties(parser_extra_uint32_array PROPERTIES PASS_REGULAR_EXPRESSION "u32s:2")
+
+add_test(NAME parser_extra_uint64_array COMMAND parser_extra_coverage_test uint64-array)
+set_tests_properties(parser_extra_uint64_array PROPERTIES PASS_REGULAR_EXPRESSION "u64s:2")
+
+add_test(NAME parser_extra_float_array COMMAND parser_extra_coverage_test float-array)
+set_tests_properties(parser_extra_float_array PROPERTIES PASS_REGULAR_EXPRESSION "floats:2")
+
+add_test(NAME parser_extra_double_array COMMAND parser_extra_coverage_test double-array)
+set_tests_properties(parser_extra_double_array PROPERTIES PASS_REGULAR_EXPRESSION "doubles:2")
+
+add_test(NAME parser_extra_duration_array COMMAND parser_extra_coverage_test duration-array)
+set_tests_properties(parser_extra_duration_array PROPERTIES PASS_REGULAR_EXPRESSION "durations:2")
+
+add_test(NAME parser_extra_string_to_string COMMAND parser_extra_coverage_test string-to-string)
+set_tests_properties(parser_extra_string_to_string PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+
+add_test(NAME parser_extra_string_to_uint64 COMMAND parser_extra_coverage_test string-to-uint64)
+set_tests_properties(parser_extra_string_to_uint64 PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+
+add_test(NAME parser_extra_string_to_double COMMAND parser_extra_coverage_test string-to-double)
+set_tests_properties(parser_extra_string_to_double PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1\\.5,b=2\\.5,")
+
+add_test(NAME parser_extra_string_to_duration COMMAND parser_extra_coverage_test string-to-duration)
+set_tests_properties(parser_extra_string_to_duration PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1000,b=2000,")
+
+add_test(NAME parser_extra_string_to COMMAND parser_extra_coverage_test string-to)
+set_tests_properties(parser_extra_string_to PROPERTIES PASS_REGULAR_EXPRESSION "map:a=x,b=y,")
+
+add_test(NAME parser_extra_flag_values_as COMMAND parser_extra_coverage_test flag-values-as)
+set_tests_properties(parser_extra_flag_values_as PROPERTIES PASS_REGULAR_EXPRESSION "vals:2")
+
+add_test(NAME parser_extra_flag_map COMMAND parser_extra_coverage_test flag-map)
+set_tests_properties(parser_extra_flag_map PROPERTIES PASS_REGULAR_EXPRESSION "map:a=1,b=2,")
+
+add_test(NAME parser_extra_flag_values_split COMMAND parser_extra_coverage_test flag-values-split)
+set_tests_properties(parser_extra_flag_values_split PROPERTIES PASS_REGULAR_EXPRESSION "vals:a,b,c,")
+
+add_test(NAME parser_extra_flag_values COMMAND parser_extra_coverage_test flag-values)
+set_tests_properties(parser_extra_flag_values PROPERTIES PASS_REGULAR_EXPRESSION "vals:1")
+
+add_test(NAME parser_extra_positionals COMMAND parser_extra_coverage_test positionals)
+set_tests_properties(parser_extra_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos:arg1,arg2,")
+
+add_test(NAME parser_extra_has_value COMMAND parser_extra_coverage_test has-value)
+set_tests_properties(parser_extra_has_value PROPERTIES PASS_REGULAR_EXPRESSION "name:yes.*missing:no")
+
+add_test(NAME parser_extra_duration_flag COMMAND parser_extra_coverage_test duration-flag)
+set_tests_properties(parser_extra_duration_flag PROPERTIES PASS_REGULAR_EXPRESSION "timeout:1500")
+
+add_test(NAME parser_extra_uint64_flag COMMAND parser_extra_coverage_test uint64-flag)
+set_tests_properties(parser_extra_uint64_flag PROPERTIES PASS_REGULAR_EXPRESSION "size:100")
+
+add_test(NAME parser_extra_int64_flag COMMAND parser_extra_coverage_test int64-flag)
+set_tests_properties(parser_extra_int64_flag PROPERTIES PASS_REGULAR_EXPRESSION "value:-100")
+
+add_test(NAME parser_extra_uint32_flag COMMAND parser_extra_coverage_test uint32-flag)
+set_tests_properties(parser_extra_uint32_flag PROPERTIES PASS_REGULAR_EXPRESSION "port:8080")
+
+add_test(NAME parser_extra_double_flag COMMAND parser_extra_coverage_test double-flag)
+set_tests_properties(parser_extra_double_flag PROPERTIES PASS_REGULAR_EXPRESSION "ratio:3\\.14")
+
+add_test(NAME parser_extra_float_flag COMMAND parser_extra_coverage_test float-flag)
+set_tests_properties(parser_extra_float_flag PROPERTIES PASS_REGULAR_EXPRESSION "ratio:1\\.5")
+
+add_test(NAME parser_extra_cidr_flag COMMAND parser_extra_coverage_test cidr-flag)
+set_tests_properties(parser_extra_cidr_flag PROPERTIES PASS_REGULAR_EXPRESSION "cidr:10\\.0\\.0\\.0/8")
+
+add_test(NAME parser_extra_ipmask_flag COMMAND parser_extra_coverage_test ipmask-flag)
+set_tests_properties(parser_extra_ipmask_flag PROPERTIES PASS_REGULAR_EXPRESSION "mask:255\\.255\\.255\\.0")
+
+add_test(NAME parser_extra_ipnet_flag COMMAND parser_extra_coverage_test ipnet-flag)
+set_tests_properties(parser_extra_ipnet_flag PROPERTIES PASS_REGULAR_EXPRESSION "net:10\\.0\\.0\\.0/8")
+
+add_test(NAME parser_extra_bytes_flag COMMAND parser_extra_coverage_test bytes-flag)
+set_tests_properties(parser_extra_bytes_flag PROPERTIES PASS_REGULAR_EXPRESSION "size:1024")
+
+add_test(NAME parser_extra_count_flag COMMAND parser_extra_coverage_test count-flag)
+set_tests_properties(parser_extra_count_flag PROPERTIES PASS_REGULAR_EXPRESSION "count:1")
+
+add_test(NAME parser_extra_ipv6 COMMAND parser_extra_coverage_test ipv6)
+set_tests_properties(parser_extra_ipv6 PROPERTIES PASS_REGULAR_EXPRESSION "host:2001:db8::1")
+
+add_test(NAME parser_extra_ipv6_cidr COMMAND parser_extra_coverage_test ipv6-cidr)
+set_tests_properties(parser_extra_ipv6_cidr PROPERTIES PASS_REGULAR_EXPRESSION "cidr:2001:db8::/32")
+
+add_test(NAME parser_extra_url_flag COMMAND parser_extra_coverage_test url-flag)
+set_tests_properties(parser_extra_url_flag PROPERTIES PASS_REGULAR_EXPRESSION "url:http://example\\.com/path")
+
+add_test(NAME parser_extra_url_relative COMMAND parser_extra_coverage_test url-relative)
+set_tests_properties(parser_extra_url_relative PROPERTIES PASS_REGULAR_EXPRESSION "url:foo/bar")
+
+add_test(NAME parser_extra_url_ipv6 COMMAND parser_extra_coverage_test url-ipv6)
+set_tests_properties(parser_extra_url_ipv6 PROPERTIES PASS_REGULAR_EXPRESSION "url:http://\\[::1\\]:8080/path")
+
+add_test(NAME parser_extra_noopt COMMAND parser_extra_coverage_test noopt)
+set_tests_properties(parser_extra_noopt PROPERTIES PASS_REGULAR_EXPRESSION "mode:auto")
+
+add_test(NAME parser_extra_noopt_next_flag COMMAND parser_extra_coverage_test noopt-next-flag)
+set_tests_properties(parser_extra_noopt_next_flag PROPERTIES PASS_REGULAR_EXPRESSION "mode:auto")
+
+add_test(NAME parser_extra_noopt_next_arg COMMAND parser_extra_coverage_test noopt-next-arg)
+set_tests_properties(parser_extra_noopt_next_arg PROPERTIES PASS_REGULAR_EXPRESSION "mode:manual")
+
+add_test(NAME parser_extra_hex_uint64 COMMAND parser_extra_coverage_test hex-uint64)
+set_tests_properties(parser_extra_hex_uint64 PROPERTIES PASS_REGULAR_EXPRESSION "size:255")
+
+add_test(NAME parser_extra_hex_uint32 COMMAND parser_extra_coverage_test hex-uint32)
+set_tests_properties(parser_extra_hex_uint32 PROPERTIES PASS_REGULAR_EXPRESSION "port:255")
+
+add_test(NAME parser_extra_hex_int64 COMMAND parser_extra_coverage_test hex-int64)
+set_tests_properties(parser_extra_hex_int64 PROPERTIES PASS_REGULAR_EXPRESSION "value:255")
+
+add_test(NAME parser_extra_bool_true COMMAND parser_extra_coverage_test bool-true)
+set_tests_properties(parser_extra_bool_true PROPERTIES PASS_REGULAR_EXPRESSION "debug:true")
+
+add_test(NAME parser_extra_bytes_tib COMMAND parser_extra_coverage_test bytes-tib)
+set_tests_properties(parser_extra_bytes_tib PROPERTIES PASS_REGULAR_EXPRESSION "size:1099511627776")
+
+add_test(NAME parser_extra_bytes_eib COMMAND parser_extra_coverage_test bytes-eib)
+set_tests_properties(parser_extra_bytes_eib PROPERTIES PASS_REGULAR_EXPRESSION "size:1152921504606846976")
 
 endif()
