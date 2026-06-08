@@ -588,12 +588,28 @@ public:
     }
 
     Command& markPersistentFlagFilename(const std::string& name, std::vector<std::string> extensions) {
-        return markFlagFilename(name, std::move(extensions));
+        const auto directive = static_cast<std::uint32_t>(ShellCompDirective::FilterFileExt);
+        return registerFlagCompletion(name,
+                                      [extensions = std::move(extensions), directive](Command&,
+                                                                                       const Parser&,
+                                                                                       const std::vector<std::string>&,
+                                                                                       std::string_view) {
+                                          auto out = extensions;
+                                          out.push_back(":" + std::to_string(directive));
+                                          return out;
+                                      });
     }
     Command& markPersistentFlagFilename(const std::string& name, std::initializer_list<std::string> extensions) {
-        return markFlagFilename(name, extensions);
+        return markPersistentFlagFilename(name, std::vector<std::string>(extensions.begin(), extensions.end()));
     }
-    Command& markPersistentFlagDirname(const std::string& name) { return markFlagDirname(name); }
+    Command& markPersistentFlagDirname(const std::string& name) {
+        const auto directive = static_cast<std::uint32_t>(ShellCompDirective::FilterDirs);
+        return registerFlagCompletion(name,
+                                      [directive](Command&,
+                                                  const Parser&,
+                                                  const std::vector<std::string>&,
+                                                  std::string_view) { return std::vector<std::string>{":" + std::to_string(directive)}; });
+    }
 
     Command& markPersistentFlagNoOptDefaultValue(const std::string& name, std::string value) {
         if (auto* f = findFlagMutable(persistentFlags_, normalizeFlagName(name))) f->setNoOptDefaultValue(std::move(value));

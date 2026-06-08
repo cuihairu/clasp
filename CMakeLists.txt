@@ -1356,79 +1356,79 @@ add_test(NAME run_silence_usage COMMAND run_coverage_test silence-usage)
 set_tests_properties(run_silence_usage PROPERTIES FAIL_REGULAR_EXPRESSION "Usage:")
 
 add_test(NAME run_silence_errors COMMAND run_coverage_test silence-errors)
-set_tests_properties(run_silence_errors PROPERTIES FAIL_REGULAR_RESPONSE "Error:")
+set_tests_properties(run_silence_errors PROPERTIES FAIL_REGULAR_EXPRESSION "Error:")
 
 add_test(NAME run_deprecated_cmd COMMAND run_coverage_test deprecated-cmd)
-set_tests_properties(run_deprecated_cmd PROPERTIES PASS_REGULAR_RESPONSE "deprecated")
+set_tests_properties(run_deprecated_cmd PROPERTIES PASS_REGULAR_EXPRESSION "deprecated")
 
 add_test(NAME run_deprecated_flag COMMAND run_coverage_test deprecated-flag)
-set_tests_properties(run_deprecated_flag PROPERTIES PASS_REGULAR_RESPONSE "deprecated")
+set_tests_properties(run_deprecated_flag PROPERTIES PASS_REGULAR_EXPRESSION "deprecated")
 
 add_test(NAME run_flag_groups COMMAND run_coverage_test flag-groups)
-set_tests_properties(run_flag_groups PROPERTIES PASS_REGULAR_RESPONSE "mutually exclusive")
+set_tests_properties(run_flag_groups PROPERTIES PASS_REGULAR_EXPRESSION "mutually exclusive")
 
 add_test(NAME run_required_together COMMAND run_coverage_test required-together)
-set_tests_properties(run_required_together PROPERTIES PASS_REGULAR_RESPONSE "must be set together")
+set_tests_properties(run_required_together PROPERTIES PASS_REGULAR_EXPRESSION "must be set together")
 
 add_test(NAME run_one_required COMMAND run_coverage_test one-required)
-set_tests_properties(run_one_required PROPERTIES PASS_REGULAR_RESPONSE "at least one")
+set_tests_properties(run_one_required PROPERTIES PASS_REGULAR_EXPRESSION "at least one")
 
 add_test(NAME run_args_validation COMMAND run_coverage_test args-validation)
-set_tests_properties(run_args_validation PROPERTIES PASS_REGULAR_RESPONSE "accepts 2 arg")
+set_tests_properties(run_args_validation PROPERTIES PASS_REGULAR_EXPRESSION "accepts 2 arg")
 
 add_test(NAME run_args_range COMMAND run_coverage_test args-range)
-set_tests_properties(run_args_range PROPERTIES PASS_REGULAR_RESPONSE "accepts between")
+set_tests_properties(run_args_range PROPERTIES PASS_REGULAR_EXPRESSION "accepts between")
 
 add_test(NAME run_valid_args COMMAND run_coverage_test valid-args)
-set_tests_properties(run_valid_args PROPERTIES PASS_REGULAR_RESPONSE ".*")
+set_tests_properties(run_valid_args PROPERTIES PASS_REGULAR_EXPRESSION ".*")
 
 add_test(NAME run_completion COMMAND run_coverage_test completion)
-set_tests_properties(run_completion PROPERTIES PASS_REGULAR_RESPONSE "--name")
+set_tests_properties(run_completion PROPERTIES PASS_REGULAR_EXPRESSION "--name")
 
 add_test(NAME run_count_flag COMMAND run_coverage_test count-flag)
-set_tests_properties(run_count_flag PROPERTIES PASS_REGULAR_RESPONSE "verbose:3")
+set_tests_properties(run_count_flag PROPERTIES PASS_REGULAR_EXPRESSION "verbose:3")
 
 add_test(NAME run_bytes_flag COMMAND run_coverage_test bytes-flag)
-set_tests_properties(run_bytes_flag PROPERTIES PASS_REGULAR_RESPONSE "size:1024")
+set_tests_properties(run_bytes_flag PROPERTIES PASS_REGULAR_EXPRESSION "size:1024")
 
 add_test(NAME run_ip_flag COMMAND run_coverage_test ip-flag)
-set_tests_properties(run_ip_flag PROPERTIES PASS_REGULAR_RESPONSE "host:192.168.1.1")
+set_tests_properties(run_ip_flag PROPERTIES PASS_REGULAR_EXPRESSION "host:192.168.1.1")
 
 add_test(NAME run_url_flag COMMAND run_coverage_test url-flag)
-set_tests_properties(run_url_flag PROPERTIES PASS_REGULAR_RESPONSE "url:http://example.com")
+set_tests_properties(run_url_flag PROPERTIES PASS_REGULAR_EXPRESSION "url:http://example.com")
 
 add_test(NAME run_duration_flag COMMAND run_coverage_test duration-flag)
-set_tests_properties(run_duration_flag PROPERTIES PASS_REGULAR_RESPONSE "timeout:2000")
+set_tests_properties(run_duration_flag PROPERTIES PASS_REGULAR_EXPRESSION "timeout:2000")
 
 add_test(NAME run_float_flag COMMAND run_coverage_test float-flag)
-set_tests_properties(run_float_flag PROPERTIES PASS_REGULAR_RESPONSE "ratio:1.5")
+set_tests_properties(run_float_flag PROPERTIES PASS_REGULAR_EXPRESSION "ratio:1.5")
 
 add_test(NAME run_string_slice COMMAND run_coverage_test string-slice)
-set_tests_properties(run_string_slice PROPERTIES PASS_REGULAR_RESPONSE "tags:a,b,c,")
+set_tests_properties(run_string_slice PROPERTIES PASS_REGULAR_EXPRESSION "tags:a,b,c,")
 
 add_test(NAME run_map_flag COMMAND run_coverage_test map-flag)
-set_tests_properties(run_map_flag PROPERTIES PASS_REGULAR_RESPONSE "labels:.*a=1.*b=2")
+set_tests_properties(run_map_flag PROPERTIES PASS_REGULAR_EXPRESSION "labels:.*a=1.*b=2")
 
 add_test(NAME run_repeat_flag COMMAND run_coverage_test repeat-flag)
-set_tests_properties(run_repeat_flag PROPERTIES PASS_REGULAR_RESPONSE "tag:b")
+set_tests_properties(run_repeat_flag PROPERTIES PASS_REGULAR_EXPRESSION "tag:b")
 
 add_test(NAME run_no_args COMMAND run_coverage_test no-args)
-set_tests_properties(run_no_args PROPERTIES PASS_REGULAR_RESPONSE "action")
+set_tests_properties(run_no_args PROPERTIES PASS_REGULAR_EXPRESSION "action")
 
 add_test(NAME run_positionals COMMAND run_coverage_test positionals)
-set_tests_properties(run_positionals PROPERTIES PASS_REGULAR_RESPONSE "pos:arg1,arg2,")
+set_tests_properties(run_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos:arg1,arg2,")
 
 add_test(NAME run_color_help COMMAND run_coverage_test color-help)
-set_tests_properties(run_color_help PROPERTIES PASS_REGULAR_RESPONSE "Usage:.*app")
+set_tests_properties(run_color_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*app")
 
 add_test(NAME run_color_version COMMAND run_coverage_test color-version)
-set_tests_properties(run_color_version PROPERTIES PASS_REGULAR_RESPONSE "1\\.0\\.0")
+set_tests_properties(run_color_version PROPERTIES PASS_REGULAR_EXPRESSION "1\\.0\\.0")
 
 add_test(NAME run_color_help_sub COMMAND run_coverage_test color-help-sub)
-set_tests_properties(run_color_help_sub PROPERTIES PASS_REGULAR_RESPONSE "Usage:.*sub")
+set_tests_properties(run_color_help_sub PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*sub")
 
 add_test(NAME run_color_flag COMMAND run_coverage_test color-flag)
-set_tests_properties(run_color_flag PROPERTIES PASS_REGULAR_RESPONSE "Usage:.*app")
+set_tests_properties(run_color_flag PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*app")
 
 # --- Hook coverage tests ---
 
@@ -1455,6 +1455,15 @@ target_link_libraries(parser_external_example PRIVATE clasp)
 
 add_test(NAME parser_external_multi_sources COMMAND parser_external_example)
 set_tests_properties(parser_external_multi_sources PROPERTIES PASS_REGULAR_EXPRESSION "name=b.*count=3")
+
+add_executable(persistent_completion_test tests/persistent_completion.cpp)
+target_link_libraries(persistent_completion_test PRIVATE clasp)
+
+add_test(NAME persistent_completion_filename COMMAND persistent_completion_test filename)
+set_tests_properties(persistent_completion_filename PROPERTIES PASS_REGULAR_EXPRESSION "yaml|yml" FAIL_REGULAR_EXPRESSION "unknown command|unknown flag")
+
+add_test(NAME persistent_completion_dirname COMMAND persistent_completion_test dirname)
+set_tests_properties(persistent_completion_dirname PROPERTIES PASS_REGULAR_EXPRESSION ":16" FAIL_REGULAR_EXPRESSION "unknown command|unknown flag")
 
 add_executable(hook_error_example examples/hook_error_example.cpp)
 target_link_libraries(hook_error_example PRIVATE clasp)

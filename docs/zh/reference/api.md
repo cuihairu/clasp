@@ -5,13 +5,15 @@
 - 构造：`Command(name, short, long?)`
 - 子命令：`addCommand(cmd)`
 - flags：`withFlag/withPersistentFlag`
-- pflag 语义：`markFlagNoOptDefaultValue()`、`shortFlagGrouping()`、`boolNegation()`
+- pflag 语义：`markFlagNoOptDefaultValue()/markPersistentFlagNoOptDefaultValue()`、`shortFlagGrouping()`、`boolNegation()`
+- 补全辅助：`markFlagFilename()/markPersistentFlagFilename()`、`markFlagDirname()/markPersistentFlagDirname()`
 - hooks：`preRun/preRunE/postRun/postRunE` + persistent variants
 - args：`args(validator)`
 - 执行：`run(argc, argv)` / `setArgs(vec)` + `execute()`
 - 输出控制：`silenceUsage/silenceErrors`、`setOut/setErr`
 - help/usage/version：`setHelpTemplate/setUsageTemplate/setVersionTemplate`、`setHelpFunc/setUsageFunc`
 - completion：`enableCompletion(...)`、`validArgs/validArgsFunction/registerFlagCompletion`
+- 外部源：`bindEnv()`、`configFile()`、`configFileFlag()`
 
 ## Parser
 

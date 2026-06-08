@@ -10,5 +10,19 @@ Use `bindEnv("--flag", "ENV_NAME")`.
 
 - Specify config file: `configFile("path")`
 - Provide a config file flag like `--config`: `configFileFlag("config")`
+- `configFileFlag("config")` matches the normalized flag name, so `config` and `--config` both work.
 
-Supports `.env` style, JSON/TOML/YAML (see `examples/config_*`).
+Supported formats:
+
+- `.env`: `KEY=value`
+- `.ini` / `.cfg`: section keys are flattened into flag names
+- `.json`
+- `.toml`
+- `.yaml` / `.yml`
+
+Notes:
+
+- Unknown extensions are rejected.
+- Environment values override config file values.
+- Explicit CLI flags override both.
+- The parsers intentionally implement a practical subset aimed at CLI config merging; see `examples/config_*` for supported shapes.

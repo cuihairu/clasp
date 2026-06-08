@@ -89,6 +89,22 @@ Hello, Clasp!
 - Public headers live under `include/clasp/` (`clasp/clasp.hpp` includes the main API).
 - `docs/`: VuePress site sources (optional).
 
+## Behavior Notes
+
+- Flag precedence is `CLI > env > config file > default`.
+- `configFile("path")` hardwires a config path; `configFileFlag("config")` lets a flag such as `--config` supply it.
+- Supported config formats are `.env`, `.ini`, `.cfg`, `.json`, `.toml`, and `.yaml`/`.yml`. Unknown extensions are rejected.
+- Completion supports generated shell scripts plus dynamic `__complete` / `__completeNoDesc` commands.
+- File and directory completion can be attached to both local and persistent flags with `markFlagFilename(...)` and `markPersistentFlagFilename(...)`, or `markFlagDirname()` and `markPersistentFlagDirname()`.
+- On multi-config generators such as Visual Studio, run tests with an explicit configuration, for example `ctest --test-dir build -C Debug --output-on-failure`.
+
+## Coverage
+
+The test suite is broad, but coverage report generation depends on toolchain support:
+
+- GCC/Clang: configure with `-DCLASP_ENABLE_COVERAGE=ON` and use your usual `gcov`/`lcov` flow.
+- Visual Studio/MSVC: the library and tests build and run, but `CLASP_ENABLE_COVERAGE` does not instrument MSVC builds. Use Visual Studio code coverage tooling if you need a Windows coverage report.
+
 ### VuePress Docs (Optional)
 
 ```bash

@@ -643,7 +643,8 @@ void testRunValidArgs() {
 // Test run() with completion
 void testRunCompletion() {
     clasp::Command root("app", "Test app");
-    root.withFlag("--name", "-n", "name", "Name", std::string("default"));
+    root.enableCompletion()
+        .withFlag("--name", "-n", "name", "Name", std::string("default"));
 
     // Test completion
     const char* argv[] = {"app", "__completeNoDesc", "--"};
@@ -656,13 +657,13 @@ void testRunCountFlag() {
     clasp::Command root("app", "Test app");
     root.withCountFlag("--verbose", "-v", "verbose", "Verbose", 0)
         .action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
-            std::cout << "verbose:" << parser.getFlag<int>("--verbose") << "\n";
+            std::cout << "verbose:" << parser.getCount("--verbose", 0) << "\n";
             return 0;
         });
 
     // Test count flag
-    const char* argv[] = {"app", "-vvv"};
-    int argc = 2;
+    const char* argv[] = {"app", "-v", "-v", "-v"};
+    int argc = 4;
     root.run(argc, const_cast<char**>(argv));
 }
 
@@ -684,7 +685,7 @@ void testRunBytesFlag() {
 // Test run() with IP flag
 void testRunIPFlag() {
     clasp::Command root("app", "Test app");
-    root.withIPFlag("--host", "-h", "host", "Host", std::string("127.0.0.1"))
+    root.withIPFlag("--host", "-H", "host", "Host", std::string("127.0.0.1"))
         .action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
             std::cout << "host:" << parser.getFlag<std::string>("--host") << "\n";
             return 0;
