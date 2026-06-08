@@ -108,6 +108,7 @@ jobs:
           disable_search: true
           plugins: noop
           fail_ci_if_error: false
+          skip_validation: true
           verbose: true
 
       - name: Upload to Codecov (OIDC)
@@ -119,4 +120,5 @@ jobs:
           disable_search: true
           plugins: noop
           fail_ci_if_error: false
+          skip_validation: true
           verbose: true
