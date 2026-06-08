@@ -36,6 +36,33 @@ void testSimplifiedFlagMethods() {
     std::cout << "testSimplifiedFlagMethods: ok\n";
 }
 
+void testSimplifiedFlagMethods3Param() {
+    clasp::Command root("app", "Test 3-param simplified flag methods");
+
+    // Test 3-param withIPFlag (no varName)
+    root.withIPFlag("--host", "-h", "Host");
+
+    // Test 3-param withIPMaskFlag (no varName)
+    root.withIPMaskFlag("--mask", "-m", "Mask");
+
+    // Test 3-param withCIDRFlag (no varName)
+    root.withCIDRFlag("--cidr", "-c", "CIDR");
+
+    // Test 3-param withIPNetFlag (no varName)
+    root.withIPNetFlag("--network", "-n", "Network");
+
+    // Test 3-param withURLFlag (no varName)
+    root.withURLFlag("--url", "-u", "URL");
+
+    // Test 3-param withBytesFlag (no varName)
+    root.withBytesFlag("--size", "-s", "Size");
+
+    // Test 3-param withCountFlag (no varName)
+    root.withCountFlag("--count", "-c", "Count");
+
+    std::cout << "testSimplifiedFlagMethods3Param: ok\n";
+}
+
 void testPersistentFlagMethods() {
     clasp::Command root("app", "Test persistent flag methods");
 
@@ -61,6 +88,33 @@ void testPersistentFlagMethods() {
     root.withPersistentURLFlag("--url", "-u", "url", "URL", std::string("http://example.com"));
 
     std::cout << "testPersistentFlagMethods: ok\n";
+}
+
+void testPersistentFlagMethods3Param() {
+    clasp::Command root("app", "Test 3-param persistent flag methods");
+
+    // Test 3-param withPersistentIPFlag (no varName)
+    root.withPersistentIPFlag("--host", "-h", "Host");
+
+    // Test 3-param withPersistentIPMaskFlag (no varName)
+    root.withPersistentIPMaskFlag("--mask", "-m", "Mask");
+
+    // Test 3-param withPersistentCIDRFlag (no varName)
+    root.withPersistentCIDRFlag("--cidr", "-c", "CIDR");
+
+    // Test 3-param withPersistentIPNetFlag (no varName)
+    root.withPersistentIPNetFlag("--network", "-n", "Network");
+
+    // Test 3-param withPersistentURLFlag (no varName)
+    root.withPersistentURLFlag("--url", "-u", "URL");
+
+    // Test 3-param withPersistentBytesFlag (no varName)
+    root.withPersistentBytesFlag("--size", "-s", "Size");
+
+    // Test 3-param withPersistentCountFlag (no varName)
+    root.withPersistentCountFlag("--count", "-c", "Count");
+
+    std::cout << "testPersistentFlagMethods3Param: ok\n";
 }
 
 void testPersistentFlagMarking() {
@@ -148,16 +202,68 @@ void testPersistentFlagWithShortName() {
     std::cout << "testPersistentFlagWithShortName: ok\n";
 }
 
+void testStaticCompletion() {
+    clasp::Command root("app", "Test static completion");
+    root.withFlag("--flag", "-f", "flag", "Flag", std::string(""))
+        .withFlag("--debug", "-d", "dbg", "Debug", true);
+
+    clasp::Command sub("cmd", "A subcommand");
+    sub.withFlag("--opt", "-o", "opt", "Option", std::string(""));
+    root.addCommand(std::move(sub));
+
+    // Enable completion with static-only config (no dynamic complete commands)
+    clasp::Command::CompletionConfig cfg;
+    cfg.addCompletionCommand = false;
+    cfg.addCompleteCommands = false;
+    root.enableCompletion(cfg);
+
+    // Generate all shell completions (static fallback paths)
+    std::ostringstream bash, zsh, fish, ps;
+    root.printCompletionBash(bash);
+    root.printCompletionZsh(zsh);
+    root.printCompletionFish(fish);
+    root.printCompletionPowerShell(ps);
+
+    std::cout << "testStaticCompletion: ok\n";
+}
+
+
+void testCompletionEntries() {
+    clasp::Command root("app", "Test completion entries");
+    root.version("1.0.0");
+
+    clasp::Command sub("process", "Process data");
+    sub.withFlag("--input", "-i", "in", "Input file", std::string(""));
+    root.addCommand(std::move(sub));
+
+    // Enable completion with help command
+    clasp::Command::CompletionConfig cfg;
+    cfg.addCompletionCommand = true;
+    cfg.completionCommandName = "completion";
+    cfg.addCompleteCommands = false;
+    root.enableCompletion(cfg);
+
+    // Trigger completionEntries via bash generation
+    std::ostringstream bash;
+    root.printCompletionBash(bash);
+
+    std::cout << "testCompletionEntries: ok\n";
+}
+
 } // namespace
 
 int main() {
     testSimplifiedFlagMethods();
+    testSimplifiedFlagMethods3Param();
     testPersistentFlagMethods();
+    testPersistentFlagMethods3Param();
     testPersistentFlagMarking();
     testCustomFunctions();
     testAnnotations();
     testFlagWithShortName();
     testPersistentFlagWithShortName();
+    testStaticCompletion();
+    testCompletionEntries();
 
     std::cout << "ok\n";
     return 0;
