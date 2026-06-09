@@ -102,6 +102,10 @@ jobs:
             --ignore-errors unused
           lcov --list coverage.info --rc branch_coverage=1
 
+      - name: Remove build dir to prevent gcov plugin interference
+        shell: bash
+        run: rm -rf build
+
       - name: Upload to Codecov (token)
         if: github.event_name == 'push' && env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v5
