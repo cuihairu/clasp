@@ -113,6 +113,7 @@ jobs:
           token: ${{ env.CODECOV_TOKEN }}
           files: coverage.info
           disable_search: true
+          plugins: noop
           fail_ci_if_error: false
           skip_validation: true
           verbose: true
@@ -124,6 +125,7 @@ jobs:
           use_oidc: true
           files: coverage.info
           disable_search: true
+          plugins: noop
           fail_ci_if_error: false
           skip_validation: true
           verbose: true
