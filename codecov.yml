@@ -14,7 +14,7 @@ ignore:
   - "examples/**"
 
 fixes:
-  - "build/::"
+  - "/home/runner/work/clasp/clasp/::"
 
 include:
   - "src/"
