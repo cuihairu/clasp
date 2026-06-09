@@ -90,11 +90,14 @@ jobs:
       - name: Generate coverage (lcov)
         shell: bash
         run: |
-          lcov --capture --directory build --output-file coverage.info \
+          lcov --capture --directory build --output-file coverage_raw.info \
             --rc branch_coverage=1 \
             --rc geninfo_unexecuted_blocks=1 \
             --ignore-errors mismatch
-          lcov --remove coverage.info '/usr/*' '*/examples/*' '*/tests/*' --output-file coverage.info \
+          lcov --extract coverage_raw.info '*/include/*' '*/src/*' --output-file coverage.info \
+            --rc branch_coverage=1 \
+            --ignore-errors unused
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info \
             --rc branch_coverage=1 \
             --ignore-errors unused
           lcov --list coverage.info --rc branch_coverage=1
