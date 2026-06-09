@@ -15,7 +15,3 @@ ignore:
 
 fixes:
   - "/home/runner/work/clasp/clasp/::"
-
-include:
-  - "src/"
-  - "include/"

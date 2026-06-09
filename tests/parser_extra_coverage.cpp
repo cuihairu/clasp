@@ -277,6 +277,7 @@ void testGetStringToString() {
             return 0;
         });
 
+    // unordered_map iteration order varies across platforms
     const char* argv[] = {"app", "--labels", "a=1,b=2"};
     int argc = 3;
     root.run(argc, const_cast<char**>(argv));
