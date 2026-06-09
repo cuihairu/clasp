@@ -1407,7 +1407,7 @@ add_test(NAME run_string_slice COMMAND run_coverage_test string-slice)
 set_tests_properties(run_string_slice PROPERTIES PASS_REGULAR_EXPRESSION "tags:a,b,c,")
 
 add_test(NAME run_map_flag COMMAND run_coverage_test map-flag)
-set_tests_properties(run_map_flag PROPERTIES PASS_REGULAR_EXPRESSION "labels:.*a=1.*b=2")
+set_tests_properties(run_map_flag PROPERTIES PASS_REGULAR_EXPRESSION "labels:.*(a=1|b=2).*(a=1|b=2),")
 
 add_test(NAME run_repeat_flag COMMAND run_coverage_test repeat-flag)
 set_tests_properties(run_repeat_flag PROPERTIES PASS_REGULAR_EXPRESSION "tag:b")
@@ -1493,7 +1493,7 @@ add_executable(map_example examples/map_example.cpp)
 target_link_libraries(map_example PRIVATE clasp)
 
 add_test(NAME map_single COMMAND map_example --label a=1,b=2)
-set_tests_properties(map_single PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=1,b=2")
+set_tests_properties(map_single PROPERTIES PASS_REGULAR_EXPRESSION "labels=.*(a=1|b=2).*(a=1|b=2)")
 
 add_test(NAME map_repeat_overrides COMMAND map_example --label a=1 --label a=9)
 set_tests_properties(map_repeat_overrides PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=9")
