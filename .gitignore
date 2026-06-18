@@ -42,3 +42,12 @@ node_modules/
 docs/.vuepress/dist/
 docs/.vuepress/.cache/
 docs/.vuepress/.temp/
+
+# Coverage / build artifacts (Rust gcovr / PGO)
+build_cov2/
+build_cov/
+*.profraw
+*.profdata
+*.gcda
+*.gcno
+*.gcov
