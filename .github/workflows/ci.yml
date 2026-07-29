@@ -111,7 +111,7 @@ jobs:
 
       - name: Upload to Codecov (token)
         if: github.event_name == 'push' && env.CODECOV_TOKEN != ''
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ env.CODECOV_TOKEN }}
           files: coverage.info
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload to Codecov (OIDC)
         if: github.event_name == 'push' && env.CODECOV_TOKEN == ''
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@v5
         with:
           use_oidc: true
           files: coverage.info
