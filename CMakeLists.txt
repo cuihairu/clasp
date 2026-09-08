@@ -1222,6 +1222,30 @@ target_link_libraries(value_parse_test PRIVATE clasp)
 add_test(NAME value_parse_run COMMAND value_parse_test)
 set_tests_properties(value_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
+# --- Value interface coverage tests ---
+
+add_executable(value_test tests/value.cpp)
+target_link_libraries(value_test PRIVATE clasp)
+
+add_test(NAME value_run COMMAND value_test)
+set_tests_properties(value_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+# --- Parser gap coverage tests ---
+
+add_executable(parser_gaps_test tests/parser_gaps.cpp)
+target_link_libraries(parser_gaps_test PRIVATE clasp)
+
+add_test(NAME parser_gaps_run COMMAND parser_gaps_test)
+set_tests_properties(parser_gaps_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+# --- Command gap coverage tests ---
+
+add_executable(command_gaps_test tests/command_gaps.cpp)
+target_link_libraries(command_gaps_test PRIVATE clasp)
+
+add_test(NAME command_gaps_run COMMAND command_gaps_test)
+set_tests_properties(command_gaps_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
 # --- Color coverage tests ---
 
 add_executable(color_test tests/color.cpp)

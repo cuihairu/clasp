@@ -15,7 +15,7 @@ namespace clasp {
 // - `set()` should return an error string on failure; empty optional indicates success.
 class Value {
 public:
-    virtual ~Value() = default;
+    virtual ~Value() = default; // LCOV_EXCL_LINE (abstract class deleting dtor is unreachable)
 
     // A human-readable type name (e.g. "ip", "level", "duration").
     [[nodiscard]] virtual std::string type() const = 0;

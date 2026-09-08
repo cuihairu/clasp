@@ -171,6 +171,22 @@ void testColorRole() {
     std::cout << "ColorRole enum: pass" << std::endl;
 }
 
+void testOutOfRangeEnumFallbacks() {
+    using namespace clasp;
+
+    // Values outside the declared enumerator range exercise the defensive
+    // fallback returns after the exhaustive switches.
+    const auto badTheme = static_cast<ColorThemeName>(99);
+    const auto& theme = clasp::color::builtinTheme(badTheme);
+    expect(!theme.flag.empty(), "builtinTheme falls back for out-of-range theme");
+
+    const auto badMode = static_cast<ColorMode>(99);
+    expect(clasp::color::modeName(badMode) == "auto", "modeName falls back for out-of-range mode");
+    expect(clasp::color::themeName(badTheme) == "vscode", "themeName falls back for out-of-range theme");
+
+    expect(!clasp::color::isTty(static_cast<clasp::color::Stream>(99)), "isTty falls back for out-of-range stream");
+}
+
 } // namespace
 
 int main() {
@@ -197,6 +213,9 @@ int main() {
 
     std::cout << "\n=== Testing ColorRole ===" << std::endl;
     testColorRole();
+
+    std::cout << "\n=== Testing out-of-range enum fallbacks ===" << std::endl;
+    testOutOfRangeEnumFallbacks();
 
     std::cout << "\n=== Testing IsTty ===" << std::endl;
     testIsTty();

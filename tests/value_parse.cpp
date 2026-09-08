@@ -93,6 +93,13 @@ void testTryParseSignedInt() {
     // Test invalid values
     expect(!tryParseSignedInt("abc", out), "tryParseSignedInt 'abc'");
     expect(!tryParseSignedInt("", out), "tryParseSignedInt ''");
+
+    // Test values that fit in long long but overflow the target type
+    expect(!tryParseSignedInt("9999999999", out), "tryParseSignedInt overflow for int");
+    expect(!tryParseSignedInt("-9999999999", out), "tryParseSignedInt negative overflow for int");
+
+    // Test values that overflow long long itself (errno/ERANGE)
+    expect(!tryParseSignedInt("99999999999999999999999", out), "tryParseSignedInt ERANGE");
 }
 
 void testTryParseUnsignedInt() {
@@ -180,6 +187,17 @@ void testTryParseDuration() {
     expect(!tryParseDuration("", out), "tryParseDuration ''");
     expect(!tryParseDuration("invalid", out), "tryParseDuration 'invalid'");
     expect(!tryParseDuration("10", out), "tryParseDuration '10'");
+
+    // Test a numeric magnitude too large for double (stod throws out_of_range)
+    const std::string hugeNumber(400, '9');
+    expect(!tryParseDuration(hugeNumber + "s", out), "tryParseDuration out-of-range number");
+
+    // Test result that would overflow the int64 millisecond range
+    expect(!tryParseDuration("9223372036854775807h", out), "tryParseDuration int64 overflow");
+    expect(!tryParseDuration("-9223372036854775807h", out), "tryParseDuration int64 negative overflow");
+
+    // Test magnitude beyond int64 nanoseconds is rejected
+    expect(!tryParseDuration("99999999999999999ns", out), "tryParseDuration ns overflow");
 }
 
 void testParseDuration() {
