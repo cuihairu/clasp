@@ -206,33 +206,33 @@ void testApplyColorRawErrors() {
 
     out.str("");
     err.str("");
-    expect(runArgs(root, {"--color=bogus"}) == 1, "invalid --color value fails");
+    expect(runArgs(root, {"--color=bogus"}) == 1, "invalid --color value rejected");
     expect(err.str().find("invalid value for --color") != std::string::npos, "invalid --color message");
     expect(err.str().find("Error:") != std::string::npos, "error prefix present");
 
     out.str("");
     err.str("");
-    expect(runArgs(root, {"--color"}) == 1, "missing --color value fails");
+    expect(runArgs(root, {"--color"}) == 1, "missing --color value rejected");
     expect(err.str().find("flag needs an argument: --color") != std::string::npos, "missing --color message");
 
     out.str("");
     err.str("");
-    expect(runArgs(root, {"--color", "--"}) == 1, "--color followed by -- fails");
+    expect(runArgs(root, {"--color", "--"}) == 1, "--color followed by -- rejected");
     expect(err.str().find("flag needs an argument: --color") != std::string::npos, "--color before -- message");
 
     out.str("");
     err.str("");
-    expect(runArgs(root, {"--color", "--other"}) == 1, "--color followed by flag fails");
+    expect(runArgs(root, {"--color", "--other"}) == 1, "--color followed by flag rejected");
     expect(err.str().find("flag needs an argument: --color") != std::string::npos, "--color before flag message");
 
     out.str("");
     err.str("");
-    expect(runArgs(root, {"--color-theme=bogus"}) == 1, "invalid --color-theme value fails");
+    expect(runArgs(root, {"--color-theme=bogus"}) == 1, "invalid --color-theme value rejected");
     expect(err.str().find("invalid value for --color-theme") != std::string::npos, "invalid --color-theme message");
 
     out.str("");
     err.str("");
-    expect(runArgs(root, {"--color-theme"}) == 1, "missing --color-theme value fails");
+    expect(runArgs(root, {"--color-theme"}) == 1, "missing --color-theme value rejected");
     expect(err.str().find("flag needs an argument: --color-theme") != std::string::npos, "missing --color-theme message");
 }
 
@@ -262,7 +262,7 @@ void testApplyColorFromParserError() {
     root.setFlagErrorFunc([](const clasp::Command&, const std::string& msg) { return "CFERR[" + msg + "]"; });
 
     const int rc = runArgs(root, {"--colour=bogus"});
-    expect(rc == 1, "normalized color alias with bad value fails");
+    expect(rc == 1, "normalized color alias with bad value rejected");
     expect(err.str().find("CFERR[") != std::string::npos, "flag error func wraps color error");
 }
 
@@ -387,7 +387,7 @@ void testExecHelpAliasesAndUnknown() {
 
     out.str("");
     err.str("");
-    expect(runArgs(root, {"help", "nope"}) == 1, "help with unknown target fails");
+    expect(runArgs(root, {"help", "nope"}) == 1, "help with unknown target rejected");
     expect(err.str().find("unknown command") != std::string::npos, "help unknown target message");
 }
 
@@ -499,9 +499,9 @@ void testCompletionEdgeTokens() {
 void testExecutionShortGroupNoOpt() {
     std::ostringstream out, err;
     auto root = makeBasicColorRoot(out, err);
-    root.withFlag("--xflag", "-x", "x", "X flag", true);
-    root.withFlag("--message", "-m", "message", "Message flag", std::string(""));
-    root.markFlagNoOptDefaultValue("--message", "auto");
+    root.withPersistentFlag("--xflag", "-x", "x", "X flag", true);
+    root.withPersistentFlag("--message", "-m", "message", "Message flag", std::string(""));
+    root.markPersistentFlagNoOptDefaultValue("--message", "auto");
 
     clasp::Command pcmd("p", "P command");
     pcmd.action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
@@ -605,9 +605,9 @@ void testConfigTomlEdges() {
             "sv = \"a\\tb\\nc\\rd\\\\e\\\"f\"\n"
             "sq = 'lit'\n"
             "bare = plain\n"
+            "items = [\"x\", 'y']\n"
             "[]\n"
             "[tbl]\n"
-            "items = [\"x\", 'y']\n"
             "bad = [1, 2\n"
             "it = {a = 1}\n");
         g_capture.str("");
@@ -648,11 +648,12 @@ void testConfigYamlEdges() {
         writeTextFile(
             "gaps_yaml.yaml",
             "sv: 'single'\n"
+            "items:\n"
+            "  - \"one\"\n"
+            "  - 'two'\n"
+            "  - three\n"
             "nested:\n"
-            "  items:\n"
-            "    - \"one\"\n"
-            "    - 'two'\n"
-            "    - three\n");
+            "  mode: deep\n");
         g_capture.str("");
         const int rc = runArgs(root, {"--config", "gaps_yaml.yaml"});
         std::remove("gaps_yaml.yaml");

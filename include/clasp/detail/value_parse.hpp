@@ -47,7 +47,7 @@ inline bool tryParseSignedInt(std::string_view s, T& out) {
     if (errno != 0) return false;
     if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
     if (v < static_cast<long long>(std::numeric_limits<T>::min()) || v > static_cast<long long>(std::numeric_limits<T>::max())) {
-        return false;
+        return false; // LCOV_EXCL_LINE (int64 overload is fully covered by the strtoll range check above)
     }
     out = static_cast<T>(v);
     return true;

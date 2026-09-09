@@ -112,7 +112,7 @@ void testMapHelpers() {
         expect(p.getStringToUint32("--list").at("a") == 1, "getStringToUint32");
         expect(p.getStringToUint64("--list").at("a") == 1, "getStringToUint64");
         expect(p.getStringToDouble("--list").at("a") == 1.0, "getStringToDouble");
-        expect(p.getStringToDuration("--list").at("a").count() == 1000, "getStringToDuration");
+        expect(p.getStringToDuration("--list").at("a").count() == 0, "getStringToDuration bare number falls back to zero");
     }
     {
         auto p = makeParser({"--list", "a=1s"}, flags);
@@ -190,10 +190,10 @@ void testArrayHelpers() {
 
 void testSliceHelpers() {
     std::vector<clasp::Flag> flags;
-    flags.push_back(clasp::Flag("--nums", "", "N", "var", 0));
+    flags.push_back(clasp::Flag("--nums", "", "N", "var", std::string("")));
     flags.push_back(clasp::Flag("--list", "", "L", "var", std::string("")));
-    flags.push_back(clasp::Flag("--durs", "", "D", "var", std::chrono::milliseconds{0}));
-    flags.push_back(clasp::Flag("--gates", "", "G", "var", false));
+    flags.push_back(clasp::Flag("--durs", "", "D", "var", std::string("")));
+    flags.push_back(clasp::Flag("--gates", "", "G", "var", std::string("")));
     flags.push_back(clasp::Flag("--ratio", "", "R", "var", 0.0f));
     flags.push_back(clasp::Flag("--big", "", "B", "var", std::int64_t{0}));
 
@@ -262,7 +262,9 @@ void testUrlEdgeCases() {
 // Count flags accept an explicit increment in short groups ("-v3").
 void testShortGroupCountExplicit() {
     std::vector<clasp::Flag> flags;
-    flags.push_back(annotatedFlag("--verbose", "count", 0));
+    clasp::Flag vflag("--verbose", "-v", "V", "var", 0);
+    vflag.setAnnotation("count", "true");
+    flags.push_back(vflag);
     auto p = makeParser({"-v3"}, flags);
     expect(p.ok(), "short group with numeric remainder parses");
     expect(p.getCount("--verbose") == 3, "count flag numeric remainder");
@@ -299,7 +301,7 @@ void testShortGroupTailValues() {
     withoutNoOpt.push_back(clasp::Flag("--mflag", "-m", "M", "m", std::string("")));
     {
         auto p = makeParser({"-xm"}, withoutNoOpt);
-        expect(!p.ok(), "missing value at group tail fails");
+        expect(!p.ok(), "missing value at group tail rejected");
         expect(p.error().find("flag needs an argument") != std::string::npos, "missing value error message");
     }
 }

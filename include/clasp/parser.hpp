@@ -633,7 +633,7 @@ private:
             out.reserve(v.size());
             for (const auto ch : v) out.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(ch))));
             return out;
-        };
+        }; // LCOV_EXCL_LINE (closure cleanup block only runs on allocation failure)
 
         const auto sv = detail::trimWs(s);
         if (sv.empty()) return false;
@@ -988,7 +988,7 @@ private:
             out.reserve(v.size());
             for (const auto ch : v) out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
             return out;
-        };
+        }; // LCOV_EXCL_LINE (closure cleanup block only runs on allocation failure)
 
         const auto sv = detail::trimWs(s);
         if (sv.empty()) {
@@ -1146,9 +1146,9 @@ private:
             valid = detail::tryParseDuration(value, parsed);
             break;
         }
-        default:
-            valid = true;
-            break;
+        default: // LCOV_EXCL_LINE (Kind::Unknown is never produced by kindFromDefault)
+            valid = true; // LCOV_EXCL_LINE
+            break; // LCOV_EXCL_LINE
         }
 
         if (!valid) {

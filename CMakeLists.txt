@@ -1246,6 +1246,14 @@ target_link_libraries(command_gaps_test PRIVATE clasp)
 add_test(NAME command_gaps_run COMMAND command_gaps_test)
 set_tests_properties(command_gaps_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
+# --- Final coverage gap tests ---
+
+add_executable(coverage_final_test tests/coverage_final.cpp)
+target_link_libraries(coverage_final_test PRIVATE clasp)
+
+add_test(NAME coverage_final_run COMMAND coverage_final_test)
+set_tests_properties(coverage_final_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
 # --- Color coverage tests ---
 
 add_executable(color_test tests/color.cpp)

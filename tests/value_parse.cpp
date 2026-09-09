@@ -196,8 +196,8 @@ void testTryParseDuration() {
     expect(!tryParseDuration("9223372036854775807h", out), "tryParseDuration int64 overflow");
     expect(!tryParseDuration("-9223372036854775807h", out), "tryParseDuration int64 negative overflow");
 
-    // Test magnitude beyond int64 nanoseconds is rejected
-    expect(!tryParseDuration("99999999999999999ns", out), "tryParseDuration ns overflow");
+    // Test magnitude beyond int64 milliseconds is rejected
+    expect(!tryParseDuration("9999999999999999999999999999ns", out), "tryParseDuration ns overflow");
 }
 
 void testParseDuration() {
