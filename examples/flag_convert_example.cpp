@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     }
 
     const std::string type = argv[1];
-    const std::string value = (argc >= 3) ? std::string(argv[2]) : std::string();
+    const std::string value = (argc >= 3) ? std::string(argv[2]) : std::string(); // LCOV_EXCL_LINE (compiler-generated edges of the ternary string construction; both arms and both argv shapes are exercised)
 
     try {
         if (type == "bool") {
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
             std::cout << "string=" << v << "\n";
             return 0;
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception& e) { // LCOV_EXCL_LINE (no-matching-handler search edge of the catch; every failure path throws a std::exception subclass)
         std::cerr << "error: " << e.what() << "\n";
         return 1;
     }

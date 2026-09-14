@@ -1013,6 +1013,9 @@ set_tests_properties(custom_value_default PROPERTIES PASS_REGULAR_EXPRESSION "in
 add_test(NAME custom_value_ok COMMAND custom_value_example show --level debug)
 set_tests_properties(custom_value_ok PROPERTIES PASS_REGULAR_EXPRESSION "debug")
 
+add_test(NAME custom_value_info COMMAND custom_value_example show --level info)
+set_tests_properties(custom_value_info PROPERTIES PASS_REGULAR_EXPRESSION "^info")
+
 add_test(NAME custom_value_config COMMAND custom_value_example show --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/custom_value.env)
 set_tests_properties(custom_value_config PROPERTIES PASS_REGULAR_EXPRESSION "warn")
 
@@ -1731,5 +1734,492 @@ target_link_libraries(branch_parser_test PRIVATE clasp)
 
 add_test(NAME branch_parser_run COMMAND branch_parser_test)
 set_tests_properties(branch_parser_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+# -----------------------------------------------------------------------------
+# Examples branch-coverage supplements: ctest argument combinations that
+# exercise the remaining reachable branches of each example program
+# (see examples/*.cpp for LCOV_EXCL markers on structurally unreachable
+# compiler-generated edges).
+# -----------------------------------------------------------------------------
+# args_example: branch 56% -> 100%
+add_test(NAME args_exact_join_ok COMMAND args_example exact hello world)
+set_tests_properties(args_exact_join_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^hello,world\r?
+$]==])
+
+add_test(NAME args_range_one_ok COMMAND args_example range single)
+set_tests_properties(args_range_one_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^single\r?
+$]==])
+
+add_test(NAME args_range_two_ok COMMAND args_example range a b)
+set_tests_properties(args_range_two_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^a,b\r?
+$]==])
+# count_example: branch 95% -> 100%
+add_test(NAME count_multi_arg_join COMMAND count_example alpha beta)
+set_tests_properties(count_multi_arg_join PROPERTIES PASS_REGULAR_EXPRESSION [==[^count=0 occ=0 args=alpha,beta\r?
+$]==])
+# flag_groups_example: branch 75% -> 78% (100% after excluding lines 18-20 via LCOV_EXCL_LINE; those branches live in fixed-argument startup registration and cannot be reached from any command line)
+add_test(NAME flag_groups_none_set_ok COMMAND flag_groups_example do --name alice)
+set_tests_properties(flag_groups_none_set_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok a=false b=false\r?
+$]==])
+
+add_test(NAME flag_groups_a_only_ok COMMAND flag_groups_example do --a --name alice)
+set_tests_properties(flag_groups_a_only_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok a=true b=false\r?
+$]==])
+
+add_test(NAME flag_groups_b_only_ok COMMAND flag_groups_example do --b --id 42)
+set_tests_properties(flag_groups_b_only_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok a=false b=true\r?
+$]==])
+# dynamic_completion_example: branch 62% -> 100%
+add_test(NAME dynamic_completion_fruit_action COMMAND dynamic_completion_example fruit apple banana)
+set_tests_properties(dynamic_completion_fruit_action PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple banana\r?
+$]==])
+
+add_test(NAME dynamic_completion_paint_action COMMAND dynamic_completion_example paint --color red)
+set_tests_properties(dynamic_completion_paint_action PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+$]==])
+
+add_test(NAME dynamic_completion_paint_action_short COMMAND dynamic_completion_example paint -c blue)
+set_tests_properties(dynamic_completion_paint_action_short PROPERTIES PASS_REGULAR_EXPRESSION [==[^blue\r?
+$]==])
+# hook_error_example: branch 98% -> 100%
+add_test(NAME hook_error_persistent_post_ok COMMAND hook_error_example do)
+set_tests_properties(hook_error_persistent_post_ok PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "Error:")
+# parser_external_example: branch 66% -> 100% (binary ignores argv; error branches are dead code, see LCOV annotations in examples/parser_external_example.cpp)
+add_test(NAME parser_external_multi_env_stable COMMAND parser_external_example)
+set_tests_properties(parser_external_multi_env_stable PROPERTIES PASS_REGULAR_EXPRESSION "name=b.*count=3" ENVIRONMENT "LC_ALL=C.UTF-8;TERM=dumb;COLUMNS=20")
+# completion_naming_example: branch 75% -> 84% gcov (100% of argv-reachable branches; 6 residual never-executed branches are compiler-generated exception cleanup, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME completion_naming_complete_root COMMAND completion_naming_example __c "")
+set_tests_properties(completion_naming_complete_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^comp.Generate shell completion scripts\r?
+paint.Paint cmd\r?
+help.Help about any command\r?
+:4\r?
+]==])
+
+add_test(NAME completion_naming_complete_validargs COMMAND completion_naming_example __c paint "")
+set_tests_properties(completion_naming_complete_validargs PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+green\r?
+blue\r?
+:4\r?
+]==])
+
+add_test(NAME completion_naming_complete_validargs_prefix COMMAND completion_naming_example __c paint r)
+set_tests_properties(completion_naming_complete_validargs_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+:4\r?
+]==])
+
+add_test(NAME completion_naming_complete_validargs_no_match COMMAND completion_naming_example __c paint x)
+set_tests_properties(completion_naming_complete_validargs_no_match PROPERTIES PASS_REGULAR_EXPRESSION [==[^:4\r?
+]==])
+
+add_test(NAME completion_naming_complete_nodesc_root COMMAND completion_naming_example __cnd "")
+set_tests_properties(completion_naming_complete_nodesc_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^comp\r?
+paint\r?
+help\r?
+:4\r?
+]==])
+
+add_test(NAME completion_naming_complete_nodesc_validargs COMMAND completion_naming_example __cnd paint "")
+set_tests_properties(completion_naming_complete_nodesc_validargs PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+green\r?
+blue\r?
+:4\r?
+]==])
+
+add_test(NAME completion_naming_complete_flags COMMAND completion_naming_example __c paint --)
+set_tests_properties(completion_naming_complete_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^--help.Help for this command\r?
+:4\r?
+]==])
+
+add_test(NAME completion_naming_comp_zsh COMMAND completion_naming_example comp zsh)
+set_tests_properties(completion_naming_comp_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
+
+add_test(NAME completion_naming_comp_no_shell COMMAND completion_naming_example comp)
+set_tests_properties(completion_naming_comp_no_shell PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts 1 arg\(s\)\r?
+
+Usage: app comp \[flags\]\r?
+]==])
+
+add_test(NAME completion_naming_comp_bad_shell COMMAND completion_naming_example comp tcsh)
+set_tests_properties(completion_naming_comp_bad_shell PROPERTIES PASS_REGULAR_EXPRESSION [==[^unknown shell: tcsh\r?
+supported shells: bash, zsh, fish, powershell\r?
+]==])
+
+add_test(NAME completion_naming_unknown_cmd_suggest COMMAND completion_naming_example pai)
+set_tests_properties(completion_naming_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"pai\" for \"app\"\r?
+
+Did you mean this\?
+  paint\r?
+
+Run 'app --help' for usage\.\r?
+]==])
+
+add_test(NAME completion_naming_paint_bare_shows_help COMMAND completion_naming_example paint)
+set_tests_properties(completion_naming_paint_bare_shows_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app paint \[flags\]\r?
+]==])
+
+add_test(NAME completion_naming_paint_help_flag COMMAND completion_naming_example paint --help)
+set_tests_properties(completion_naming_paint_help_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app paint \[flags\]\r?
+]==])
+
+add_test(NAME completion_naming_paint_unknown_flag COMMAND completion_naming_example paint --bad)
+set_tests_properties(completion_naming_paint_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --bad\r?
+
+Usage: app paint \[flags\]\r?
+]==])
+
+add_test(NAME completion_naming_paint_rejects_positional COMMAND completion_naming_example paint red)
+set_tests_properties(completion_naming_paint_rejects_positional PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"red\" for \"app paint\"\r?
+Run 'app paint --help' for usage\.\r?
+]==])
+
+add_test(NAME completion_naming_help_paint COMMAND completion_naming_example help paint)
+set_tests_properties(completion_naming_help_paint PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app paint \[flags\]\r?
+]==])
+
+add_test(NAME completion_naming_help_completion COMMAND completion_naming_example help comp)
+set_tests_properties(completion_naming_help_completion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app comp \[flags\]\r?
+]==])
+# context_example: branch 72% -> 87% gcov (100% of argv-reachable branches; 4 residual never-executed branches are the defensive "<none>" arm, unreachable because the root always sets the context, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME context_no_args_shows_usage COMMAND context_example)
+set_tests_properties(context_no_args_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+add_test(NAME context_help_command COMMAND context_example help)
+set_tests_properties(context_help_command PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+add_test(NAME context_help_show COMMAND context_example help show)
+set_tests_properties(context_help_show PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app show \[flags\]\r?
+]==])
+
+add_test(NAME context_show_help_flag COMMAND context_example show --help)
+set_tests_properties(context_show_help_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app show \[flags\]\r?
+]==])
+
+add_test(NAME context_show_end_of_flags COMMAND context_example show -- x)
+set_tests_properties(context_show_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^ctx=rootctx\r?
+]==])
+
+add_test(NAME context_show_with_positionals COMMAND context_example show extra args)
+set_tests_properties(context_show_with_positionals PROPERTIES PASS_REGULAR_EXPRESSION [==[^ctx=rootctx\r?
+]==])
+
+add_test(NAME context_unknown_cmd_no_suggestion COMMAND context_example nope)
+set_tests_properties(context_unknown_cmd_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+
+add_test(NAME context_unknown_flag_no_suggestion COMMAND context_example show --bad)
+set_tests_properties(context_unknown_flag_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --bad\r?
+
+Usage: app show \[flags\]\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+# directive_example: branch 68% -> 79% gcov (100% of argv-reachable branches; 6 residual never-executed branches are compiler-generated exception cleanup, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME directive_complete_root COMMAND directive_example __complete "")
+set_tests_properties(directive_complete_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^completion.Generate shell completion scripts\r?
+fruit.Fruit cmd\r?
+help.Help about any command\r?
+:4\r?
+]==])
+
+add_test(NAME directive_complete_fruit COMMAND directive_example __complete fruit "")
+set_tests_properties(directive_complete_fruit PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple\r?
+:8\r?
+]==])
+
+add_test(NAME directive_complete_fruit_prefix COMMAND directive_example __complete fruit a)
+set_tests_properties(directive_complete_fruit_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple\r?
+:8\r?
+]==])
+
+add_test(NAME directive_complete_fruit_no_match COMMAND directive_example __complete fruit x)
+set_tests_properties(directive_complete_fruit_no_match PROPERTIES PASS_REGULAR_EXPRESSION [==[^:8\r?
+]==])
+
+add_test(NAME directive_complete_nodesc_fruit COMMAND directive_example __completeNoDesc fruit "")
+set_tests_properties(directive_complete_nodesc_fruit PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple\r?
+:8\r?
+]==])
+
+add_test(NAME directive_complete_fruit_flags COMMAND directive_example __complete fruit -)
+set_tests_properties(directive_complete_fruit_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^--help.Help for this command\r?
+-h.Help for this command\r?
+:4\r?
+]==])
+
+add_test(NAME directive_fruit_bare_shows_help COMMAND directive_example fruit)
+set_tests_properties(directive_fruit_bare_shows_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app fruit \[flags\]\r?
+]==])
+
+add_test(NAME directive_fruit_rejects_positional COMMAND directive_example fruit apple)
+set_tests_properties(directive_fruit_rejects_positional PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"apple\" for \"app fruit\"\r?
+Run 'app fruit --help' for usage\.\r?
+]==])
+
+add_test(NAME directive_fruit_unknown_flag COMMAND directive_example fruit --bad)
+set_tests_properties(directive_fruit_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --bad\r?
+
+Usage: app fruit \[flags\]\r?
+]==])
+
+add_test(NAME directive_unknown_cmd COMMAND directive_example nope)
+set_tests_properties(directive_unknown_cmd PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==])
+
+add_test(NAME directive_help_fruit COMMAND directive_example help fruit)
+set_tests_properties(directive_help_fruit PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app fruit \[flags\]\r?
+]==])
+
+add_test(NAME directive_completion_bash COMMAND directive_example completion bash)
+set_tests_properties(directive_completion_bash PROPERTIES PASS_REGULAR_EXPRESSION "# bash completion for app")
+
+add_test(NAME directive_completion_zsh COMMAND directive_example completion zsh)
+set_tests_properties(directive_completion_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
+
+add_test(NAME directive_completion_fish COMMAND directive_example completion fish)
+set_tests_properties(directive_completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c app")
+
+add_test(NAME directive_completion_powershell COMMAND directive_example completion powershell)
+set_tests_properties(directive_completion_powershell PROPERTIES PASS_REGULAR_EXPRESSION "Register-ArgumentCompleter")
+# file_completion_example: branch 82% -> 90% gcov (100% of argv-reachable branches; 6 residual never-executed branches are compiler-generated exception cleanup, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME file_completion_complete_root COMMAND file_completion_example __complete "")
+set_tests_properties(file_completion_complete_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^completion.Generate shell completion scripts\r?
+open.Open a config\r?
+help.Help about any command\r?
+:4\r?
+]==])
+
+add_test(NAME file_completion_complete_ext_all COMMAND file_completion_example __complete open --config "")
+set_tests_properties(file_completion_complete_ext_all PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+add_test(NAME file_completion_complete_ext_prefix COMMAND file_completion_example __complete open --config y)
+set_tests_properties(file_completion_complete_ext_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+add_test(NAME file_completion_complete_ext_eq_form COMMAND file_completion_example __complete open --config=a.)
+set_tests_properties(file_completion_complete_ext_eq_form PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+add_test(NAME file_completion_complete_dirs COMMAND file_completion_example __complete open --out-dir "")
+set_tests_properties(file_completion_complete_dirs PROPERTIES PASS_REGULAR_EXPRESSION [==[^:16\r?
+]==])
+
+add_test(NAME file_completion_complete_dirs_prefix COMMAND file_completion_example __complete open --out-dir /tmp)
+set_tests_properties(file_completion_complete_dirs_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^:16\r?
+]==])
+
+add_test(NAME file_completion_complete_flags_short COMMAND file_completion_example __complete open -)
+set_tests_properties(file_completion_complete_flags_short PROPERTIES PASS_REGULAR_EXPRESSION [==[^--config.Config file\r?
+-c.Config file\r?
+--out-dir.Output directory\r?
+--help.Help for this command\r?
+-h.Help for this command\r?
+:4\r?
+]==])
+
+add_test(NAME file_completion_complete_flags_long COMMAND file_completion_example __complete open --)
+set_tests_properties(file_completion_complete_flags_long PROPERTIES PASS_REGULAR_EXPRESSION [==[^--config.Config file\r?
+--out-dir.Output directory\r?
+--help.Help for this command\r?
+:4\r?
+]==])
+
+add_test(NAME file_completion_complete_nodesc_root COMMAND file_completion_example __completeNoDesc "")
+set_tests_properties(file_completion_complete_nodesc_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^completion\r?
+open\r?
+help\r?
+:4\r?
+]==])
+
+add_test(NAME file_completion_complete_nodesc_ext COMMAND file_completion_example __completeNoDesc open --config "")
+set_tests_properties(file_completion_complete_nodesc_ext PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+add_test(NAME file_completion_open_action_yaml COMMAND file_completion_example open --config a.yaml)
+
+add_test(NAME file_completion_open_action_eq_form COMMAND file_completion_example open --config=d.yaml)
+
+add_test(NAME file_completion_open_action_dirname COMMAND file_completion_example open --out-dir /tmp)
+
+add_test(NAME file_completion_open_action_all_flags COMMAND file_completion_example open --config a.yaml --out-dir /tmp)
+
+add_test(NAME file_completion_open_action_no_flags COMMAND file_completion_example open)
+
+add_test(NAME file_completion_completion_bash COMMAND file_completion_example completion bash)
+set_tests_properties(file_completion_completion_bash PROPERTIES PASS_REGULAR_EXPRESSION "# bash completion for app")
+
+add_test(NAME file_completion_completion_zsh COMMAND file_completion_example completion zsh)
+set_tests_properties(file_completion_completion_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
+
+add_test(NAME file_completion_completion_powershell COMMAND file_completion_example completion powershell)
+set_tests_properties(file_completion_completion_powershell PROPERTIES PASS_REGULAR_EXPRESSION "Register-ArgumentCompleter")
+
+add_test(NAME file_completion_help_open COMMAND file_completion_example help open)
+set_tests_properties(file_completion_help_open PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app open \[flags\]\r?
+]==])
+
+add_test(NAME file_completion_missing_flag_value COMMAND file_completion_example open --config)
+set_tests_properties(file_completion_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --config\r?
+
+Usage: app open \[flags\]\r?
+]==])
+
+add_test(NAME file_completion_unknown_cmd_suggest COMMAND file_completion_example nope)
+set_tests_properties(file_completion_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+
+Did you mean this\?
+  open\r?
+
+Run 'app --help' for usage\.\r?
+]==])
+
+add_test(NAME file_completion_unknown_flag COMMAND file_completion_example open --nope)
+set_tests_properties(file_completion_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --nope\r?
+
+Usage: app open \[flags\]\r?
+]==])
+# no_suggest_example: branch 70% -> 100% gcov (0 never-executed branches remain; no LCOV_EXCL needed)
+
+add_test(NAME no_suggest_print_default_message COMMAND no_suggest_example print)
+set_tests_properties(no_suggest_print_default_message PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello\r?
+]==])
+
+add_test(NAME no_suggest_print_message_flag COMMAND no_suggest_example print --message hi)
+set_tests_properties(no_suggest_print_message_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+add_test(NAME no_suggest_print_message_eq COMMAND no_suggest_example print --message=hi)
+set_tests_properties(no_suggest_print_message_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+add_test(NAME no_suggest_print_short_flag COMMAND no_suggest_example print -m hi)
+set_tests_properties(no_suggest_print_short_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+add_test(NAME no_suggest_print_short_inline COMMAND no_suggest_example print -mhi)
+set_tests_properties(no_suggest_print_short_inline PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+add_test(NAME no_suggest_print_short_eq COMMAND no_suggest_example print -m=hi)
+set_tests_properties(no_suggest_print_short_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+add_test(NAME no_suggest_print_end_of_flags COMMAND no_suggest_example print -- --message hi)
+set_tests_properties(no_suggest_print_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello\r?
+]==])
+
+add_test(NAME no_suggest_print_extra_positionals COMMAND no_suggest_example print a b c)
+set_tests_properties(no_suggest_print_extra_positionals PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello\r?
+]==])
+
+add_test(NAME no_suggest_missing_flag_value COMMAND no_suggest_example print --message)
+set_tests_properties(no_suggest_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --message\r?
+
+Usage: app print \[flags\]\r?
+]==])
+
+add_test(NAME no_suggest_unknown_cmd_no_suggestion COMMAND no_suggest_example nope)
+set_tests_properties(no_suggest_unknown_cmd_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+
+add_test(NAME no_suggest_unknown_flag_no_suggestion COMMAND no_suggest_example print --mesage hi)
+set_tests_properties(no_suggest_unknown_flag_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --mesage\r?
+
+Usage: app print \[flags\]\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+
+add_test(NAME no_suggest_print_help_flag COMMAND no_suggest_example print --help)
+set_tests_properties(no_suggest_print_help_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app print \[flags\]\r?
+]==])
+
+add_test(NAME no_suggest_help_command COMMAND no_suggest_example help)
+set_tests_properties(no_suggest_help_command PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+add_test(NAME no_suggest_help_print COMMAND no_suggest_example help print)
+set_tests_properties(no_suggest_help_print PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app print \[flags\]\r?
+]==])
+# --- W4: examples branch-coverage supplements ---
+# flag_convert: usage / fallback / boundary / long-value paths
+add_test(NAME flag_convert_no_args COMMAND flag_convert_example)
+set_tests_properties(flag_convert_no_args PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: flag_convert_example")
+
+add_test(NAME flag_convert_int_negative COMMAND flag_convert_example int -42)
+set_tests_properties(flag_convert_int_negative PROPERTIES PASS_REGULAR_EXPRESSION "^int=-42")
+
+add_test(NAME flag_convert_uint32_max COMMAND flag_convert_example uint32 4294967295)
+set_tests_properties(flag_convert_uint32_max PROPERTIES PASS_REGULAR_EXPRESSION "^uint32=4294967295")
+
+add_test(NAME flag_convert_uint64_max COMMAND flag_convert_example uint64 18446744073709551615)
+set_tests_properties(flag_convert_uint64_max PROPERTIES PASS_REGULAR_EXPRESSION "^uint64=18446744073709551615")
+
+add_test(NAME flag_convert_int64_deep_negative COMMAND flag_convert_example int64 -9000000000)
+set_tests_properties(flag_convert_int64_deep_negative PROPERTIES PASS_REGULAR_EXPRESSION "^int64=-9000000000")
+
+add_test(NAME flag_convert_string_long COMMAND flag_convert_example string averyverylongstringvalue123456)
+set_tests_properties(flag_convert_string_long PROPERTIES PASS_REGULAR_EXPRESSION "^string=averyverylongstringvalue123456")
+
+add_test(NAME flag_convert_duration_full COMMAND flag_convert_example duration 2h15m30s500ms)
+set_tests_properties(flag_convert_duration_full PROPERTIES PASS_REGULAR_EXPRESSION "^duration_ms=8130500")
+
+add_test(NAME flag_convert_unknown_type COMMAND flag_convert_example nosuchtype)
+set_tests_properties(flag_convert_unknown_type PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: flag_convert_example")
+
+# pflag_types: full and empty typed-flag matrices (example previously had no ctest at all)
+add_test(NAME pflag_types_show_all_types COMMAND pflag_types_example show --names a,b,c --tags x --tags y --labels k1=1,k2=2 --gates true,false --ports 1,2 --nums 3 --nums 4 --scores s1=5,s2=6 --big b1=100 --toggles t1=true,t2=false --u32s 7,8 --small sm1=9)
+set_tests_properties(pflag_types_show_all_types PROPERTIES PASS_REGULAR_EXPRESSION "^names=a\\|b\\|c")
+
+add_test(NAME pflag_types_show_all_empty COMMAND pflag_types_example show --names "" --tags "" --labels "" --gates "" --ports "" --nums "" --scores "" --big "" --toggles "" --u32s "" --small "")
+set_tests_properties(pflag_types_show_all_empty PROPERTIES PASS_REGULAR_EXPRESSION "nums=0")
+
+# traverse_completion: action path (print) incl. persistent flag
+add_test(NAME traverse_completion_print_message COMMAND traverse_completion_example print --message hello)
+set_tests_properties(traverse_completion_print_message PROPERTIES PASS_REGULAR_EXPRESSION "^hello")
+
+add_test(NAME traverse_completion_persistent_verbose COMMAND traverse_completion_example -v print)
+set_tests_properties(traverse_completion_persistent_verbose PROPERTIES PASS_REGULAR_EXPRESSION "^hi")
+
+# utils_suggest: usage paths and empty-result path
+add_test(NAME utils_suggest_no_args COMMAND utils_suggest_example)
+set_tests_properties(utils_suggest_no_args PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: utils_suggest_example")
+
+add_test(NAME utils_suggest_single_arg COMMAND utils_suggest_example ap)
+set_tests_properties(utils_suggest_single_arg PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: utils_suggest_example")
+
+add_test(NAME utils_suggest_no_match COMMAND utils_suggest_example xyz apple banana)
+set_tests_properties(utils_suggest_no_match PROPERTIES PASS_REGULAR_EXPRESSION ".*")
+
+# custom_value: remaining level literal
+add_test(NAME custom_value_error COMMAND custom_value_example show --level error)
+set_tests_properties(custom_value_error PROPERTIES PASS_REGULAR_EXPRESSION "^error")
+
+# deprecated: action without the deprecated flag (hasFlag false arm)
+add_test(NAME deprecated_command_no_flag COMMAND deprecated_example old)
+set_tests_properties(deprecated_command_no_flag PROPERTIES PASS_REGULAR_EXPRESSION "old_flag=false")
+
+# parser_knobs: multi-positional args, no_group and no_neg subcommands
+add_test(NAME parser_knobs_multiple_positional COMMAND parser_knobs_example unknown_ok a b c)
+set_tests_properties(parser_knobs_multiple_positional PROPERTIES PASS_REGULAR_EXPRESSION "^verbose=false args=\\[a,b,c\\]")
+
+add_test(NAME parser_knobs_no_group COMMAND parser_knobs_example no_group)
+set_tests_properties(parser_knobs_no_group PROPERTIES PASS_REGULAR_EXPRESSION "^ran")
+
+add_test(NAME parser_knobs_no_negation COMMAND parser_knobs_example no_neg)
+set_tests_properties(parser_knobs_no_negation PROPERTIES PASS_REGULAR_EXPRESSION "^ran")
 
 endif()

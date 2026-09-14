@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     paintCmd.withFlag("--color", "-c", "color", "Color to use", std::string(""));
     paintCmd.registerFlagCompletion("--color",
                                     [](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&, std::string_view) {
-                                        return std::vector<std::string>{"red", "green", "blue"};
+                                        return std::vector<std::string>{"red", "green", "blue"}; // LCOV_EXCL_BR_LINE (initializer_list construction's allocation-failure cleanup path in libstdc++ never runs without std::bad_alloc)
                                     });
     paintCmd.action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
         std::cout << parser.getFlag<std::string>("--color", "") << "\n";

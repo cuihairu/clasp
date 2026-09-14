@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     clasp::Command show("show", "Print context");
     show.action([](clasp::Command& cmd, const clasp::Parser&, const std::vector<std::string>&) {
         const auto* ctx = cmd.contextAs<std::string>();
-        std::cout << "ctx=" << (ctx ? *ctx : std::string("<none>")) << "\n";
+        std::cout << "ctx=" << (ctx ? *ctx : std::string("<none>")) << "\n"; // LCOV_EXCL_LINE (defensive "<none>" arm is unreachable via argv: the root unconditionally setContext(std::string), so contextAs<std::string> never returns null)
         return 0;
     });
 

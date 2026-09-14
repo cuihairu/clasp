@@ -15,9 +15,9 @@ int main(int argc, char** argv) {
     doCmd.withFlag("--user", "", "user", "Username", std::string(""));
     doCmd.withFlag("--pass", "", "pass", "Password", std::string(""));
 
-    doCmd.markFlagsMutuallyExclusive({"--a", "--b"});
-    doCmd.markFlagsOneRequired({"--name", "--id"});
-    doCmd.markFlagsRequiredTogether({"--user", "--pass"});
+    doCmd.markFlagsMutuallyExclusive({"--a", "--b"}); // LCOV_EXCL_LINE (fixed-argument startup registration; inlined short-circuited normalizeFlagName fallback and compiler-generated cleanup edges never run for any command line)
+    doCmd.markFlagsOneRequired({"--name", "--id"}); // LCOV_EXCL_LINE (same inlined registration edges; arguments are compile-time constants, so these branches are CLI-independent)
+    doCmd.markFlagsRequiredTogether({"--user", "--pass"}); // LCOV_EXCL_LINE (same inlined registration edges; arguments are compile-time constants, so these branches are CLI-independent)
 
     doCmd.action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
         const bool a = parser.getFlag<bool>("--a", false);

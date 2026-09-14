@@ -147,6 +147,14 @@ void testColorAutoBranches() {
         expect(out.str().find("\x1b[") == std::string::npos, "TERM=dumb disables color in auto mode");
     }
     {
+        EnvGuard noTerm("TERM", nullptr);
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.enableColor(clasp::ColorMode::Auto);
+        runArgs(root, {"--help"});
+        expect(out.str().find("\x1b[") == std::string::npos, "missing TERM disables color in auto mode");
+    }
+    {
         EnvGuard term("TERM", "xterm");
         std::ostringstream out, err;
         auto root = makeBasicColorRoot(out, err);

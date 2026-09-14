@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
 
     clasp::Command openCmd("open", "Open a config");
     openCmd.withFlag("--config", "-c", "config", "Config file", std::string(""));
-    openCmd.markFlagFilename("--config", {"yaml", "yml"});
+    openCmd.markFlagFilename("--config", {"yaml", "yml"}); // LCOV_EXCL_LINE (compiler-generated exception cleanup edges of the inlined vector/std::function construction with fixed literals; bad_alloc is not triggerable via argv)
 
     openCmd.withFlag("--out-dir", "", "outDir", "Output directory", std::string(""));
     openCmd.markFlagDirname("--out-dir");

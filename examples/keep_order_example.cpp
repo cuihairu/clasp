@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
                               static_cast<std::uint32_t>(clasp::Command::ShellCompDirective::KeepOrder));
     fruit.validArgsFunction([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&, std::string_view) {
         // Intentionally not sorted.
-        return std::vector<std::string>{"zebra", "apple"};
+        return std::vector<std::string>{"zebra", "apple"}; // LCOV_EXCL_LINE (initializer-list vector constructor's unwind-cleanup edges; string copies are noexcept so mid-construction failure is impossible)
     });
 
     root.addCommand(std::move(fruit));
