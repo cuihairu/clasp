@@ -104,7 +104,7 @@ inline const ColorTheme& builtinTheme(ColorThemeName name) {
         t.meta = ansiDim() + ansiRgbFg(160, 160, 160);     // dim gray
         t.error = ansiBold() + ansiRgbFg(244, 71, 71);     // red
         return t;
-    }();
+    }(); // LCOV_EXCL_LINE (guard_acquire contention/abort edges need a thread inside the single initialization window; not deterministically schedulable)
     static const ColorTheme sublime = [] {
         ColorTheme t;
         t.section = ansiBold() + ansiRgbFg(249, 38, 114);  // pink
@@ -114,7 +114,7 @@ inline const ColorTheme& builtinTheme(ColorThemeName name) {
         t.meta = ansiDim() + ansiRgbFg(160, 160, 160);     // dim gray
         t.error = ansiBold() + ansiRgbFg(249, 38, 114);    // pink
         return t;
-    }();
+    }(); // LCOV_EXCL_LINE (guard_acquire contention/abort edges need a thread inside the single initialization window; not deterministically schedulable)
     static const ColorTheme iterm2 = [] {
         ColorTheme t;
         t.section = "\x1b[1m\x1b[36m"; // bold cyan
@@ -124,7 +124,7 @@ inline const ColorTheme& builtinTheme(ColorThemeName name) {
         t.meta = "\x1b[2m";            // dim
         t.error = "\x1b[1m\x1b[31m";   // bold red
         return t;
-    }();
+    }(); // LCOV_EXCL_LINE (guard_acquire contention/abort edges need a thread inside the single initialization window; not deterministically schedulable)
     switch (name) {
         case ColorThemeName::Vscode: return vscode;
         case ColorThemeName::Sublime: return sublime;

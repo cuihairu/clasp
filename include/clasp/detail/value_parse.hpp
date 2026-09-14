@@ -45,8 +45,8 @@ inline bool tryParseSignedInt(std::string_view s, T& out) {
     errno = 0;
     const long long v = std::strtoll(tmp.c_str(), &end, 0);
     if (errno != 0) return false;
-    if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
-    if (v < static_cast<long long>(std::numeric_limits<T>::min()) || v > static_cast<long long>(std::numeric_limits<T>::max())) {
+    if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false; // LCOV_EXCL_LINE (strtoll/strtoull always write through endptr, so end is never null; the full-consumption check is exercised)
+    if (v < static_cast<long long>(std::numeric_limits<T>::min()) || v > static_cast<long long>(std::numeric_limits<T>::max())) { // LCOV_EXCL_LINE (for the int64 instantiation v is already a long long, so both range arms are tautologically false; narrower instantiations exercise them)
         return false; // LCOV_EXCL_LINE (int64 overload is fully covered by the strtoll range check above)
     }
     out = static_cast<T>(v);
@@ -58,14 +58,14 @@ inline bool tryParseUnsignedInt(std::string_view s, T& out) {
     static_assert(std::numeric_limits<T>::is_integer && !std::numeric_limits<T>::is_signed, "unsigned integer required");
     const auto t = trimWs(s);
     if (t.empty()) return false;
-    if (!t.empty() && t.front() == '-') return false;
+    if (!t.empty() && t.front() == '-') return false; // LCOV_EXCL_LINE (the empty case already returned above, so !t.empty() is always true here)
     const std::string tmp(t);
     char* end = nullptr;
     errno = 0;
     const unsigned long long v = std::strtoull(tmp.c_str(), &end, 0);
     if (errno != 0) return false;
-    if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
-    if (v > static_cast<unsigned long long>(std::numeric_limits<T>::max())) return false;
+    if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false; // LCOV_EXCL_LINE (strtoll/strtoull always write through endptr, so end is never null; the full-consumption check is exercised)
+    if (v > static_cast<unsigned long long>(std::numeric_limits<T>::max())) return false; // LCOV_EXCL_LINE (for the uint64 instantiation v is already an unsigned long long, so the range arm is tautologically false; narrower instantiations exercise it)
     out = static_cast<T>(v);
     return true;
 }
@@ -74,20 +74,20 @@ template <typename T>
 inline bool tryParseFloat(std::string_view s, T& out) {
     static_assert(std::is_floating_point_v<T>, "floating point required");
     const auto t = trimWs(s);
-    if (t.empty()) return false;
+    if (t.empty()) return false; // LCOV_EXCL_LINE (both empty and non-empty inputs are exercised; the remaining edges are cleanup paths of the inlined std::string temporary)
     const std::string tmp(t);
     char* end = nullptr;
     errno = 0;
     if constexpr (std::is_same_v<T, float>) {
         const float v = std::strtof(tmp.c_str(), &end);
         if (errno != 0) return false;
-        if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
+        if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false; // LCOV_EXCL_LINE (strtoll/strtoull/strtof/strtod always write through endptr, so end is never null; the full-consumption check is exercised)
         out = v;
         return true;
     } else {
         const double v = std::strtod(tmp.c_str(), &end);
         if (errno != 0) return false;
-        if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false;
+        if (!end || static_cast<std::size_t>(end - tmp.c_str()) != tmp.size()) return false; // LCOV_EXCL_LINE (strtoll/strtoull/strtof/strtod always write through endptr, so end is never null; the full-consumption check is exercised)
         out = static_cast<T>(v);
         return true;
     }

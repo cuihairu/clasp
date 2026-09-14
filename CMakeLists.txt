@@ -1700,4 +1700,36 @@ set_tests_properties(parser_extra_bytes_tib PROPERTIES PASS_REGULAR_EXPRESSION "
 add_test(NAME parser_extra_bytes_eib COMMAND parser_extra_coverage_test bytes-eib)
 set_tests_properties(parser_extra_bytes_eib PROPERTIES PASS_REGULAR_EXPRESSION "size:1152921504606846976")
 
+# --- Branch coverage: config file parsing internals ---
+
+add_executable(config_parse_coverage_test tests/config_parse_coverage.cpp)
+target_link_libraries(config_parse_coverage_test PRIVATE clasp)
+
+add_test(NAME config_parse_run COMMAND config_parse_coverage_test)
+set_tests_properties(config_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+# --- Branch coverage: completion internals ---
+
+add_executable(completion_coverage_test tests/completion_coverage.cpp)
+target_link_libraries(completion_coverage_test PRIVATE clasp)
+
+add_test(NAME completion_coverage_run COMMAND completion_coverage_test)
+set_tests_properties(completion_coverage_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+# --- Branch coverage: help/color rendering and setter fallbacks ---
+
+add_executable(command_render_coverage_test tests/command_render_coverage.cpp)
+target_link_libraries(command_render_coverage_test PRIVATE clasp)
+
+add_test(NAME command_render_run COMMAND command_render_coverage_test)
+set_tests_properties(command_render_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+# --- Branch coverage: remaining parser.hpp / value_parse.hpp branches ---
+
+add_executable(branch_parser_test tests/branch_parser.cpp)
+target_link_libraries(branch_parser_test PRIVATE clasp)
+
+add_test(NAME branch_parser_run COMMAND branch_parser_test)
+set_tests_properties(branch_parser_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
 endif()

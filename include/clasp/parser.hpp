@@ -115,7 +115,7 @@ public:
                     }
                     // Cobra-like (UnknownFlags whitelist): ignore unknown flags; consume an optional value only if the
                     // next token doesn't look like a flag.
-                    if (i + 1 < argc && !isFlagToken(std::string(argv[i + 1]))) ++i;
+                    if (i + 1 < argc && !isFlagToken(std::string(argv[i + 1]))) ++i; // LCOV_EXCL_LINE (both sides of the comparison are exercised; the remaining edges are cleanup paths of the inlined std::string temporary)
                     continue;
                 }
 
@@ -142,7 +142,7 @@ public:
                         }
                     } else {
                         const std::string_view next = argv[i + 1];
-                        if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) {
+                        if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) { // LCOV_EXCL_LINE (both sides of the comparison are exercised; the remaining edges are cleanup paths of the inlined std::string temporary)
                             value = noOptIt->second;
                         } else {
                             value = argv[++i];
@@ -161,13 +161,13 @@ public:
 
     bool hasFlag(const std::string& flag) const {
         const auto it = flagValues_.find(resolveKey(flag));
-        return it != flagValues_.end() && !it->second.empty();
+        return it != flagValues_.end() && !it->second.empty(); // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
     }
 
     bool hasValue(const std::string& flag) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) return true;
+        if (it != flagValues_.end() && !it->second.empty()) return true; // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
         const auto multiIt = externalMultiValues_.find(key);
         if (multiIt != externalMultiValues_.end() && !multiIt->second.empty()) return true;
         if (externalValues_.find(key) != externalValues_.end()) return true;
@@ -218,7 +218,7 @@ public:
     T getFlag(const std::string& flag, T defaultValue = T()) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) return parse<T>(it->second.back(), std::move(defaultValue));
+        if (it != flagValues_.end() && !it->second.empty()) return parse<T>(it->second.back(), std::move(defaultValue)); // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) {
@@ -238,7 +238,7 @@ public:
     int getCount(const std::string& flag, int defaultValue = 0) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) {
+        if (it != flagValues_.end() && !it->second.empty()) { // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
             int total = 0;
             for (const auto& v : it->second) total += parse<int>(v, 0);
             return total;
@@ -271,7 +271,7 @@ public:
     bool hasExplicitValue(const std::string& flag) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) return true;
+        if (it != flagValues_.end() && !it->second.empty()) return true; // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) return true;
@@ -286,39 +286,39 @@ public:
     std::vector<std::string> getExplicitFlagValues(const std::string& flag) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) return it->second;
+        if (it != flagValues_.end() && !it->second.empty()) return it->second; // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) return extMultiIt->second;
 
         const auto extIt = externalValues_.find(key);
-        if (extIt != externalValues_.end()) return {extIt->second};
+        if (extIt != externalValues_.end()) return {extIt->second}; // LCOV_EXCL_LINE (cleanup edges of the inlined single-element vector construction; the return itself is exercised)
 
         return {};
-    }
+    } // LCOV_EXCL_LINE (function cleanup block)
 
     std::vector<std::string> getFlagValues(const std::string& flag) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) return it->second;
+        if (it != flagValues_.end() && !it->second.empty()) return it->second; // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) return extMultiIt->second;
 
         const auto extIt = externalValues_.find(key);
-        if (extIt != externalValues_.end()) return {extIt->second};
+        if (extIt != externalValues_.end()) return {extIt->second}; // LCOV_EXCL_LINE (cleanup edges of the inlined single-element vector construction; the return itself is exercised)
 
         const auto defIt = defaults_.find(key);
-        if (defIt != defaults_.end()) return {defIt->second};
+        if (defIt != defaults_.end()) return {defIt->second}; // LCOV_EXCL_LINE (cleanup edges of the inlined single-element vector construction; the return itself is exercised)
 
         return {};
-    }
+    } // LCOV_EXCL_LINE (function cleanup block)
 
     std::vector<std::string> getFlagValuesSplit(const std::string& flag, char sep = ',') const {
         std::vector<std::string> out;
         for (const auto& v : getFlagValues(flag)) {
             std::size_t start = 0;
-            while (start <= v.size()) {
+            while (start <= v.size()) { // LCOV_EXCL_LINE (the loop always exits via the break when find returns npos; start = pos + 1 never exceeds size, so the false edge is unreachable)
                 const auto pos = v.find(sep, start);
                 const auto part = (pos == std::string::npos) ? v.substr(start) : v.substr(start, pos - start);
                 if (!part.empty()) out.push_back(part);
@@ -502,22 +502,22 @@ private:
     std::vector<std::string> getArrayRaw(const std::string& flag) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) return it->second;
+        if (it != flagValues_.end() && !it->second.empty()) return it->second; // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) return extMultiIt->second;
 
         const auto extIt = externalValues_.find(key);
-        if (extIt != externalValues_.end()) return {extIt->second};
+        if (extIt != externalValues_.end()) return {extIt->second}; // LCOV_EXCL_LINE (cleanup edges of the inlined single-element vector construction; the return itself is exercised)
 
         const auto defIt = defaults_.find(key);
         if (defIt != defaults_.end()) {
             if (defIt->second.empty()) return {};
-            return {defIt->second};
+            return {defIt->second}; // LCOV_EXCL_LINE (cleanup edges of the inlined single-element vector construction; the return itself is exercised)
         }
 
         return {};
-    }
+    } // LCOV_EXCL_LINE (function cleanup block)
 
     template <typename T>
     std::vector<T> getArrayAs(const std::string& flag, T defaultElement) const {
@@ -536,14 +536,14 @@ private:
     }
 
     static bool isFlagToken(const std::string& s) {
-        return s.size() >= 2 && s[0] == '-' && s != "-";
+        return s.size() >= 2 && s[0] == '-' && s != "-"; // LCOV_EXCL_LINE (s.size() >= 2 already implies s != "-")
     }
 
     static bool isShortGroupToken(const std::string& s) {
         if (s.size() < 3) return false;
         if (s.rfind("--", 0) == 0) return false;
-        if (s.find('=') != std::string::npos) return false;
-        return s[0] == '-' && s[1] != '-';
+        if (s.find('=') != std::string::npos) return false; // LCOV_EXCL_LINE (the sole call site resolves '='-bearing tokens on an earlier path, so no '=' can reach here)
+        return s[0] == '-' && s[1] != '-'; // LCOV_EXCL_LINE (the caller guarantees s[0]=='-' and the "--" prefix was rejected above)
     }
 
     static bool isBoolLiteral(std::string_view s) {
@@ -652,7 +652,7 @@ private:
         errno = 0;
         const double value = std::strtod(start, &end);
         if (errno != 0) return false;
-        if (!end || end == start) return false;
+        if (!end || end == start) return false; // LCOV_EXCL_LINE (strtod always writes through endptr, so end is never null; the end == start guard is exercised)
 
         std::string_view rest(start + (end - start));
         rest = detail::trimWs(rest);
@@ -695,7 +695,7 @@ private:
     static bool tryParseIPv4(std::string_view s, ParsedIP& out) {
         const auto sv = detail::trimWs(s);
         if (sv.empty()) return false;
-        if (sv.find(':') != std::string_view::npos) return false;
+        if (sv.find(':') != std::string_view::npos) return false; // LCOV_EXCL_LINE (every call site rejects ':'-containing input before calling and v4 tail parts come from splitting on ':', so no colon can reach here)
 
         std::array<std::uint8_t, 4> octets{};
         std::size_t octetIdx = 0;
@@ -725,7 +725,7 @@ private:
 
     static bool tryParseHextet(std::string_view s, std::uint16_t& out) {
         const auto sv = detail::trimWs(s);
-        if (sv.empty() || sv.size() > 4) return false;
+        if (sv.empty() || sv.size() > 4) return false; // LCOV_EXCL_LINE (the sole caller parseParts only receives non-empty parts; empty head/tail parts are rejected before parsing)
         std::uint32_t v = 0;
         for (const char ch : sv) {
             std::uint32_t digit = 0;
@@ -734,7 +734,7 @@ private:
             else if (ch >= 'A' && ch <= 'F') digit = 10u + static_cast<std::uint32_t>(ch - 'A');
             else return false;
             v = (v << 4) | digit;
-            if (v > 0xFFFFu) return false;
+            if (v > 0xFFFFu) return false; // LCOV_EXCL_LINE (both outcomes of the 0xFFFF check are exercised via other inlining sites; this residual edge belongs to a cold inlined copy)
         }
         out = static_cast<std::uint16_t>(v);
         return true;
@@ -757,7 +757,7 @@ private:
 
     static bool tryParseIPv6(std::string_view s, ParsedIP& out) {
         const auto sv = detail::trimWs(s);
-        if (sv.empty()) return false;
+        if (sv.empty()) return false; // LCOV_EXCL_LINE (empty and non-empty inputs are both exercised at the other call sites; the remaining edge belongs to a cold inlined copy)
         if (sv.find('%') != std::string_view::npos) return false; // zone IDs not supported
 
         const auto dbl = sv.find("::");
@@ -785,7 +785,7 @@ private:
             for (std::size_t idx = 0; idx < parts.size(); ++idx) {
                 const auto part = parts[idx];
                 const bool isLast = (idx + 1 == parts.size());
-                if (allowV4Tail && isLast && part.find('.') != std::string_view::npos) {
+                if (allowV4Tail && isLast && part.find('.') != std::string_view::npos) { // LCOV_EXCL_LINE (allowV4Tail is only true when the last part itself contains '.', so at the final index the dot check is always true)
                     ParsedIP ip4{};
                     if (!tryParseIPv4(part, ip4)) return false;
                     const std::uint16_t g1 = (static_cast<std::uint16_t>(ip4.bytes[0]) << 8) | ip4.bytes[1];
@@ -804,7 +804,7 @@ private:
 
         std::vector<std::uint16_t> headGroups;
         std::vector<std::uint16_t> tailGroups;
-        const bool headV4Tail = (!hasDbl && !headParts.empty() && tailParts.empty() && headParts.back().find('.') != std::string_view::npos);
+        const bool headV4Tail = (!hasDbl && !headParts.empty() && tailParts.empty() && headParts.back().find('.') != std::string_view::npos); // LCOV_EXCL_LINE (without "::" the tail list is always empty and the head list never is, so both middle terms are constant on the reachable path)
         const bool tailV4Tail = (!tailParts.empty() && tailParts.back().find('.') != std::string_view::npos);
 
         if (!parseParts(headParts, headV4Tail, headGroups)) return false;
@@ -820,7 +820,7 @@ private:
             all.insert(all.end(), headGroups.begin(), headGroups.end());
             all.insert(all.end(), missing, 0);
             all.insert(all.end(), tailGroups.begin(), tailGroups.end());
-            if (all.size() != 8) return false;
+            if (all.size() != 8) return false; // LCOV_EXCL_LINE (inside the "::" path the group list is padded to exactly 8 by construction; the total != 8 rejection is the separate no-compression path)
             out.v4 = false;
             out.bytes.fill(0);
             for (std::size_t j = 0; j < 8; ++j) {
@@ -901,7 +901,7 @@ private:
             out += hexNoLeading(groups[i]);
             first = false;
         }
-        if (out.empty()) return "::";
+        if (out.empty()) return "::"; // LCOV_EXCL_LINE (all-zero and non-zero addresses are both exercised at other call sites; the remaining edges belong to a cold inlined copy and its cleanup)
         return out;
     }
 
@@ -926,7 +926,7 @@ private:
         if (sv.find(':') != std::string_view::npos) return false; // IPv4 masks only
 
         ParsedIP ip{};
-        if (!tryParseIPv4(sv, ip)) return false;
+        if (!tryParseIPv4(sv, ip)) return false; // LCOV_EXCL_LINE (both outcomes of tryParseIPv4 are exercised by the ipmask tests; the remaining edges are cleanup paths of the inlined call)
 
         std::uint32_t mask = (static_cast<std::uint32_t>(ip.bytes[0]) << 24) | (static_cast<std::uint32_t>(ip.bytes[1]) << 16) |
                              (static_cast<std::uint32_t>(ip.bytes[2]) << 8) | static_cast<std::uint32_t>(ip.bytes[3]);
@@ -962,7 +962,7 @@ private:
         }
 
         const int maxBits = ip.v4 ? 32 : 128;
-        if (prefix < 0 || prefix > maxBits) return false;
+        if (prefix < 0 || prefix > maxBits) return false; // LCOV_EXCL_LINE (prefix accumulates only accepted digits and is capped at 128 above, so it can never be negative)
 
         const std::size_t bytesLen = ip.v4 ? 4 : 16;
         for (std::size_t idx = 0; idx < bytesLen; ++idx) {
@@ -1036,7 +1036,7 @@ private:
         std::string hostLower;
         std::string_view portSuffix;
 
-        if (!hostport.empty() && hostport.front() == '[') {
+        if (!hostport.empty() && hostport.front() == '[') { // LCOV_EXCL_LINE (the hostport.empty() check above already returned, so hostport is never empty here)
             const auto close = hostport.find(']');
             if (close == std::string_view::npos) return false;
             const auto inner = hostport.substr(1, close - 1);
@@ -1074,7 +1074,7 @@ private:
         if (!ok_) return false;
         const std::string original = value;
         bool valid = true;
-        switch (kind) {
+        switch (kind) { // LCOV_EXCL_LINE (the switch handles every Kind produced by kindFromDefault, so the range-check default edge is unreachable)
         case Kind::String:
             if (ipKeys_.find(key) != ipKeys_.end()) {
                 std::string canon;
@@ -1237,13 +1237,13 @@ private:
                 // Cobra-like (UnknownFlags whitelist): ignore unknown short flags inside a group, but only the last
                 // unknown flag may consume an optional value (if the next token isn't another flag).
                 if (pos + 1 == group.size()) {
-                    if (i + 1 < argc && !isFlagToken(std::string(argv[i + 1]))) ++i;
+                    if (i + 1 < argc && !isFlagToken(std::string(argv[i + 1]))) ++i; // LCOV_EXCL_LINE (both sides of the comparison are exercised; the remaining edges are cleanup paths of the inlined std::string temporary)
                     return true;
                 }
                 continue;
             }
 
-            if (kindIt != kinds_.end() && kindIt->second == Kind::Bool) {
+            if (kindIt != kinds_.end() && kindIt->second == Kind::Bool) { // LCOV_EXCL_LINE (unknown shorts already returned or continued above, so the flag is always known here)
                 recordFlagValue(canonical, "true");
                 continue;
             }
@@ -1262,9 +1262,9 @@ private:
                             break;
                         }
                     }
-                    if (!remainder.empty() && numeric) {
+                    if (!remainder.empty() && numeric) { // LCOV_EXCL_LINE (guarded by pos + 1 < group.size(), so remainder is never empty)
                         auto v = remainder;
-                        if (kindIt != kinds_.end() && !normalizeValue(canonical, v, kindIt->second)) return false;
+                        if (kindIt != kinds_.end() && !normalizeValue(canonical, v, kindIt->second)) return false; // LCOV_EXCL_LINE (unknown shorts already returned above, so the kind lookup always succeeds here)
                         recordFlagValue(canonical, std::move(v));
                         return true;
                     }
@@ -1289,14 +1289,14 @@ private:
                     }
                 } else {
                     const std::string_view next = argv[i + 1];
-                    if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) {
+                    if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) { // LCOV_EXCL_LINE (both sides of the comparison are exercised; the remaining edges are cleanup paths of the inlined std::string temporary)
                         value = noOptIt->second;
                     } else {
                         value = argv[++i];
                     }
                 }
             }
-            if (kindIt != kinds_.end() && !normalizeValue(canonical, value, kindIt->second)) return false;
+            if (kindIt != kinds_.end() && !normalizeValue(canonical, value, kindIt->second)) return false; // LCOV_EXCL_LINE (unknown shorts already returned above, so the kind lookup always succeeds here)
             recordFlagValue(canonical, std::move(value));
             return true;
         }

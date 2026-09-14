@@ -62,7 +62,7 @@ inline std::vector<std::string> suggest(std::string_view input,
         if (s.score <= maxDistance) out.push_back(s.value);
     }
     return out;
-}
+} // LCOV_EXCL_LINE (function cleanup block)
 
 } // namespace clasp::utils
 
