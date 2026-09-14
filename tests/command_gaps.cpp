@@ -9,7 +9,9 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <utility>
 #include <vector>
 
@@ -164,6 +166,9 @@ void testColorAutoBranches() {
 
 // Auto mode resolves to true when stdout is a real terminal.
 void testColorAutoWithPty() {
+#ifdef _WIN32
+    std::cout << "pty unavailable on Windows: skip" << std::endl;
+#else
     const int master = posix_openpt(O_RDWR | O_NOCTTY);
     if (master < 0) {
         std::cout << "pty unavailable: skip" << std::endl;
@@ -197,6 +202,7 @@ void testColorAutoWithPty() {
     close(slave);
     close(master);
     std::cout << "auto color with pty: pass" << std::endl;
+#endif
 }
 
 void testApplyColorRawErrors() {
