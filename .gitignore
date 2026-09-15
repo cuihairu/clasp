@@ -37,11 +37,11 @@ build-*/
 .venv-gcovr/
 .idea/
 
-# Node / VuePress docs
+# Node / VitePress docs
 node_modules/
-docs/.vuepress/dist/
-docs/.vuepress/.cache/
-docs/.vuepress/.temp/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/.vitepress/tmp/
 
 # Coverage / build artifacts (Rust gcovr / PGO)
 build_cov2/
