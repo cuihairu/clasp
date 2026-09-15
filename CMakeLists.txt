@@ -221,6 +221,15 @@ add_test(NAME args_silence_errors_hides_error COMMAND args_example silence_error
 set_tests_properties(args_silence_errors_hides_error PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app silence_errors \[flags\]\r?
 $]==] FAIL_REGULAR_EXPRESSION "Error:")
 
+# Success paths: with exactly 1 arg the silenced commands still run their action.
+add_test(NAME args_silence_usage_ok COMMAND args_example silence_usage x)
+set_tests_properties(args_silence_usage_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^unreachable\r?
+$]==])
+
+add_test(NAME args_silence_errors_ok COMMAND args_example silence_errors x)
+set_tests_properties(args_silence_errors_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^unreachable\r?
+$]==])
+
 add_test(NAME basic_invalid_bool_eq COMMAND basic_example --verbose=maybe print --message hi)
 set_tests_properties(basic_invalid_bool_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: invalid argument \"maybe\" for \"--verbose\"\r?
 \r?
