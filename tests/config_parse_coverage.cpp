@@ -6,6 +6,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include <crtdbg.h>
+#endif
 
 #include "clasp/command.hpp"
 
@@ -493,6 +496,16 @@ void testIniYamlTopLevelKeys() {
 } // namespace
 
 int main() {
+#if defined(_MSC_VER) && defined(_DEBUG)
+    // Headless CI: route Debug-CRT reports to stderr instead of a modal
+    // MessageBox nobody can dismiss (same rationale as completion_coverage).
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+#endif
     // Keep the short relative fixture used by the extension tests inside a
     // writable temp directory ("/tmp" does not exist on Windows).
     std::filesystem::current_path(tmpDir());

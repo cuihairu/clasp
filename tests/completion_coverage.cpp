@@ -4,6 +4,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include <crtdbg.h>
+#endif
 
 #include "clasp/command.hpp"
 
@@ -1146,6 +1149,18 @@ void testApplyBoundFlagValues() {
 } // namespace
 
 int main() {
+#if defined(_MSC_VER) && defined(_DEBUG)
+    // Headless CI: a Debug-CRT report (ucrtbased!CrtDbgReportW) pops a modal
+    // MessageBox that nobody will ever dismiss, hanging the test. Route the
+    // reports to stderr instead, so a violation shows in the ctest log and
+    // the process aborts rather than waiting forever.
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+#endif
     expect(true, "scaffold");
     testResolvedCompletionConfigFallback();
     testUsageTemplateCommandPathKey();
