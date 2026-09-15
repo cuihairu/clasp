@@ -1,8 +1,10 @@
 // Coverage tests for completion internals (shell script generation,
 // completion entries, value completion).
+#include <exception>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <typeinfo>
 #include <vector>
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include <crtdbg.h>
@@ -1171,6 +1173,7 @@ int main() {
     _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
     _set_invalid_parameter_handler(claspReportInvalidParameter);
 #endif
+    try {
     expect(true, "scaffold");
     testResolvedCompletionConfigFallback();
     testUsageTemplateCommandPathKey();
@@ -1192,6 +1195,15 @@ int main() {
     testNormalizeFlagKeyCompletion();
     testTraverseChildrenResolution();
     testApplyBoundFlagValues();
+    } catch (const std::exception& e) {
+        // Surface the exact MSVC-Debug-only failure: type + message before
+        // the terminate abort hides them from the ctest log.
+        std::cout << "UNCAUGHT exception: " << typeid(e).name() << ": " << e.what() << std::endl;
+        return 2;
+    } catch (...) {
+        std::cout << "UNCAUGHT non-standard exception" << std::endl;
+        return 2;
+    }
     if (g_failures == 0) {
         std::cout << "ALL OK" << std::endl;
         return 0;
