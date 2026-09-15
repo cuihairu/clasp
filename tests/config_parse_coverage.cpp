@@ -36,6 +36,22 @@ void expect(bool cond, const char* label) {
     if (!cond) ++g_failures;
 }
 
+// "/tmp" is POSIX-only (current_path("/tmp") throws on Windows); resolve
+// fixture paths against the platform temp directory instead.
+const std::string& tmpDir() {
+    static const std::string dir = [] {
+        std::error_code ec;
+        std::filesystem::path p = std::filesystem::temp_directory_path(ec);
+        if (ec) p = std::filesystem::current_path(ec);
+        return p.string();
+    }();
+    return dir;
+}
+
+std::string tmpPath(const std::string& name) {
+    return (std::filesystem::path(tmpDir()) / name).string();
+}
+
 void writeTextFile(const std::string& path, const std::string& content) {
     std::ofstream f(path, std::ios::binary);
     f << content;
@@ -102,7 +118,7 @@ void testEnvLikeParsing() {
     std::string errText;
     // Comments, key-less lines, quoted/mismatched/short values.
     const int rc = loadConfigContent(
-        "/tmp/cpc_env.env",
+        tmpPath("cpc_env.env"),
         "# full line comment\n"
         "justtext\n"
         "s=x\n"
@@ -115,7 +131,7 @@ void testEnvLikeParsing() {
     expect(g_capture.find("sv=[double quoted]") != std::string::npos, "env: double-quoted value unquoted");
 
     // Unquoted value arrives trimmed.
-    const int rc2 = loadConfigContent("/tmp/cpc_env2.env", "sv= spaced out \n");
+    const int rc2 = loadConfigContent(tmpPath("cpc_env2.env"), "sv= spaced out \n");
     expect(rc2 == 0, "env: unquoted value accepted");
     expect(g_capture.find("sv=[spaced out]") != std::string::npos, "env: unquoted value trimmed");
 
@@ -166,7 +182,7 @@ void testJsonBranchMatrix() {
     };
     for (const auto& c : cases) {
         std::string errText;
-        const int rc = loadConfigContent("/tmp/cpc_json.json", c.content, &errText);
+        const int rc = loadConfigContent(tmpPath("cpc_json.json"), c.content, &errText);
         expect((rc == 0) == c.ok, c.label);
         if (!c.ok) {
             expect(errText.find("failed to parse json config file") != std::string::npos,
@@ -177,10 +193,10 @@ void testJsonBranchMatrix() {
     {
         std::ostringstream out, err;
         auto root = makeCfgRoot(out, err, true);
-        writeTextFile("/tmp/cpc_json2.json", "{\"outer\": {\"sv\": \"nested\"}}");
+        writeTextFile(tmpPath("cpc_json2.json"), "{\"outer\": {\"sv\": \"nested\"}}");
         g_capture.clear();
-        const int rc = runArgs(root, {"--config", "/tmp/cpc_json2.json"});
-        std::remove("/tmp/cpc_json2.json");
+        const int rc = runArgs(root, {"--config", tmpPath("cpc_json2.json")});
+        std::remove(tmpPath("cpc_json2.json").c_str());
         expect(rc == 0, "json: nested key load ok");
         expect(g_capture.find("outer=[nested]") != std::string::npos, "json: nested scalar value applied");
     }
@@ -191,7 +207,7 @@ void testJsonBranchMatrix() {
 void testTomlBranchMatrix() {
     std::string errText;
     const int rc = loadConfigContent(
-        "/tmp/cpc_toml.toml",
+        tmpPath("cpc_toml.toml"),
         "# whole line comment\n"
         "justtext\n"
         "= 5\n"
@@ -221,15 +237,15 @@ void testTomlBranchMatrix() {
     expect(errText.empty(), "toml: no error text");
 
     // Unclosed table header fails the whole file.
-    const int rc2 = loadConfigContent("/tmp/cpc_toml_bad.toml", "[no-close\nsv = 1\n");
+    const int rc2 = loadConfigContent(tmpPath("cpc_toml_bad.toml"), "[no-close\nsv = 1\n");
     expect(rc2 != 0, "toml: unclosed table header rejected");
 
     std::ostringstream out, err;
     auto root = makeCfgRoot(out, err, true);
-    writeTextFile("/tmp/cpc_toml_arr.toml", "items = [\"x\", 'y']\n");
+    writeTextFile(tmpPath("cpc_toml_arr.toml"), "items = [\"x\", 'y']\n");
     g_capture.clear();
-    const int rc3 = runArgs(root, {"--config", "/tmp/cpc_toml_arr.toml"});
-    std::remove("/tmp/cpc_toml_arr.toml");
+    const int rc3 = runArgs(root, {"--config", tmpPath("cpc_toml_arr.toml")});
+    std::remove(tmpPath("cpc_toml_arr.toml").c_str());
     expect(rc3 == 0, "toml: quoted array load ok");
     expect(g_capture.find("items=|x|y") != std::string::npos, "toml: array values bound as multi");
 }
@@ -239,7 +255,7 @@ void testTomlBranchMatrix() {
 void testIniBranchMatrix() {
     std::string errText;
     const int rc = loadConfigContent(
-        "/tmp/cpc_a.ini",
+        tmpPath("cpc_a.ini"),
         "justtext\n"
         "= nokey\n"
         "; semi comment\n"
@@ -267,7 +283,7 @@ void testIniBranchMatrix() {
 void testYamlBranchMatrix() {
     std::string errText;
     const int rc = loadConfigContent(
-        "/tmp/cpc_a.yml",
+        tmpPath("cpc_a.yml"),
         "sv: plain\n"
         "sq: 'single'\n"
         "dq: \"double\"\n"
@@ -303,7 +319,7 @@ void testYamlBranchMatrix() {
     expect(errText.empty(), "yaml: no error text");
 
     // .yaml extension dispatches too.
-    const int rc2 = loadConfigContent("/tmp/cpc_b.yaml", "sv: yamlfile\n");
+    const int rc2 = loadConfigContent(tmpPath("cpc_b.yaml"), "sv: yamlfile\n");
     expect(rc2 == 0, "yaml: .yaml extension dispatches");
     expect(g_capture.find("sv=[yamlfile]") != std::string::npos, "yaml: .yaml value applied");
 }
@@ -312,33 +328,33 @@ void testYamlBranchMatrix() {
 
 void testExtensionDispatchAndPaths() {
     // .cfg and .env extensions route to their parsers.
-    const int rcCfg = loadConfigContent("/tmp/cpc_b.cfg", "sv=cfgval\n");
+    const int rcCfg = loadConfigContent(tmpPath("cpc_b.cfg"), "sv=cfgval\n");
     expect(rcCfg == 0, "dispatch: .cfg extension routes to ini parser");
     expect(g_capture.find("sv=[cfgval]") != std::string::npos, "dispatch: .cfg value applied");
 
-    const int rcEnv = loadConfigContent("/tmp/cpc_b.env", "sv=envval\n");
+    const int rcEnv = loadConfigContent(tmpPath("cpc_b.env"), "sv=envval\n");
     expect(rcEnv == 0, "dispatch: .env extension routes to env parser");
     expect(g_capture.find("sv=[envval]") != std::string::npos, "dispatch: .env value applied");
 
     // Unsupported extension and unreadable file produce errors.
     std::string errText;
-    const int rcTxt = loadConfigContent("/tmp/cpc_b.txt", "sv=x\n", &errText);
+    const int rcTxt = loadConfigContent(tmpPath("cpc_b.txt"), "sv=x\n", &errText);
     expect(rcTxt != 0, "dispatch: unsupported extension rejected");
     expect(errText.find("unsupported config file format") != std::string::npos,
            "dispatch: unsupported extension error text");
 
     std::ostringstream out, err;
     auto root = makeCfgRoot(out, err, true);
-    const int rcMissing = runArgs(root, {"--config", "/tmp/cpc_definitely_missing.json"});
+    const int rcMissing = runArgs(root, {"--config", tmpPath("cpc_definitely_missing.json")});
     expect(rcMissing != 0, "dispatch: missing config file rejected");
 
     // Fixed path (no flag): configPathDefault branch.
-    writeTextFile("/tmp/cpc_fixed.json", "{\"sv\": \"fixed\"}");
+    writeTextFile(tmpPath("cpc_fixed.json"), "{\"sv\": \"fixed\"}");
     clasp::Command root2("app", "fixed path");
     root2.setOut(out);
     root2.setErr(err);
     root2.withFlag("--sv", "", "sv", "S", std::string(""));
-    root2.configFile("/tmp/cpc_fixed.json");
+    root2.configFile(tmpPath("cpc_fixed.json"));
     root2.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
         g_capture = "sv=[" + p.getFlag<std::string>("--sv", "") + "]";
         return 0;
@@ -347,21 +363,21 @@ void testExtensionDispatchAndPaths() {
     const int rcFixed = runArgs(root2, {});
     expect(rcFixed == 0, "dispatch: fixed config path loads without flag");
     expect(g_capture.find("sv=[fixed]") != std::string::npos, "dispatch: fixed path value applied");
-    std::remove("/tmp/cpc_fixed.json");
+    std::remove(tmpPath("cpc_fixed.json").c_str());
 
     // Child overrides parent default path; both loop-guard sides exercised.
-    writeTextFile("/tmp/cpc_parent.json", "{\"sv\": \"parent\"}");
-    writeTextFile("/tmp/cpc_child.json", "{\"sv\": \"child\"}");
+    writeTextFile(tmpPath("cpc_parent.json"), "{\"sv\": \"parent\"}");
+    writeTextFile(tmpPath("cpc_child.json"), "{\"sv\": \"child\"}");
     clasp::Command root3("app", "parent");
     root3.setOut(out);
     root3.setErr(err);
-    root3.configFile("/tmp/cpc_parent.json");
+    root3.configFile(tmpPath("cpc_parent.json"));
     clasp::Command sub("sub", "sub");
     sub.setOut(out);
     sub.setErr(err);
     sub.withFlag("--config", "", "cfg", "Config file", std::string(""));
     sub.withFlag("--sv", "", "sv", "S", std::string(""));
-    sub.configFile("/tmp/cpc_child.json");
+    sub.configFile(tmpPath("cpc_child.json"));
     sub.configFileFlag("--config");
     sub.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
         g_capture = "sv=[" + p.getFlag<std::string>("--sv", "") + "]";
@@ -369,7 +385,7 @@ void testExtensionDispatchAndPaths() {
     });
     root3.addCommand(std::move(sub));
     g_capture.clear();
-    const int rcSub = runArgs(root3, {"sub", "--config", "/tmp/cpc_child.json"});
+    const int rcSub = runArgs(root3, {"sub", "--config", tmpPath("cpc_child.json")});
     expect(rcSub == 0, "dispatch: subcommand config load ok");
     expect(g_capture.find("sv=[child]") != std::string::npos, "dispatch: config flag beats fixed path");
 }
@@ -378,15 +394,15 @@ void testExtensionDispatchAndPaths() {
 
 void testMultiMappingAndEnvOverrides() {
     // Unknown multi key is dropped; known multi key with invalid scalar fails.
-    const int rcUnknown = loadConfigContent("/tmp/cpc_multi1.json", "{\"items\": [1, 2], \"unknownkey\": [1]}");
+    const int rcUnknown = loadConfigContent(tmpPath("cpc_multi1.json"), "{\"items\": [1, 2], \"unknownkey\": [1]}");
     expect(rcUnknown == 0, "multi: unknown key dropped without error");
 
     std::string errText;
-    const int rcBad = loadConfigContent("/tmp/cpc_multi2.json", "{\"num\": [1, \"abc\"]}", &errText);
+    const int rcBad = loadConfigContent(tmpPath("cpc_multi2.json"), "{\"num\": [1, \"abc\"]}", &errText);
     expect(rcBad != 0, "multi: invalid scalar value rejected");
     expect(!errText.empty(), "multi: rejection carries error text");
 
-    const int rcInts = loadConfigContent("/tmp/cpc_multi3.json", "{\"num\": [1, 2], \"items\": [\"a\"]}");
+    const int rcInts = loadConfigContent(tmpPath("cpc_multi3.json"), "{\"num\": [1, 2], \"items\": [\"a\"]}");
     expect(rcInts == 0, "multi: valid integer array accepted");
 
     // Env bindings override config scalars and erase config multi values.
@@ -399,10 +415,10 @@ void testMultiMappingAndEnvOverrides() {
     root.bindEnv("--num", "CPC_EMPTY");
     root.bindEnv("--noenvname", "");
     root.bindEnv("--items", "CPC_ITEMS");
-    writeTextFile("/tmp/cpc_envov.json", "{\"items\": [\"a\", \"b\"], \"sv\": \"cfg\", \"num\": 7}");
+    writeTextFile(tmpPath("cpc_envov.json"), "{\"items\": [\"a\", \"b\"], \"sv\": \"cfg\", \"num\": 7}");
     g_capture.clear();
-    const int rc = runArgs(root, {"--config", "/tmp/cpc_envov.json"});
-    std::remove("/tmp/cpc_envov.json");
+    const int rc = runArgs(root, {"--config", tmpPath("cpc_envov.json")});
+    std::remove(tmpPath("cpc_envov.json").c_str());
     expect(rc == 0, "env: override matrix load ok");
     expect(g_capture.find("sv=[fromenv]") != std::string::npos, "env: env value beats config value");
     expect(g_capture.find("items=|x") != std::string::npos && g_capture.find("|a") == std::string::npos,
@@ -422,7 +438,7 @@ void testTomlValueShapes() {
     // double-quoted escapes incl. one past-the-end backslash and unknown \g;
     // single-quoted raw; bare word; plain double-quoted (no escapes).
     const int rc = loadConfigContent(
-        "/tmp/cpc_shapes.toml",
+        tmpPath("cpc_shapes.toml"),
         "esc = \"a\\nb\\tc\\rd\\\\e\\\"f\\g\"\n"
         "escend = \"tail\\\"\n"
         "plain = \"simple\"\n"
@@ -438,7 +454,7 @@ void testTomlValueShapes() {
     // Arrays: padded spaces, trailing comma, empty array, single element,
     // quoted mix, and the same shapes nested under a table header.
     const int rc2 = loadConfigContent(
-        "/tmp/cpc_shapes2.toml",
+        tmpPath("cpc_shapes2.toml"),
         "items = [ 1 , 2 ]\n"
         "items = [4, ]\n"
         "items = []\n"
@@ -458,13 +474,13 @@ void testTomlValueShapes() {
 void testIniYamlTopLevelKeys() {
     std::string errText;
     // INI keys before any [section] header: sectionPrefix stays empty.
-    const int rc = loadConfigContent("/tmp/cpc_top.ini", "sv = topINI\n", &errText);
+    const int rc = loadConfigContent(tmpPath("cpc_top.ini"), "sv = topINI\n", &errText);
     expect(rc == 0, "ini top-level: load ok");
     expect(g_capture.find("sv=[topINI]") != std::string::npos, "ini top-level: key applied");
 
     // YAML nested mapping: fullKey accumulates the stack frames (dotted).
     const int rc2 = loadConfigContent(
-        "/tmp/cpc_nested.yml",
+        tmpPath("cpc_nested.yml"),
         "sec:\n"
         "  sv: fromsec\n"
         "sv: plain\n",
@@ -477,8 +493,9 @@ void testIniYamlTopLevelKeys() {
 } // namespace
 
 int main() {
-    // Keep the short relative fixture used by the extension tests inside /tmp.
-    std::filesystem::current_path("/tmp");
+    // Keep the short relative fixture used by the extension tests inside a
+    // writable temp directory ("/tmp" does not exist on Windows).
+    std::filesystem::current_path(tmpDir());
 
     testEnvLikeParsing();
     testJsonBranchMatrix();

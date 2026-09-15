@@ -1709,7 +1709,9 @@ add_executable(config_parse_coverage_test tests/config_parse_coverage.cpp)
 target_link_libraries(config_parse_coverage_test PRIVATE clasp)
 
 add_test(NAME config_parse_run COMMAND config_parse_coverage_test)
-set_tests_properties(config_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+# Explicit bound: MSVC Debug should stay within seconds; a runaway test must
+# fail fast instead of eating the CTest default 1500s per test.
+set_tests_properties(config_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail" TIMEOUT 600)
 
 # --- Branch coverage: completion internals ---
 
@@ -1717,7 +1719,7 @@ add_executable(completion_coverage_test tests/completion_coverage.cpp)
 target_link_libraries(completion_coverage_test PRIVATE clasp)
 
 add_test(NAME completion_coverage_run COMMAND completion_coverage_test)
-set_tests_properties(completion_coverage_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+set_tests_properties(completion_coverage_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail" TIMEOUT 600)
 
 # --- Branch coverage: help/color rendering and setter fallbacks ---
 
