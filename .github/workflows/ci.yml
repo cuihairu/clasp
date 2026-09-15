@@ -54,19 +54,36 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       # CTest discards partial output of timed-out tests, so a hang leaves no
-      # trace. Run the two known offenders directly (timeout kills at 120s) to
-      # capture whatever they printed before hanging.
+      # trace. Run the offender directly, capture its live process state and a
+      # minidump after 45s, then unwind every thread's stack with cdb.
       - name: Diagnose hung tests
         if: failure() && runner.os == 'Windows'
-        shell: bash
+        shell: pwsh
         run: |
-          for t in config_parse_coverage_test completion_coverage_test; do
-            bin="build/$t.exe"
-            [ -f "$bin" ] || bin="build/$t"
-            timeout 120 "$bin" > "diag_$t.log" 2>&1
-            echo "== $t exit=$? =="
-            tail -30 "diag_$t.log"
-          done
+          $exe = "build\completion_coverage_test.exe"
+          if (-not (Test-Path $exe)) { $exe = "build\completion_coverage_test" }
+          $p = Start-Process -FilePath $exe -RedirectStandardOutput diag_completion.log -RedirectStandardError diag_completion.err -PassThru
+          Start-Sleep -Seconds 45
+          try {
+            $proc = Get-Process -Id $p.Id -ErrorAction Stop
+            "alive=yes cpu=$([math]::Round($proc.CPU,1))s mem=$([math]::Round($proc.WorkingSet64/1MB))MB"
+            $proc.Threads | ForEach-Object {
+              $top = try { $_.Frames.Count } catch { '?' }
+              "thread $($_.Id) state=$($_.ThreadState) wait=$($_.WaitReason) frames=$top"
+            }
+            $dump = "$env:RUNNER_TEMP\hang.dmp"
+            rundll32 comsvcs.dll,MiniDump $($p.Id) $dump full 2>$null
+            if (Test-Path $dump) { "dump: $([math]::Round((Get-Item $dump).Length/1MB))MB -> $dump" }
+            $cdb = "${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64\cdb.exe"
+            if ((Test-Path $cdb) -and (Test-Path $dump)) {
+              & $cdb -z $dump -c "~*kv 40; qd"
+            } else { "cdb present: $(Test-Path $cdb)" }
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          } catch { "process exited early: $_" }
+          "--- stdout ($((Get-Item diag_completion.log).Length) bytes) ---"
+          Get-Content diag_completion.log -Tail 20
+          "--- stderr ($((Get-Item diag_completion.err).Length) bytes) ---"
+          Get-Content diag_completion.err -Tail 20
 
   coverage:
     name: Coverage (Codecov)
