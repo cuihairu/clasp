@@ -1424,6 +1424,21 @@ private:
         return {};
     }
 
+    // Nearest actual root at runtime. Actions installed by enableCompletion()
+    // must resolve their tree through this instead of a captured `this`: the
+    // Command that installed them may have been moved (factory return) and no
+    // longer be the object the subcommands live in.
+    Command* rootCommand() {
+        Command* c = this;
+        while (c->parent_) c = c->parent_;
+        return c;
+    }
+    const Command* rootCommand() const {
+        const Command* c = this;
+        while (c->parent_) c = c->parent_;
+        return c;
+    }
+
     const std::string* resolvedVersionTemplate() const {
         for (auto* c = this; c; c = c->parent_) {
             if (c->versionTemplateOverride_.has_value()) return &(*c->versionTemplateOverride_);
@@ -4099,22 +4114,22 @@ inline Command& Command::enableCompletion(CompletionConfig cfg) {
             if (args.size() == 1) return std::nullopt;
             return std::string("accepts 1 arg(s)");
         });
-        completionCmd.action([this](Command& cmd, const Parser&, const std::vector<std::string>& args) {
+        completionCmd.action([](Command& cmd, const Parser&, const std::vector<std::string>& args) {
             const auto& shell = args[0];
             if (shell == "bash") {
-                this->printCompletionBash(cmd.outOrStdout());
+                cmd.rootCommand()->printCompletionBash(cmd.outOrStdout());
                 return 0;
             }
             if (shell == "zsh") {
-                this->printCompletionZsh(cmd.outOrStdout());
+                cmd.rootCommand()->printCompletionZsh(cmd.outOrStdout());
                 return 0;
             }
             if (shell == "fish") {
-                this->printCompletionFish(cmd.outOrStdout());
+                cmd.rootCommand()->printCompletionFish(cmd.outOrStdout());
                 return 0;
             }
             if (shell == "powershell") {
-                this->printCompletionPowerShell(cmd.outOrStdout());
+                cmd.rootCommand()->printCompletionPowerShell(cmd.outOrStdout());
                 return 0;
             }
             cmd.errOrStderr() << "unknown shell: " << shell << "\n";
@@ -4128,7 +4143,7 @@ inline Command& Command::enableCompletion(CompletionConfig cfg) {
         Command completeCmd(std::move(name), "Internal completion command");
         completeCmd.hidden(true);
         completeCmd.disableFlagParsing(true);
-        completeCmd.action([this, withDescriptions](Command& cmd, const Parser&, const std::vector<std::string>& args) {
+        completeCmd.action([withDescriptions](Command& cmd, const Parser&, const std::vector<std::string>& args) {
             std::vector<std::string> words;
             std::string toComplete;
             if (!args.empty()) {
@@ -4136,7 +4151,7 @@ inline Command& Command::enableCompletion(CompletionConfig cfg) {
                 toComplete = args.back();
             }
 
-            const auto items = this->completeWords(words, toComplete, withDescriptions);
+            const auto items = cmd.rootCommand()->completeWords(words, toComplete, withDescriptions);
             for (const auto& it : items) {
                 if (!it.description.empty()) cmd.outOrStdout() << it.value << "\t" << it.description << "\n";
                 else cmd.outOrStdout() << it.value << "\n";
