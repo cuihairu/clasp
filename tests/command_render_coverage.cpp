@@ -116,7 +116,14 @@ struct TestContext {
 
 // noinline + runtime flag: the optimizer must not prove which context type a
 // command holds, so every dynamic_cast inside contextAs stays instrumented.
-__attribute__((noinline)) void installContext(clasp::Command& c, bool testCtx, bool withAny) {
+#if defined(_MSC_VER)
+#define CLASP_TEST_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__)
+#define CLASP_TEST_NOINLINE __attribute__((noinline))
+#else
+#define CLASP_TEST_NOINLINE
+#endif
+CLASP_TEST_NOINLINE void installContext(clasp::Command& c, bool testCtx, bool withAny) {
     if (!withAny) return;
     if (testCtx) {
         c.setContext(TestContext{5});
