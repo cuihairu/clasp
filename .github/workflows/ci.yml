@@ -93,7 +93,8 @@ jobs:
           lcov --capture --directory build --output-file coverage_raw.info \
             --rc branch_coverage=1 \
             --rc geninfo_unexecuted_blocks=1 \
-            --ignore-errors mismatch
+            --ignore-errors mismatch \
+            --ignore-errors negative
           lcov --extract coverage_raw.info '*/include/*' '*/src/*' --output-file coverage_filtered.info \
             --rc branch_coverage=1 \
             --ignore-errors unused

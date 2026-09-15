@@ -14,6 +14,23 @@ namespace {
 int g_failures = 0;
 std::string g_capture;
 
+// MSVC has no setenv/unsetenv (POSIX); _putenv_s with an empty value deletes.
+void setEnvVar(const char* name, const char* value) {
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
+    ::setenv(name, value, 1);
+#endif
+}
+
+void unsetEnvVar(const char* name) {
+#ifdef _WIN32
+    _putenv_s(name, "");
+#else
+    ::unsetenv(name);
+#endif
+}
+
 void expect(bool cond, const char* label) {
     std::cout << label << ": " << (cond ? "ok" : "fail") << std::endl;
     if (!cond) ++g_failures;
@@ -373,9 +390,9 @@ void testMultiMappingAndEnvOverrides() {
     expect(rcInts == 0, "multi: valid integer array accepted");
 
     // Env bindings override config scalars and erase config multi values.
-    ::setenv("CPC_SV", "fromenv", 1);
-    ::setenv("CPC_EMPTY", "", 1);
-    ::setenv("CPC_ITEMS", "x", 1);
+    setEnvVar("CPC_SV", "fromenv");
+    setEnvVar("CPC_EMPTY", "");
+    setEnvVar("CPC_ITEMS", "x");
     std::ostringstream out, err;
     auto root = makeCfgRoot(out, err, true);
     root.bindEnv("--sv", "CPC_SV");
@@ -390,9 +407,9 @@ void testMultiMappingAndEnvOverrides() {
     expect(g_capture.find("sv=[fromenv]") != std::string::npos, "env: env value beats config value");
     expect(g_capture.find("items=|x") != std::string::npos && g_capture.find("|a") == std::string::npos,
            "env: env binding erases config multi");
-    ::unsetenv("CPC_SV");
-    ::unsetenv("CPC_EMPTY");
-    ::unsetenv("CPC_ITEMS");
+    unsetEnvVar("CPC_SV");
+    unsetEnvVar("CPC_EMPTY");
+    unsetEnvVar("CPC_ITEMS");
 }
 
 // --- Remaining TOML value-shape branches -------------------------------------
