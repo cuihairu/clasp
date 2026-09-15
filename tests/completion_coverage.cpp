@@ -6,6 +6,15 @@
 #include <vector>
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include <crtdbg.h>
+
+// Debug-CRT violations that skip _CrtDbgReport still funnel through the
+// invalid-parameter handler; print the details so the ctest log shows them.
+void claspReportInvalidParameter(const wchar_t* expr, const wchar_t* func,
+                                 const wchar_t* file, unsigned line, uintptr_t) {
+    std::fwprintf(stderr, L"INVALID_PARAMETER expr=%ls func=%ls file=%ls line=%u\n",
+                  expr ? expr : L"?", func ? func : L"?", file ? file : L"?", line);
+    std::fflush(stderr);
+}
 #endif
 
 #include "clasp/command.hpp"
@@ -1160,6 +1169,7 @@ int main() {
     _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
     _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+    _set_invalid_parameter_handler(claspReportInvalidParameter);
 #endif
     expect(true, "scaffold");
     testResolvedCompletionConfigFallback();
