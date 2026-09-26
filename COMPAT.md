@@ -34,7 +34,7 @@ These are treated as compatibility commitments; changes should include an exampl
 - **Completion**: bash/zsh/fish/powershell script generation, `__complete` callbacks, directives (keep-order, no-file-comp, file-ext, dirs).
 - **External sources merge**: precedence `flag > env > config > default` for declared bindings.
 
-## Feature Inventory (Cobra → Clasp)
+## Feature Inventory (Cobra [Clasp]
 
 This section is a practical mapping from commonly used Cobra/pflag concepts to Clasp API and examples.
 
