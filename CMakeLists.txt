@@ -1041,6 +1041,12 @@ set_tests_properties(pflag_types2_base64_empty PROPERTIES PASS_REGULAR_EXPRESSIO
 add_test(NAME pflag_types2_base64_invalid COMMAND pflag_types2_example show --blob xx)
 set_tests_properties(pflag_types2_base64_invalid PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "xx" for "--blob"]==])
 
+add_test(NAME pflag_types2_base64_double_pad COMMAND pflag_types2_example show --blob ab==)
+set_tests_properties(pflag_types2_base64_double_pad PROPERTIES PASS_REGULAR_EXPRESSION "blob=105")
+
+add_test(NAME pflag_types2_base64_alphabet_symbols COMMAND pflag_types2_example show --blob ab+/)
+set_tests_properties(pflag_types2_base64_alphabet_symbols PROPERTIES PASS_REGULAR_EXPRESSION "blob=105\\|191\\|191")
+
 add_test(NAME pflag_types2_string_to_float COMMAND pflag_types2_example show --ratios a=1.5,b=2.5)
 set_tests_properties(pflag_types2_string_to_float PROPERTIES PASS_REGULAR_EXPRESSION "ratios=a=1\\.500000\\|b=2\\.500000")
 
