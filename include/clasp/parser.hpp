@@ -493,6 +493,44 @@ public:
         return out;
     }
 
+    std::unordered_map<std::string, float> getStringToFloat(const std::string& flag, char entrySep = ',', char kvSep = '=') const {
+        std::unordered_map<std::string, float> out;
+        for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
+            out[k] = parse<float>(v, 0.0f);
+        }
+        return out;
+    }
+
+    // --- Narrow-width integer getters (pflag int8/uint8/int16/uint16/int32/uint parity) ---
+
+    std::int8_t getInt8(const std::string& flag, std::int8_t defaultValue = 0) const { return getFlag<std::int8_t>(flag, defaultValue); }
+    std::int16_t getInt16(const std::string& flag, std::int16_t defaultValue = 0) const { return getFlag<std::int16_t>(flag, defaultValue); }
+    std::uint8_t getUint8(const std::string& flag, std::uint8_t defaultValue = 0) const { return getFlag<std::uint8_t>(flag, defaultValue); }
+    std::uint16_t getUint16(const std::string& flag, std::uint16_t defaultValue = 0) const { return getFlag<std::uint16_t>(flag, defaultValue); }
+    std::int32_t getInt32(const std::string& flag, std::int32_t defaultValue = 0) const { return getFlag<std::int32_t>(flag, defaultValue); }
+    std::size_t getUint(const std::string& flag, std::size_t defaultValue = 0) const { return getFlag<std::size_t>(flag, defaultValue); }
+
+    std::vector<std::int8_t> getInt8Slice(const std::string& flag, char sep = ',') const { return getSlice<std::int8_t>(flag, sep); }
+    std::vector<std::int16_t> getInt16Slice(const std::string& flag, char sep = ',') const { return getSlice<std::int16_t>(flag, sep); }
+    std::vector<std::uint8_t> getUint8Slice(const std::string& flag, char sep = ',') const { return getSlice<std::uint8_t>(flag, sep); }
+    std::vector<std::uint16_t> getUint16Slice(const std::string& flag, char sep = ',') const { return getSlice<std::uint16_t>(flag, sep); }
+
+    std::vector<std::int8_t> getInt8Array(const std::string& flag) const { return getArray<std::int8_t>(flag); }
+    std::vector<std::int16_t> getInt16Array(const std::string& flag) const { return getArray<std::int16_t>(flag); }
+    std::vector<std::uint8_t> getUint8Array(const std::string& flag) const { return getArray<std::uint8_t>(flag); }
+    std::vector<std::uint16_t> getUint16Array(const std::string& flag) const { return getArray<std::uint16_t>(flag); }
+
+    // pflag IPSlice parity: canonical IP per element, comma-split per occurrence.
+    std::vector<std::string> getIPSlice(const std::string& flag, char sep = ',') const { return getFlagValuesSplit(flag, sep); }
+
+    // pflag bytesBase64 parity: decoded bytes of the stored (canonical) base64 value.
+    std::vector<unsigned char> getBytesBase64(const std::string& flag) const {
+        const auto raw = getFlag<std::string>(flag, std::string());
+        std::vector<unsigned char> out;
+        detail::tryDecodeBase64(raw, out);
+        return out;
+    }
+
     const std::vector<std::string>& positionals() const { return positionals_; }
 
     bool ok() const { return ok_; }
@@ -1070,6 +1108,20 @@ private:
         return true;
     }
 
+    // Split on `sep`, dropping empty parts (same semantics as getFlagValuesSplit).
+    static std::vector<std::string> splitCsvParts(const std::string& v, char sep) {
+        std::vector<std::string> out;
+        std::size_t start = 0;
+        while (start <= v.size()) {
+            const auto pos = v.find(sep, start);
+            const auto part = (pos == std::string::npos) ? v.substr(start) : v.substr(start, pos - start);
+            if (!part.empty()) out.push_back(part);
+            if (pos == std::string::npos) break;
+            start = pos + 1;
+        }
+        return out;
+    }
+
     bool normalizeValue(const std::string& key, std::string& value, Kind kind) {
         if (!ok_) return false;
         const std::string original = value;
@@ -1096,6 +1148,25 @@ private:
                 std::string canon;
                 valid = tryParseURL(value, canon);
                 if (valid) value = std::move(canon);
+            } else if (ipSliceKeys_.find(key) != ipSliceKeys_.end()) {
+                // pflag IPSlice reads CSV: validate/canonicalize each element.
+                const auto parts = splitCsvParts(value, ',');
+                std::string rejoined;
+                for (const auto& partRaw : parts) {
+                    std::string canon;
+                    if (!tryParseIP(partRaw, canon)) {
+                        valid = false;
+                        break;
+                    }
+                    if (!rejoined.empty()) rejoined.push_back(',');
+                    rejoined += canon;
+                }
+                if (valid) value = std::move(rejoined);
+            } else if (bytesBase64Keys_.find(key) != bytesBase64Keys_.end()) {
+                // pflag bytesBase64: decode strictly, keep the canonical re-encoding.
+                std::vector<unsigned char> decoded;
+                valid = detail::tryDecodeBase64(value, decoded);
+                if (valid) value = detail::encodeBase64(decoded);
             } else {
                 valid = true;
             }
@@ -1107,8 +1178,26 @@ private:
             break;
         }
         case Kind::Int: {
-            int parsed{};
-            valid = detail::tryParseSignedInt<int>(value, parsed);
+            // Narrow pflag widths validate against their own range; plain int falls through.
+            if (int8Keys_.find(key) != int8Keys_.end()) {
+                std::int8_t parsed{};
+                valid = detail::tryParseSignedInt<std::int8_t>(value, parsed);
+            } else if (int16Keys_.find(key) != int16Keys_.end()) {
+                std::int16_t parsed{};
+                valid = detail::tryParseSignedInt<std::int16_t>(value, parsed);
+            } else if (int32Keys_.find(key) != int32Keys_.end()) {
+                std::int32_t parsed{};
+                valid = detail::tryParseSignedInt<std::int32_t>(value, parsed);
+            } else if (uint8Keys_.find(key) != uint8Keys_.end()) {
+                std::uint8_t parsed{};
+                valid = detail::tryParseUnsignedInt<std::uint8_t>(value, parsed);
+            } else if (uint16Keys_.find(key) != uint16Keys_.end()) {
+                std::uint16_t parsed{};
+                valid = detail::tryParseUnsignedInt<std::uint16_t>(value, parsed);
+            } else {
+                int parsed{};
+                valid = detail::tryParseSignedInt<int>(value, parsed);
+            }
             break;
         }
         case Kind::Int64: {
@@ -1126,6 +1215,10 @@ private:
             if (bytesKeys_.find(key) != bytesKeys_.end()) {
                 valid = tryParseBytes(value, parsed);
                 if (valid) value = std::to_string(parsed);
+            } else if (uintKeys_.find(key) != uintKeys_.end()) {
+                // Go `uint` is platform-word-sized; validate against size_t width.
+                std::size_t wordParsed{};
+                valid = detail::tryParseUnsignedInt<std::size_t>(value, wordParsed);
             } else {
                 valid = detail::tryParseUnsignedInt<std::uint64_t>(value, parsed);
             }
@@ -1211,6 +1304,38 @@ private:
             const auto urlIt = f.annotations().find("url");
             if (urlIt != f.annotations().end() && isTruthyAnnotation(urlIt->second)) {
                 urlKeys_.insert(f.longName());
+            }
+            const auto int8It = f.annotations().find("int8");
+            if (int8It != f.annotations().end() && isTruthyAnnotation(int8It->second)) {
+                int8Keys_.insert(f.longName());
+            }
+            const auto int16It = f.annotations().find("int16");
+            if (int16It != f.annotations().end() && isTruthyAnnotation(int16It->second)) {
+                int16Keys_.insert(f.longName());
+            }
+            const auto int32It = f.annotations().find("int32");
+            if (int32It != f.annotations().end() && isTruthyAnnotation(int32It->second)) {
+                int32Keys_.insert(f.longName());
+            }
+            const auto uint8It = f.annotations().find("uint8");
+            if (uint8It != f.annotations().end() && isTruthyAnnotation(uint8It->second)) {
+                uint8Keys_.insert(f.longName());
+            }
+            const auto uint16It = f.annotations().find("uint16");
+            if (uint16It != f.annotations().end() && isTruthyAnnotation(uint16It->second)) {
+                uint16Keys_.insert(f.longName());
+            }
+            const auto uintIt = f.annotations().find("uint");
+            if (uintIt != f.annotations().end() && isTruthyAnnotation(uintIt->second)) {
+                uintKeys_.insert(f.longName());
+            }
+            const auto ipSliceIt = f.annotations().find("ipslice");
+            if (ipSliceIt != f.annotations().end() && isTruthyAnnotation(ipSliceIt->second)) {
+                ipSliceKeys_.insert(f.longName());
+            }
+            const auto bytesBase64It = f.annotations().find("bytesbase64");
+            if (bytesBase64It != f.annotations().end() && isTruthyAnnotation(bytesBase64It->second)) {
+                bytesBase64Keys_.insert(f.longName());
             }
             knownKeys_.push_back(f.longName());
         }
@@ -1327,6 +1452,14 @@ private:
     std::unordered_set<std::string> cidrKeys_;
     std::unordered_set<std::string> ipNetKeys_;
     std::unordered_set<std::string> urlKeys_;
+    std::unordered_set<std::string> int8Keys_;
+    std::unordered_set<std::string> int16Keys_;
+    std::unordered_set<std::string> int32Keys_;
+    std::unordered_set<std::string> uint8Keys_;
+    std::unordered_set<std::string> uint16Keys_;
+    std::unordered_set<std::string> uintKeys_;
+    std::unordered_set<std::string> ipSliceKeys_;
+    std::unordered_set<std::string> bytesBase64Keys_;
     std::vector<std::string> knownKeys_;
     std::vector<std::string> positionals_;
     bool ok_{true};

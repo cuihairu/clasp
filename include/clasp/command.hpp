@@ -487,6 +487,122 @@ public:
         return *this;
     }
 
+    // pflag-like narrow-width int flags: stored as int, range-validated per width at parse time.
+    Command& withInt8Flag(std::string longName,
+                          std::string shortName,
+                          std::string varName,
+                          std::string description,
+                          int defaultValue = 0) {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            defaultValue);
+        flags_.back().setAnnotation("int8", "true");
+        return *this;
+    }
+
+    Command& withInt16Flag(std::string longName,
+                           std::string shortName,
+                           std::string varName,
+                           std::string description,
+                           int defaultValue = 0) {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            defaultValue);
+        flags_.back().setAnnotation("int16", "true");
+        return *this;
+    }
+
+    Command& withInt32Flag(std::string longName,
+                           std::string shortName,
+                           std::string varName,
+                           std::string description,
+                           int defaultValue = 0) {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            defaultValue);
+        flags_.back().setAnnotation("int32", "true");
+        return *this;
+    }
+
+    Command& withUint8Flag(std::string longName,
+                           std::string shortName,
+                           std::string varName,
+                           std::string description,
+                           int defaultValue = 0) {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            defaultValue);
+        flags_.back().setAnnotation("uint8", "true");
+        return *this;
+    }
+
+    Command& withUint16Flag(std::string longName,
+                            std::string shortName,
+                            std::string varName,
+                            std::string description,
+                            int defaultValue = 0) {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            defaultValue);
+        flags_.back().setAnnotation("uint16", "true");
+        return *this;
+    }
+
+    // pflag-like `uint`: platform-word-sized unsigned (validated against size_t), stored as uint64.
+    Command& withUintFlag(std::string longName,
+                          std::string shortName,
+                          std::string varName,
+                          std::string description,
+                          std::uint64_t defaultValue = 0) {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            defaultValue);
+        flags_.back().setAnnotation("uint", "true");
+        return *this;
+    }
+
+    // pflag-like IPSlice: repeated/CSV values, each validated/canonicalized as IPv4 or IPv6.
+    Command& withIPSliceFlag(std::string longName,
+                             std::string shortName,
+                             std::string varName,
+                             std::string description,
+                             std::string defaultValue = "") {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            std::move(defaultValue));
+        flags_.back().setAnnotation("ipslice", "true");
+        return *this;
+    }
+
+    // pflag-like bytesBase64: strict standard base64 in, canonical re-encoding stored.
+    Command& withBytesBase64Flag(std::string longName,
+                                 std::string shortName,
+                                 std::string varName,
+                                 std::string description,
+                                 std::string defaultValue = "") {
+        flags_.emplace_back(std::move(longName),
+                            std::move(shortName),
+                            std::move(description),
+                            std::move(varName),
+                            std::move(defaultValue));
+        flags_.back().setAnnotation("bytesbase64", "true");
+        return *this;
+    }
+
     Command& withBytesFlag(std::string longName, std::string shortName, std::string description, std::uint64_t defaultValue = 0) {
         return withBytesFlag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
     }
@@ -513,6 +629,38 @@ public:
 
     Command& withURLFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
         return withURLFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withInt8Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withInt8Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withInt16Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withInt16Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withInt32Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withInt32Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withUint8Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withUint8Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withUint16Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withUint16Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withUintFlag(std::string longName, std::string shortName, std::string description, std::uint64_t defaultValue = 0) {
+        return withUintFlag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withIPSliceFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withIPSliceFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withBytesBase64Flag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withBytesBase64Flag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
     // Convenience: bool flag with default false.
@@ -632,6 +780,119 @@ public:
         return *this;
     }
 
+    // pflag-like narrow-width persistent int flags (see withInt8Flag et al).
+    Command& withPersistentInt8Flag(std::string longName,
+                                    std::string shortName,
+                                    std::string varName,
+                                    std::string description,
+                                    int defaultValue = 0) {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      defaultValue);
+        persistentFlags_.back().setAnnotation("int8", "true");
+        return *this;
+    }
+
+    Command& withPersistentInt16Flag(std::string longName,
+                                     std::string shortName,
+                                     std::string varName,
+                                     std::string description,
+                                     int defaultValue = 0) {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      defaultValue);
+        persistentFlags_.back().setAnnotation("int16", "true");
+        return *this;
+    }
+
+    Command& withPersistentInt32Flag(std::string longName,
+                                     std::string shortName,
+                                     std::string varName,
+                                     std::string description,
+                                     int defaultValue = 0) {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      defaultValue);
+        persistentFlags_.back().setAnnotation("int32", "true");
+        return *this;
+    }
+
+    Command& withPersistentUint8Flag(std::string longName,
+                                     std::string shortName,
+                                     std::string varName,
+                                     std::string description,
+                                     int defaultValue = 0) {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      defaultValue);
+        persistentFlags_.back().setAnnotation("uint8", "true");
+        return *this;
+    }
+
+    Command& withPersistentUint16Flag(std::string longName,
+                                      std::string shortName,
+                                      std::string varName,
+                                      std::string description,
+                                      int defaultValue = 0) {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      defaultValue);
+        persistentFlags_.back().setAnnotation("uint16", "true");
+        return *this;
+    }
+
+    Command& withPersistentUintFlag(std::string longName,
+                                    std::string shortName,
+                                    std::string varName,
+                                    std::string description,
+                                    std::uint64_t defaultValue = 0) {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      defaultValue);
+        persistentFlags_.back().setAnnotation("uint", "true");
+        return *this;
+    }
+
+    Command& withPersistentIPSliceFlag(std::string longName,
+                                       std::string shortName,
+                                       std::string varName,
+                                       std::string description,
+                                       std::string defaultValue = "") {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      std::move(defaultValue));
+        persistentFlags_.back().setAnnotation("ipslice", "true");
+        return *this;
+    }
+
+    Command& withPersistentBytesBase64Flag(std::string longName,
+                                           std::string shortName,
+                                           std::string varName,
+                                           std::string description,
+                                           std::string defaultValue = "") {
+        persistentFlags_.emplace_back(std::move(longName),
+                                      std::move(shortName),
+                                      std::move(description),
+                                      std::move(varName),
+                                      std::move(defaultValue));
+        persistentFlags_.back().setAnnotation("bytesbase64", "true");
+        return *this;
+    }
+
     Command& withPersistentBytesFlag(std::string longName,
                                      std::string shortName,
                                      std::string description,
@@ -664,6 +925,38 @@ public:
 
     Command& withPersistentURLFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
         return withPersistentURLFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withPersistentInt8Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withPersistentInt8Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withPersistentInt16Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withPersistentInt16Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withPersistentInt32Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withPersistentInt32Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withPersistentUint8Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withPersistentUint8Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withPersistentUint16Flag(std::string longName, std::string shortName, std::string description, int defaultValue = 0) {
+        return withPersistentUint16Flag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withPersistentUintFlag(std::string longName, std::string shortName, std::string description, std::uint64_t defaultValue = 0) {
+        return withPersistentUintFlag(std::move(longName), std::move(shortName), "", std::move(description), defaultValue);
+    }
+
+    Command& withPersistentIPSliceFlag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withPersistentIPSliceFlag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
+    }
+
+    Command& withPersistentBytesBase64Flag(std::string longName, std::string shortName, std::string description, std::string defaultValue = "") {
+        return withPersistentBytesBase64Flag(std::move(longName), std::move(shortName), "", std::move(description), std::move(defaultValue));
     }
 
     Command& withPersistentFlag(std::string longName, std::string shortName, std::string description) {
@@ -2100,6 +2393,22 @@ private:
         if (ipNetIt != ann.end() && (ipNetIt->second == "true" || ipNetIt->second == "1" || ipNetIt->second == "yes")) return "ipnet";
         const auto urlIt = ann.find("url");
         if (urlIt != ann.end() && (urlIt->second == "true" || urlIt->second == "1" || urlIt->second == "yes")) return "url";
+        const auto int8AnnIt = ann.find("int8");
+        if (int8AnnIt != ann.end() && (int8AnnIt->second == "true" || int8AnnIt->second == "1" || int8AnnIt->second == "yes")) return "int8";
+        const auto int16AnnIt = ann.find("int16");
+        if (int16AnnIt != ann.end() && (int16AnnIt->second == "true" || int16AnnIt->second == "1" || int16AnnIt->second == "yes")) return "int16";
+        const auto int32AnnIt = ann.find("int32");
+        if (int32AnnIt != ann.end() && (int32AnnIt->second == "true" || int32AnnIt->second == "1" || int32AnnIt->second == "yes")) return "int32";
+        const auto uint8AnnIt = ann.find("uint8");
+        if (uint8AnnIt != ann.end() && (uint8AnnIt->second == "true" || uint8AnnIt->second == "1" || uint8AnnIt->second == "yes")) return "uint8";
+        const auto uint16AnnIt = ann.find("uint16");
+        if (uint16AnnIt != ann.end() && (uint16AnnIt->second == "true" || uint16AnnIt->second == "1" || uint16AnnIt->second == "yes")) return "uint16";
+        const auto uintAnnIt = ann.find("uint");
+        if (uintAnnIt != ann.end() && (uintAnnIt->second == "true" || uintAnnIt->second == "1" || uintAnnIt->second == "yes")) return "uint";
+        const auto ipSliceAnnIt = ann.find("ipslice");
+        if (ipSliceAnnIt != ann.end() && (ipSliceAnnIt->second == "true" || ipSliceAnnIt->second == "1" || ipSliceAnnIt->second == "yes")) return "ipSlice";
+        const auto bytesBase64AnnIt = ann.find("bytesbase64");
+        if (bytesBase64AnnIt != ann.end() && (bytesBase64AnnIt->second == "true" || bytesBase64AnnIt->second == "1" || bytesBase64AnnIt->second == "yes")) return "bytesBase64";
 
         return std::visit(
             [](const auto& x) -> std::optional<std::string> { // LCOV_EXCL_LINE (bool overload is pre-filtered above)

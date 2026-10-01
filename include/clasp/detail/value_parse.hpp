@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 namespace clasp::detail {
 
@@ -181,6 +182,99 @@ inline bool tryParseDuration(std::string_view s, std::chrono::milliseconds& out)
 inline std::chrono::milliseconds parseDuration(const std::string& s, std::chrono::milliseconds defaultValue) {
     std::chrono::milliseconds out{};
     if (!tryParseDuration(s, out)) return defaultValue;
+    return out;
+}
+
+// pflag-like bytesBase64: strict standard-alphabet base64 (padding required, no whitespace).
+inline bool tryDecodeBase64(std::string_view s, std::vector<unsigned char>& out) {
+    const auto t = trimWs(s);
+    if (t.empty()) {
+        out.clear();
+        return true;
+    }
+    if (t.size() % 4 != 0) return false;
+
+    auto valueOf = [](char ch) -> int {
+        if (ch >= 'A' && ch <= 'Z') return ch - 'A';
+        if (ch >= 'a' && ch <= 'z') return ch - 'a' + 26;
+        if (ch >= '0' && ch <= '9') return ch - '0' + 52;
+        if (ch == '+') return 62;
+        if (ch == '/') return 63;
+        return -1;
+    };
+
+    std::size_t padStart = t.size();
+    std::size_t padCount = 0;
+    while (padCount < 2 && padStart > 0 && t[padStart - 1] == '=') {
+        --padStart;
+        ++padCount;
+    }
+    // Any '=' outside the stripped suffix is rejected by valueOf() below; the
+    // main loop only consumes full quads, and the tail branch reads exactly the
+    // padStart data characters implied by padCount.
+
+    out.clear();
+    out.reserve((t.size() / 4) * 3);
+    std::size_t i = 0;
+    for (; i + 4 <= padStart; i += 4) {
+        const int a = valueOf(t[i]);
+        const int b = valueOf(t[i + 1]);
+        const int c = valueOf(t[i + 2]);
+        const int d = valueOf(t[i + 3]);
+        if (a < 0 || b < 0 || c < 0 || d < 0) return false;
+        const std::uint32_t group = (static_cast<std::uint32_t>(a) << 18) | (static_cast<std::uint32_t>(b) << 12) |
+                                    (static_cast<std::uint32_t>(c) << 6) | static_cast<std::uint32_t>(d);
+        out.push_back(static_cast<unsigned char>((group >> 16) & 0xFF));
+        out.push_back(static_cast<unsigned char>((group >> 8) & 0xFF));
+        out.push_back(static_cast<unsigned char>(group & 0xFF));
+    }
+    if (padCount > 0) {
+        const int a = valueOf(t[i]);
+        const int b = valueOf(t[i + 1]);
+        if (a < 0 || b < 0) return false;
+        std::uint32_t group = (static_cast<std::uint32_t>(a) << 18) | (static_cast<std::uint32_t>(b) << 12);
+        if (padCount == 1) {
+            const int c = valueOf(t[i + 2]);
+            if (c < 0) return false;
+            group |= static_cast<std::uint32_t>(c) << 6;
+            out.push_back(static_cast<unsigned char>((group >> 16) & 0xFF));
+            out.push_back(static_cast<unsigned char>((group >> 8) & 0xFF));
+        } else {
+            out.push_back(static_cast<unsigned char>((group >> 16) & 0xFF));
+        }
+    }
+    return true;
+}
+
+inline std::string encodeBase64(const std::vector<unsigned char>& data) {
+    static const char* kAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    out.reserve(((data.size() + 2) / 3) * 4);
+    std::size_t i = 0;
+    for (; i + 3 <= data.size(); i += 3) {
+        const std::uint32_t group = (static_cast<std::uint32_t>(data[i]) << 16) |
+                                    (static_cast<std::uint32_t>(data[i + 1]) << 8) |
+                                    static_cast<std::uint32_t>(data[i + 2]);
+        out.push_back(kAlphabet[(group >> 18) & 0x3F]);
+        out.push_back(kAlphabet[(group >> 12) & 0x3F]);
+        out.push_back(kAlphabet[(group >> 6) & 0x3F]);
+        out.push_back(kAlphabet[group & 0x3F]);
+    }
+    const auto rest = data.size() - i;
+    if (rest == 1) {
+        const std::uint32_t group = static_cast<std::uint32_t>(data[i]) << 16;
+        out.push_back(kAlphabet[(group >> 18) & 0x3F]);
+        out.push_back(kAlphabet[(group >> 12) & 0x3F]);
+        out.push_back('=');
+        out.push_back('=');
+    } else if (rest == 2) {
+        const std::uint32_t group = (static_cast<std::uint32_t>(data[i]) << 16) |
+                                    (static_cast<std::uint32_t>(data[i + 1]) << 8);
+        out.push_back(kAlphabet[(group >> 18) & 0x3F]);
+        out.push_back(kAlphabet[(group >> 12) & 0x3F]);
+        out.push_back(kAlphabet[(group >> 6) & 0x3F]);
+        out.push_back('=');
+    }
     return out;
 }
 
