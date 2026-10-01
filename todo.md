@@ -7,11 +7,11 @@ Goal: implement a C++17 CLI framework that mirrors Go cobra's behavior and ergon
 - Feature checklist below (P0–P3) is implemented and covered by CTest (see `CMakeLists.txt` for the current test inventory).
 - Compatibility scope is defined in `COMPAT.md`; CI runs CMake/CTest on Ubuntu/macOS/Windows.
 
-## Open Items (2025-12-26)
+## Open Items (2026-10-02)
 
-- Remaining unchecked items: **3**
-- Scope/contract: tighten “Should Support” → “Must Support” items (add examples + CTest per item)
-- Types: add more pflag type parity only if needed (more slice/map variants and other common types)
+- Remaining unchecked items: **0**
+- [x] Scope/contract: tighten “Should Support” → “Must Support” items (each now backed by an example + CTest; see `COMPAT.md` — canonical strings via `examples/cobra_strings_example.cpp`, pflag edge interactions via `examples/pflag_edge_example.cpp`, per-shell completion directives via the `completion_*` CTests)
+- [x] Types: add more pflag type parity (narrow widths `int8/int16/int32/uint8/uint16/uint`, `ipSlice`, `bytesBase64`, `getStringToFloat`; see `examples/pflag_types2_example.cpp`)
 
 ## Plan (Next: Full Cobra Parity)
 
@@ -23,8 +23,8 @@ Goal: implement a C++17 CLI framework that mirrors Go cobra's behavior and ergon
 
 ## Next Session TODO (Suggested, Optional)
 
-- [ ] 如果要继续追 Cobra：把 “Should Support” 的内容逐步收紧为 “Must Support”（每项补齐示例 + CTest）
-- [ ] 继续补 pflag 类型（仅按需求）：更多 map/slice 变体、其他常用类型
+- [x] 如果要继续追 Cobra：把 “Should Support” 的内容逐步收紧为 “Must Support”（每项补齐示例 + CTest）
+- [x] 继续补 pflag 类型（仅按需求）：更多 map/slice 变体、其他常用类型
 - [x] 发布准备：版本号策略（SemVer + 版本一致性校验）
 - [x] 发布准备：安装/打包说明（CMake `cmake --install` + `find_package`）
 - [x] 发布准备：变更记录（`CHANGELOG.md`）
@@ -135,7 +135,7 @@ Goal: implement a C++17 CLI framework that mirrors Go cobra's behavior and ergon
   - [x] IP/CIDR helpers (`withIPFlag` / `withCIDRFlag`)
   - [x] URL helper (`withURLFlag`)
   - [x] IPNet/IPMask helpers (`withIPNetFlag` / `withIPMaskFlag`)
-  - [ ] Additional pflag types (beyond current subset; more net/url types, more slice/map variants) if needed
+  - [x] Additional pflag types (beyond current subset; more net/url types, more slice/map variants) if needed
   - [x] Byte size flag (human-friendly `bytes`, e.g. `1KB`, `1.5MiB`)
 - [x] More completion parity (dynamic scripts + directive mapping + file-ext/dir filters)
 - [x] More config formats (YAML ✅ / TOML ✅) and richer nested binding rules (lists/arrays ✅)

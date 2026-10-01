@@ -39,6 +39,9 @@ ctest --test-dir build --output-on-failure
 - `examples/external_typed_example.cpp`: Env-bound typed flags validated strictly (env value parse errors fail early).
 - `examples/bytes_example.cpp`: Bytes flag (`withPersistentBytesFlag`, values like `1KB`, `1.5MiB`).
 - `examples/pflag_types_example.cpp`: pflag-like getters (`getStringSlice/getStringArray/getStringToString`).
+- `examples/pflag_types2_example.cpp`: more pflag types — narrow widths (`withInt8Flag`/`withUint16Flag`/`withUintFlag`...), `withIPSliceFlag`, `withBytesBase64Flag`, `getStringToFloat`.
+- `examples/cobra_strings_example.cpp`: canonical Cobra-like error/usage strings locked byte-for-byte (Must Support contract).
+- `examples/pflag_edge_example.cpp`: pflag edge interactions (repeated bools, empty `=` values, negative numbers, intermixed positionals, `NoOptDefVal` forms, `--`).
 - `examples/custom_value_example.cpp`: Custom flag Value interface (`Value::set/string/type`).
 - `examples/parser_external_example.cpp`: Parser external values (multi-source merge + count flags).
 - `examples/silence_errors_example.cpp`: `SilenceErrors` suppresses unknown-command output.

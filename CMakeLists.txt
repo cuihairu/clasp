@@ -306,6 +306,17 @@ set_tests_properties(completion_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcomp
 add_test(NAME completion_zsh_dynamic COMMAND completion_example completion zsh)
 set_tests_properties(completion_zsh_dynamic PROPERTIES PASS_REGULAR_EXPRESSION "__completeNoDesc")
 
+# zsh reuses the bash script via bashcompinit; its directive handling must be
+# present too (dirs / file-ext filter / keep-order).
+add_test(NAME completion_zsh_directive_dirs COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh_directive_dirs PROPERTIES PASS_REGULAR_EXPRESSION "compgen -d")
+
+add_test(NAME completion_zsh_directive_ext COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh_directive_ext PROPERTIES PASS_REGULAR_EXPRESSION "compgen -f -X")
+
+add_test(NAME completion_zsh_directive_keep_order COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh_directive_keep_order PROPERTIES PASS_REGULAR_EXPRESSION "compopt -o nosort")
+
 add_test(NAME completion_fish COMMAND completion_example completion fish)
 set_tests_properties(completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c app")
 
@@ -984,6 +995,54 @@ set_tests_properties(pflag_uint32_slice_splits PROPERTIES PASS_REGULAR_EXPRESSIO
 
 add_test(NAME pflag_map_uint32 COMMAND pflag_types_example show --small a=1,b=2 --small c=3)
 set_tests_properties(pflag_map_uint32 PROPERTIES PASS_REGULAR_EXPRESSION "small=a=1\\|b=2\\|c=3")
+
+add_executable(pflag_types2_example examples/pflag_types2_example.cpp)
+target_link_libraries(pflag_types2_example PRIVATE clasp)
+
+add_test(NAME pflag_types2_help_shows_types COMMAND pflag_types2_example help show)
+set_tests_properties(pflag_types2_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "(--small int8.*--offset uint.*--ips ipSlice.*--blob bytesBase64)|(--blob bytesBase64.*--ips ipSlice.*--offset uint.*--small int8)")
+
+add_test(NAME pflag_types2_parse_all COMMAND pflag_types2_example show --small 5 --medium 300 --wide 70000 --port 80 --vlan 4094 --offset 100000 --plevel 7 --ips 10.0.0.1,10.0.0.2 --blob SGVsbG8= --ratios a=1.5,b=2.5)
+set_tests_properties(pflag_types2_parse_all PROPERTIES PASS_REGULAR_EXPRESSION "small=5.*medium=300.*wide=70000.*port=80.*vlan=4094.*offset=100000.*plevel=7.*ips=10\\.0\\.0\\.1\\|10\\.0\\.0\\.2.*blob=72\\|101\\|108\\|108\\|111.*ratios=a=1\\.500000\\|b=2\\.500000")
+
+add_test(NAME pflag_types2_defaults COMMAND pflag_types2_example show)
+set_tests_properties(pflag_types2_defaults PROPERTIES PASS_REGULAR_EXPRESSION "small=0.*port=0.*vlan=0.*plevel=3.*ips=.*blob=")
+
+add_test(NAME pflag_types2_slices_arrays COMMAND pflag_types2_example show --small 1 --small 2 --small 3 --port 4 --port 5 --port 6 --medium 7 --vlan 8 --vlan 9 --ints8 10,11 --uints16 12,13)
+set_tests_properties(pflag_types2_slices_arrays PROPERTIES PASS_REGULAR_EXPRESSION "small_slice=1\\|2\\|3.*port_slice=4\\|5\\|6.*ints8_slice=10\\|11.*uints16_slice=12\\|13.*small_array=1\\|2\\|3.*port_array=4\\|5\\|6.*medium_array=7.*vlan_array=8\\|9")
+
+add_test(NAME pflag_types2_int8_overflow COMMAND pflag_types2_example show --small 300)
+set_tests_properties(pflag_types2_int8_overflow PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "300" for "--small"]==])
+
+add_test(NAME pflag_types2_int8_negative COMMAND pflag_types2_example show --small -128)
+set_tests_properties(pflag_types2_int8_negative PROPERTIES PASS_REGULAR_EXPRESSION "small=-128")
+
+add_test(NAME pflag_types2_uint8_overflow COMMAND pflag_types2_example show --port 256)
+set_tests_properties(pflag_types2_uint8_overflow PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "256" for "--port"]==])
+
+add_test(NAME pflag_types2_uint16_overflow COMMAND pflag_types2_example show --vlan 65536)
+set_tests_properties(pflag_types2_uint16_overflow PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "65536" for "--vlan"]==])
+
+add_test(NAME pflag_types2_uint_negative COMMAND pflag_types2_example show --offset -1)
+set_tests_properties(pflag_types2_uint_negative PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "-1" for "--offset"]==])
+
+add_test(NAME pflag_types2_ipslice_canonical COMMAND pflag_types2_example show --ips 2001:db8:0:0:0:0:2:1,10.0.1.2)
+set_tests_properties(pflag_types2_ipslice_canonical PROPERTIES PASS_REGULAR_EXPRESSION "ips=2001:db8::2:1\\|10\\.0\\.1\\.2")
+
+add_test(NAME pflag_types2_ipslice_invalid COMMAND pflag_types2_example show --ips 999.0.0.1)
+set_tests_properties(pflag_types2_ipslice_invalid PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "999.0.0.1" for "--ips"]==])
+
+add_test(NAME pflag_types2_base64_canonical COMMAND pflag_types2_example show --blob aGVsbG8=)
+set_tests_properties(pflag_types2_base64_canonical PROPERTIES PASS_REGULAR_EXPRESSION "blob=104\\|101\\|108\\|108\\|111")
+
+add_test(NAME pflag_types2_base64_empty COMMAND pflag_types2_example show --blob=)
+set_tests_properties(pflag_types2_base64_empty PROPERTIES PASS_REGULAR_EXPRESSION "blob=")
+
+add_test(NAME pflag_types2_base64_invalid COMMAND pflag_types2_example show --blob xx)
+set_tests_properties(pflag_types2_base64_invalid PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "xx" for "--blob"]==])
+
+add_test(NAME pflag_types2_string_to_float COMMAND pflag_types2_example show --ratios a=1.5,b=2.5)
+set_tests_properties(pflag_types2_string_to_float PROPERTIES PASS_REGULAR_EXPRESSION "ratios=a=1\\.500000\\|b=2\\.500000")
 
 add_executable(utils_suggest_example examples/utils_suggest_example.cpp)
 target_link_libraries(utils_suggest_example PRIVATE clasp)
@@ -2232,5 +2291,103 @@ set_tests_properties(parser_knobs_no_group PROPERTIES PASS_REGULAR_EXPRESSION "^
 
 add_test(NAME parser_knobs_no_negation COMMAND parser_knobs_example no_neg)
 set_tests_properties(parser_knobs_no_negation PROPERTIES PASS_REGULAR_EXPRESSION "^ran")
+
+# --- Must Support: canonical Cobra-like strings locked byte-for-byte ---
+add_executable(cobra_strings_example examples/cobra_strings_example.cpp)
+target_link_libraries(cobra_strings_example PRIVATE clasp)
+
+add_test(NAME cobra_strings_unknown_cmd_suggest COMMAND cobra_strings_example prnit)
+set_tests_properties(cobra_strings_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command "prnit" for "app"\r?
+\r?
+Did you mean this\?\r?
+  print\r?
+\r?
+Run 'app --help' for usage\.\r?
+]==])
+
+add_test(NAME cobra_strings_unknown_flag_suggest COMMAND cobra_strings_example print --mesage hi)
+set_tests_properties(cobra_strings_unknown_flag_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --mesage\r?
+\r?
+Did you mean this\?\r?
+  --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+add_test(NAME cobra_strings_missing_flag_value COMMAND cobra_strings_example print --message)
+set_tests_properties(cobra_strings_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+add_test(NAME cobra_strings_required_flag COMMAND cobra_strings_example locked)
+set_tests_properties(cobra_strings_required_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: required flag not set: --name\r?
+\r?
+Usage: app locked \[flags\]\r?
+]==])
+
+add_test(NAME cobra_strings_invalid_argument COMMAND cobra_strings_example print --count=abc)
+set_tests_properties(cobra_strings_invalid_argument PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: invalid argument "abc" for "--count"\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+# --- Must Support: pflag edge interactions pinned by behavior ---
+add_executable(pflag_edge_example examples/pflag_edge_example.cpp)
+target_link_libraries(pflag_edge_example PRIVATE clasp)
+
+add_test(NAME pflag_edge_repeat_bool_last_wins COMMAND pflag_edge_example edges --verbose --verbose)
+set_tests_properties(pflag_edge_repeat_bool_last_wins PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=true\r?
+]==])
+
+add_test(NAME pflag_edge_empty_eq_value COMMAND pflag_edge_example edges --name=)
+set_tests_properties(pflag_edge_empty_eq_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+]==])
+
+add_test(NAME pflag_edge_negative_number_value COMMAND pflag_edge_example edges --num -5)
+set_tests_properties(pflag_edge_negative_number_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=-5\r?
+]==])
+
+add_test(NAME pflag_edge_flag_after_positional COMMAND pflag_edge_example edges a --name x)
+set_tests_properties(pflag_edge_flag_after_positional PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=x\r?
+num=0\r?
+sep=none\r?
+mode=unset\r?
+pos=\[a\]\r?
+]==])
+
+add_test(NAME pflag_edge_noopt_eq_then_bare COMMAND pflag_edge_example edges --mode=v2 --mode)
+set_tests_properties(pflag_edge_noopt_eq_then_bare PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=0\r?
+sep=none\r?
+mode=auto\r?
+pos=\[\]\r?
+]==])
+
+add_test(NAME pflag_edge_end_of_flags COMMAND pflag_edge_example edges -- -v x)
+set_tests_properties(pflag_edge_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=0\r?
+sep=none\r?
+mode=unset\r?
+pos=\[-v,x\]\r?
+]==])
+
+add_test(NAME pflag_edge_inline_short_value COMMAND pflag_edge_example edges -nhello)
+set_tests_properties(pflag_edge_inline_short_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=hello\r?
+]==])
+
+add_test(NAME pflag_edge_repeat_string_last_wins COMMAND pflag_edge_example edges --sep a --sep b)
+set_tests_properties(pflag_edge_repeat_string_last_wins PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=0\r?
+sep=b\r?
+]==])
 
 endif()

@@ -33,8 +33,18 @@ These are treated as compatibility commitments; changes should include an exampl
 - **Help/usage/version**: `--help/-h`, `help [cmd]`, default values display, stable sorting (with opt-out), examples, version output.
 - **Completion**: bash/zsh/fish/powershell script generation, `__complete` callbacks, directives (keep-order, no-file-comp, file-ext, dirs).
 - **External sources merge**: precedence `flag > env > config > default` for declared bindings.
+- **Canonical Cobra-like strings**: the common failure messages (unknown command/flag + suggestions, needs-argument, invalid
+  argument, required-flag-not-set) are locked byte-for-byte by CTest (`examples/cobra_strings_example.cpp`).
+- **pflag edge interactions**: repeated bools, empty `--flag=`, negative-number values, intermixed positionals, `NoOptDefVal` both
+  forms, `--` end-of-flags, inline short values, repeated values last-wins — pinned by behavior tests
+  (`examples/pflag_edge_example.cpp`).
+- **Completion directives per shell**: the directive-handling logic of every generated script (bash/zsh/fish/powershell) is
+  asserted by CTest. Shell-runtime enforcement and byte-identical scripts remain out of scope.
 
-## Feature Inventory (Cobra [Clasp]
+The three bullets above were tightened from the former “Should Support (Best-Effort Fidelity)” list; each now carries its own
+example + CTest coverage.
+
+## Feature Inventory (Cobra → Clasp)
 
 This section is a practical mapping from commonly used Cobra/pflag concepts to Clasp API and examples.
 
@@ -71,13 +81,16 @@ This section is a practical mapping from commonly used Cobra/pflag concepts to C
 | Repeated flags | Supported | Multiple occurrences preserved; `examples/repeat_example.cpp` |
 | `NoOptDefVal` | Supported | `markFlagNoOptDefaultValue()`; command scanning preserves following subcommand tokens; `examples/noopt_example.cpp` |
 | Built-in types | Supported | `bool/int/int64/uint32/uint64/float/double/duration/string`; `examples/types_example.cpp` |
+| Narrow-width types (`Int8/16/32`, `Uint8/16`, `Uint`) | Supported | `withInt8Flag()` et al (range-validated) + `Parser::getInt8/getUint16/getUint`...; `examples/pflag_types2_example.cpp` |
+| Extra helpers: `ipSlice` | Supported | `withIPSliceFlag()` (per-element canonical IPs, CSV/repeatable); `examples/pflag_types2_example.cpp` |
+| Extra helpers: `bytesBase64` | Supported | `withBytesBase64Flag()` + `Parser::getBytesBase64()`; `examples/pflag_types2_example.cpp` |
 | Extra helpers: `count` | Supported | `withCountFlag()` + `Parser::getCount()`; `examples/count_example.cpp` |
 | Extra helpers: bytes | Supported | `withBytesFlag()`; `examples/bytes_example.cpp` |
 | Extra helpers: IP/CIDR | Supported | `withIPFlag()` / `withCIDRFlag()`; `examples/net_example.cpp` |
 | Extra helpers: IPNet/IPMask | Supported | `withIPNetFlag()` / `withIPMaskFlag()`; `examples/net_extra_example.cpp` |
 | Extra helpers: URL | Supported | `withURLFlag()`; `examples/url_example.cpp` |
 | Custom `Value` types | Supported | `withValueFlag()` + `clasp::Value`; `examples/custom_value_example.cpp` |
-| pflag-like slice/array/map getters | Supported | `Parser` helpers; `examples/pflag_types_example.cpp` |
+| pflag-like slice/array/map getters | Supported | `Parser` helpers; `examples/pflag_types_example.cpp`, `examples/pflag_types2_example.cpp` |
 
 ### Help / Usage / Version Output
 
@@ -102,14 +115,6 @@ This section is a practical mapping from commonly used Cobra/pflag concepts to C
 | Flag value completion | Supported | `registerFlagCompletion()`; `examples/dynamic_completion_example.cpp` |
 | File/dir helpers | Supported | `markFlagFilename()` / `markFlagDirname()`; `examples/file_completion_example.cpp` |
 
-### Should Support (Best-Effort Fidelity)
-
-These are important for a “Cobra-like feel”, but are not yet treated as a strict contract:
-
-- Byte-for-byte matching of Cobra’s **exact** default English strings and whitespace across versions.
-- Full coverage of “weird” pflag edge cases (ordering, error wording, obscure interactions) beyond the test suite.
-- Shell-specific completion behavior that is implemented by the shell/runtime (Clasp emits directives; the shell enforces them).
-
 ### Non-Goals (Explicitly Out of Scope)
 
 - **Go template parity** for help/usage/version output. Cobra uses Go templates with a rich data model and functions.
@@ -130,11 +135,15 @@ requires adding tests and tightening the contract.
   - `setVersionTemplate` supports: `{{.Version}}`, `{{.CommandPath}}`, `{{.Name}}`.
   - No conditionals/loops/pipelines/custom funcs like Cobra’s Go templates.
 - **Built-in flags**: Clasp always recognizes `--help/-h` and `--version` as built-ins, even if not explicitly declared.
-- **Type surface**: built-in flag value types are limited to `bool/int/int64/uint32/uint64/float/double/duration/string` (+ `bytes`, `count`,
-  `ip`, `ipmask`, `cidr`, `ipnet`, and `url` helpers implemented via annotations). Broader pflag type parity is out of scope unless added
-  intentionally.
-- **Completion fidelity**: file/dir filtering is directive-driven; exact behavior depends on the shell completion runtime.
-- **Error text**: error messages aim to be Cobra-like, but are not guaranteed to match Cobra’s exact phrasing unless locked by tests.
+- **Type surface**: built-in flag value types are `bool/int/int64/uint32/uint64/float/double/duration/string`, the narrow-width
+  helpers `int8/int16/int32/uint8/uint16/uint` (range-validated, annotation-backed), and the extras `bytes`, `count`, `ip`, `ipmask`,
+  `cidr`, `ipnet`, `url`, `ipSlice`, and `bytesBase64` implemented via annotations. Getter parity for slices/arrays/maps covers the
+  common variants (`get*Slice`, `get*Array`, `getStringTo*` including `getStringToFloat`); further pflag types can be added via
+  `clasp::Value`.
+- **Completion fidelity**: file/dir filtering is directive-driven; exact behavior at shell runtime depends on the completion
+  runtime. The directive-handling logic of the emitted scripts themselves is locked by CTest (see Must Support above).
+- **Error text**: the common failure messages are locked byte-for-byte by CTest (`examples/cobra_strings_example.cpp`); less common
+  messages aim to be Cobra-like, but are not guaranteed to match Cobra’s exact phrasing unless locked by tests.
 
 ## How We Measure Parity Here
 
