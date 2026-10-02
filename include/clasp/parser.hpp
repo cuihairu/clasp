@@ -499,7 +499,7 @@ public:
             out[k] = parse<float>(v, 0.0f);
         }
         return out;
-    }
+    } // LCOV_EXCL_LINE (function cleanup block)
 
     // --- Narrow-width integer getters (pflag int8/uint8/int16/uint16/int32/uint parity) ---
 
@@ -562,7 +562,7 @@ private:
         std::vector<T> out;
         for (const auto& v : getArrayRaw(flag)) out.push_back(parse<T>(v, defaultElement));
         return out;
-    }
+    } // LCOV_EXCL_LINE (function cleanup block)
 
     template <typename T>
     std::vector<T> getFlagValuesAsFromSplit(const std::string& flag, char sep) const {
@@ -571,7 +571,7 @@ private:
             out.push_back(parse<T>(v, T{}));
         }
         return out;
-    }
+    } // LCOV_EXCL_LINE (function cleanup block)
 
     static bool isFlagToken(const std::string& s) {
         return s.size() >= 2 && s[0] == '-' && s != "-"; // LCOV_EXCL_LINE (s.size() >= 2 already implies s != "-")
@@ -1112,7 +1112,7 @@ private:
     static std::vector<std::string> splitCsvParts(const std::string& v, char sep) {
         std::vector<std::string> out;
         std::size_t start = 0;
-        while (start <= v.size()) {
+        while (start <= v.size()) { // LCOV_EXCL_LINE (the loop always exits via the break when find returns npos; start = pos + 1 never exceeds size, so the false edge is unreachable)
             const auto pos = v.find(sep, start);
             const auto part = (pos == std::string::npos) ? v.substr(start) : v.substr(start, pos - start);
             if (!part.empty()) out.push_back(part);
@@ -1120,7 +1120,7 @@ private:
             start = pos + 1;
         }
         return out;
-    }
+    } // LCOV_EXCL_LINE (function cleanup block)
 
     bool normalizeValue(const std::string& key, std::string& value, Kind kind) {
         if (!ok_) return false;

@@ -1050,6 +1050,37 @@ set_tests_properties(pflag_types2_base64_alphabet_symbols PROPERTIES PASS_REGULA
 add_test(NAME pflag_types2_string_to_float COMMAND pflag_types2_example show --ratios a=1.5,b=2.5)
 set_tests_properties(pflag_types2_string_to_float PROPERTIES PASS_REGULAR_EXPRESSION "ratios=a=1\\.500000\\|b=2\\.500000")
 
+# Invalid base64 with valid length: each quad position must reject an
+# out-of-alphabet character (per-position range checks in the main loop).
+add_test(NAME pflag_types2_base64_invalid_pos0 COMMAND pflag_types2_example show --blob "*bcd")
+set_tests_properties(pflag_types2_base64_invalid_pos0 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument ".bcd" for "--blob"]==])
+
+add_test(NAME pflag_types2_base64_invalid_pos1 COMMAND pflag_types2_example show --blob "a*cd")
+set_tests_properties(pflag_types2_base64_invalid_pos1 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "a.cd" for "--blob"]==])
+
+# Characters past the base64 alphabet ('{', '@') walk the full valueOf()
+# range chain before returning -1.
+add_test(NAME pflag_types2_base64_invalid_range_fallthrough COMMAND pflag_types2_example show --blob "ab{@")
+set_tests_properties(pflag_types2_base64_invalid_range_fallthrough PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "ab.@" for "--blob"]==])
+
+add_test(NAME pflag_types2_base64_invalid_pos3 COMMAND pflag_types2_example show --blob "abc*")
+set_tests_properties(pflag_types2_base64_invalid_pos3 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "abc." for "--blob"]==])
+
+# Tail decode (padded inputs): invalid chars at either tail slot, and at the
+# single-pad third slot.
+add_test(NAME pflag_types2_base64_invalid_tail0 COMMAND pflag_types2_example show --blob "*b==")
+set_tests_properties(pflag_types2_base64_invalid_tail0 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument ".b==" for "--blob"]==])
+
+add_test(NAME pflag_types2_base64_invalid_tail1 COMMAND pflag_types2_example show --blob "a*==")
+set_tests_properties(pflag_types2_base64_invalid_tail1 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "a.==" for "--blob"]==])
+
+add_test(NAME pflag_types2_base64_invalid_tail_pad1 COMMAND pflag_types2_example show --blob "ab*=")
+set_tests_properties(pflag_types2_base64_invalid_tail_pad1 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "ab.=" for "--blob"]==])
+
+# Empty CSV segments are dropped by the split (empty-part branch).
+add_test(NAME pflag_types2_ipslice_empty_segment COMMAND pflag_types2_example show --ips 10.0.0.1,,10.0.0.2)
+set_tests_properties(pflag_types2_ipslice_empty_segment PROPERTIES PASS_REGULAR_EXPRESSION "ips=10\\.0\\.0\\.1\\|10\\.0\\.0\\.2")
+
 add_executable(utils_suggest_example examples/utils_suggest_example.cpp)
 target_link_libraries(utils_suggest_example PRIVATE clasp)
 
@@ -1810,6 +1841,14 @@ target_link_libraries(branch_parser_test PRIVATE clasp)
 
 add_test(NAME branch_parser_run COMMAND branch_parser_test)
 set_tests_properties(branch_parser_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+# --- Annotation truthiness: help type names + parser registration ---
+
+add_executable(annotation_values_test tests/annotation_values.cpp)
+target_link_libraries(annotation_values_test PRIVATE clasp)
+
+add_test(NAME annotation_values_run COMMAND annotation_values_test)
+set_tests_properties(annotation_values_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
 
 # -----------------------------------------------------------------------------
 # Examples branch-coverage supplements: ctest argument combinations that

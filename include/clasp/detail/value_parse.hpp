@@ -205,7 +205,7 @@ inline bool tryDecodeBase64(std::string_view s, std::vector<unsigned char>& out)
 
     std::size_t padStart = t.size();
     std::size_t padCount = 0;
-    while (padCount < 2 && padStart > 0 && t[padStart - 1] == '=') {
+    while (padCount < 2 && padStart > 0 && t[padStart - 1] == '=') { // LCOV_EXCL_LINE (t is non-empty with size % 4 == 0, so padCount < 2 implies padStart >= size - 1 >= 3; the padStart > 0 false edge is unreachable)
         --padStart;
         ++padCount;
     }
@@ -276,7 +276,7 @@ inline std::string encodeBase64(const std::vector<unsigned char>& data) {
         out.push_back('=');
     }
     return out;
-}
+} // LCOV_EXCL_LINE (function cleanup block)
 
 } // namespace clasp::detail
 
