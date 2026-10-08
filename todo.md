@@ -7,9 +7,10 @@ Goal: implement a C++17 CLI framework that mirrors Go cobra's behavior and ergon
 - Feature checklist below (P0–P3) is implemented and covered by CTest (see `CMakeLists.txt` for the current test inventory).
 - Compatibility scope is defined in `COMPAT.md`; CI runs CMake/CTest on Ubuntu/macOS/Windows.
 
-## Open Items (2026-10-02)
+## Open Items (2026-10-08)
 
 - Remaining unchecked items: **0**
+- Test coverage: **100%** lines / functions / branches (gcovr, scoped to `include/` + `src/`; 4585/4585 lines, 556/556 functions, 5801/5801 branches; 569/569 CTest cases green)
 - [x] Scope/contract: tighten “Should Support” → “Must Support” items (each now backed by an example + CTest; see `COMPAT.md` — canonical strings via `examples/cobra_strings_example.cpp`, pflag edge interactions via `examples/pflag_edge_example.cpp`, per-shell completion directives via the `completion_*` CTests)
 - [x] Types: add more pflag type parity (narrow widths `int8/int16/int32/uint8/uint16/uint`, `ipSlice`, `bytesBase64`, `getStringToFloat`; see `examples/pflag_types2_example.cpp`)
 
