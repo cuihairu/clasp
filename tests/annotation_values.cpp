@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "clasp/command.hpp"
@@ -56,9 +57,9 @@ std::string renderHelp(clasp::Command& cmd) {
 // Truthy alternates ("1", "yes") must render the annotated type names, and
 // the variant fallbacks must not appear.
 void testTruthyValueShowsAnnotatedTypes() {
-    for (const std::string& v : {"1", "yes"}) {
+    for (const std::string_view v : {"1", "yes"}) {
         clasp::Command root("app", "annotation values");
-        configure(root, v);
+        configure(root, std::string(v));
         root.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
         const std::string help = renderHelp(root);
         const bool ok = help.find("--small int8") != std::string::npos &&
@@ -69,7 +70,7 @@ void testTruthyValueShowsAnnotatedTypes() {
                         help.find("--offset uint64") == std::string::npos &&
                         help.find("--ips ipSlice") != std::string::npos &&
                         help.find("--blob bytesBase64") != std::string::npos;
-        expect(ok, ("annotation value \"" + v + "\" shows annotated types").c_str());
+        expect(ok, ("annotation value \"" + std::string(v) + "\" shows annotated types").c_str());
     }
 }
 
@@ -93,15 +94,15 @@ void testNonTruthyValueFallsBackToVariantTypes() {
 // Registration follows the same truthiness: "1"/"yes" keep narrow-width
 // range validation active; "no" registers nothing, so 999 parses as a plain int.
 void testRegisterFlagTruthiness() {
-    for (const std::string& v : {"1", "yes"}) {
+    for (const std::string_view v : {"1", "yes"}) {
         clasp::Command root("app", "annotation values");
-        configure(root, v);
+        configure(root, std::string(v));
         root.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
         std::ostringstream os;
         root.setOut(os);
         root.setErr(os);
         const int rc = runArgs(root, {"--small", "999"});
-        expect(rc != 0, ("annotation value \"" + v + "\" keeps int8 validation").c_str());
+        expect(rc != 0, ("annotation value \"" + std::string(v) + "\" keeps int8 validation").c_str());
     }
     {
         clasp::Command root("app", "annotation values");

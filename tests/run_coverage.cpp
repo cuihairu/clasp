@@ -115,7 +115,7 @@ void testRunSubAction() {
 
     clasp::Command sub("sub", "Sub command");
     sub.withFlag("--verbose", "-v", "verbose", "Verbose", false)
-        .action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
+        .action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
             std::cout << "sub action\n";
             return 0;
         });
@@ -201,7 +201,7 @@ void testRunCustomUsage() {
 // Test run() with custom flag error function
 void testRunCustomFlagError() {
     clasp::Command root("app", "Test app");
-    root.setFlagErrorFunc([](const clasp::Command& cmd, const std::string& err) -> std::string {
+    root.setFlagErrorFunc([](const clasp::Command&, const std::string& err) -> std::string {
         return "Custom error: " + err;
     });
 
@@ -466,7 +466,7 @@ void testRunTraverseChildren() {
         .withPersistentFlag("--name", "-n", "name", "Name", std::string("default"));
 
     clasp::Command sub("sub", "Sub command");
-    sub.action([](clasp::Command& cmd, const clasp::Parser& parser, const std::vector<std::string>&) {
+    sub.action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
         std::cout << "sub:" << parser.getFlag<std::string>("--name") << "\n";
         return 0;
     });

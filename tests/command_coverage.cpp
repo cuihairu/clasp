@@ -159,7 +159,7 @@ void testCustomFunctions() {
     });
 
     // Test setFlagErrorFunc
-    root.setFlagErrorFunc([](const clasp::Command& cmd, const std::string& err) -> std::string {
+    root.setFlagErrorFunc([](const clasp::Command&, const std::string& err) -> std::string {
         return "Custom error: " + err;
     });
 

@@ -168,7 +168,7 @@ void testDoubleDash() {
         root.withFlag("--verbose", "-v", "verbose", "Verbose", false);
 
         bool actionCalled = false;
-        root.action([&](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>& args) {
+        root.action([&](clasp::Command&, const clasp::Parser&, const std::vector<std::string>& args) {
             expect(args.size() == 2 && args[1] == "--verbose", "double dash positionals");
             actionCalled = true;
             return 0;
@@ -271,7 +271,7 @@ void testEmptyPositionals() {
         root.withFlag("--flag", "-f", "flag", "Flag", false);
 
         bool actionCalled = false;
-        root.action([&](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>& args) {
+        root.action([&](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
             auto positionals = parser.positionals();
             expect(positionals.empty(), "empty positionals");
             actionCalled = true;

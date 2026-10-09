@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     root.withFlag("--mode", "", "mode", "Mode", std::string(""));
     root.withFlag("--count", "-c", "count", "Count", 0);
 
-    root.action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>& args) {
+    root.action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
         std::cout << "occ=" << parser.occurrences("--verbose") << "\n";
 
         std::cout << "explicit=" << (parser.hasExplicitValue("--name") ? "yes" : "no");
