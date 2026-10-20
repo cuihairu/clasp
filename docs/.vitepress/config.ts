@@ -3,6 +3,9 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   // Base path for GitHub Pages
   base: '/clasp/',
+  // review/ holds raw archival records (pasted tool logs); they are not site
+  // pages and break the markdown parser, so keep them out of the build.
+  srcExclude: ['review/**'],
 
   // Shared configuration
   title: 'Clasp',
