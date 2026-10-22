@@ -31,11 +31,11 @@ jobs:
             cxx: cl
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - name: Setup MSVC dev cmd
         if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@v1.13.0
 
       - name: Configure
         shell: bash
@@ -76,7 +76,7 @@ jobs:
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - name: Install lcov
         shell: bash
@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload to Codecov (token)
         if: github.event_name == 'push' && env.CODECOV_TOKEN != ''
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7.1.1
         with:
           token: ${{ env.CODECOV_TOKEN }}
           files: coverage.info
@@ -138,7 +138,7 @@ jobs:
 
       - name: Upload to Codecov (OIDC)
         if: github.event_name == 'push' && env.CODECOV_TOKEN == ''
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7.1.1
         with:
           use_oidc: true
           files: coverage.info
