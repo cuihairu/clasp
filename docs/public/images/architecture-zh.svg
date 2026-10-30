@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1140" viewBox="0 0 1200 1140" role="img" aria-labelledby="title desc" xml:lang="zh-CN">
+<title id="title">Clasp · 组件架构</title>
+<desc id="desc">Clasp 是 C++17 CLI 库，对齐 Cobra v1.x 可观察行为。应用定义 Command 与 Flag 并调用 Execute()；clasp.hpp 为公共伞头。核心层：Command 命令树（子命令/aliases/hooks/args 校验/生命周期/模板）、Parser pflag 风格解析、Flag 标志定义、Value 类型安全取值。支撑层：Color ANSI 主题、Config env 与配置文件合并（flag &gt; env &gt; config &gt; default）、Shell 补全（bash/zsh/fish/powershell、__complete）、detail 值解析与 utils。对外可观察行为：help/usage/错误渲染、补全协议、兼容行为。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" fill="context-stroke"/></marker></defs>
+<style>text{font-family:Arial,'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#172b4d}.title{font-size:30px;font-weight:700}.name{font-size:21px;font-weight:700}.body{font-size:15px;fill:#435570}.small{font-size:13px;fill:#52647b}.layer{font-size:18px;font-weight:700;fill:#334155}.label{font-size:14px;fill:#435570;paint-order:stroke;stroke:#f8fafc;stroke-width:5px;stroke-linejoin:round}.edge{fill:none;stroke-linejoin:round}.control{stroke-dasharray:7 5}</style>
+<rect width="1200" height="1140" rx="20" fill="#f8fafc"/>
+<text x="40" y="48" class="title" text-anchor="start">Clasp · 组件架构</text>
+<text x="40" y="80" class="body" text-anchor="start">C++17 CLI 库 · 命令树 + pflag 风格解析 · 对齐 Cobra v1.x 可观察 CLI 行为</text>
+
+<path d="M600 205 V270" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="app-umbrella" data-from="app" data-to="umbrella" d="M600 205 V270" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-command" data-from="umbrella" data-to="command" d="M600 360 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V395 H454 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-parser" data-from="umbrella" data-to="parser" d="M600 360 V395 H454 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V395 H744 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-flag" data-from="umbrella" data-to="flag" d="M600 360 V395 H744 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V395 H1034 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-value" data-from="umbrella" data-to="value" d="M600 360 V395 H1034 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+
+<path d="M290 525 H330" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="command-parser" data-from="command" data-to="parser" d="M290 525 H330" class="edge" style="stroke:#2563eb;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M580 525 H620" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="parser-flag" data-from="parser" data-to="flag" d="M580 525 H620" class="edge" style="stroke:#2563eb;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M870 525 H910" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="flag-value" data-from="flag" data-to="value" d="M870 525 H910" class="edge" style="stroke:#2563eb;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+
+<path d="M164 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="command-color" data-from="command" data-to="color" d="M164 620 V740" class="edge" style="stroke:#c2410c;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M454 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="parser-config" data-from="parser" data-to="config" d="M454 620 V740" class="edge" style="stroke:#7c3aed;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M744 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="flag-completion" data-from="flag" data-to="completion" d="M744 620 V740" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M1034 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="value-detail" data-from="value" data-to="detail" d="M1034 620 V740" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+
+<path d="M164 840 V930" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="color-output" data-from="color" data-to="outputs" d="M164 840 V930" class="edge" style="stroke:#c2410c;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M744 840 V930" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="completion-output" data-from="completion" data-to="outputs" d="M744 840 V930" class="edge" style="stroke:#087f5b;stroke-width:2" marker-end="url(#arrow)"/>
+
+<g id="app" data-node="app"><rect x="320" y="120" width="560" height="85" rx="14" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+<text x="342" y="154" class="name" text-anchor="start">你的 CLI 应用</text>
+<text x="342" y="182" class="body" text-anchor="start">定义 Command + Flag · 调用 Execute() 运行命令树</text></g>
+<g id="umbrella" data-node="umbrella"><rect x="240" y="270" width="720" height="90" rx="14" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.5"/>
+<text x="262" y="304" class="name" text-anchor="start">clasp.hpp — 公共伞头（umbrella）</text>
+<text x="262" y="332" class="body" text-anchor="start">include color/command/flag/value · 版本宏 CLASP_VERSION_MAJOR/MINOR/PATCH</text></g>
+
+<g id="command" data-node="command"><rect x="40" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="60" y="464" class="name" text-anchor="start">Command</text>
+<text x="60" y="486" class="small" text-anchor="start">command.hpp</text>
+<text x="60" y="514" class="body" text-anchor="start">命令树 · 子命令 / aliases</text>
+<text x="60" y="538" class="body" text-anchor="start">hooks · args validators</text>
+<text x="60" y="562" class="body" text-anchor="start">TraverseChildren</text>
+<text x="60" y="586" class="body" text-anchor="start">Execute 生命周期 · 模板</text></g>
+<g id="parser" data-node="parser"><rect x="330" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="350" y="464" class="name" text-anchor="start">Parser</text>
+<text x="350" y="486" class="small" text-anchor="start">parser.hpp</text>
+<text x="350" y="514" class="body" text-anchor="start">pflag 风格：--k=v / -k=v</text>
+<text x="350" y="538" class="body" text-anchor="start">-abc 短分组 · --no-foo 取反</text>
+<text x="350" y="562" class="body" text-anchor="start">重复 flags · NoOptDefVal</text>
+<text x="350" y="586" class="body" text-anchor="start">子命令与可选值分离</text></g>
+<g id="flag" data-node="flag"><rect x="620" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="640" y="464" class="name" text-anchor="start">Flag</text>
+<text x="640" y="486" class="small" text-anchor="start">flag.hpp</text>
+<text x="640" y="514" class="body" text-anchor="start">持久 / 局部 flags</text>
+<text x="640" y="538" class="body" text-anchor="start">required / hidden / deprecated</text>
+<text x="640" y="562" class="body" text-anchor="start">分组 · 重复</text>
+<text x="640" y="586" class="body" text-anchor="start">FlagValue variant</text></g>
+<g id="value" data-node="value"><rect x="910" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="930" y="464" class="name" text-anchor="start">Value</text>
+<text x="930" y="486" class="small" text-anchor="start">value.hpp</text>
+<text x="930" y="514" class="body" text-anchor="start">类型安全取值</text>
+<text x="930" y="538" class="body" text-anchor="start">bytes / count / IP / CIDR</text>
+<text x="930" y="562" class="body" text-anchor="start">IPNet / IPMask / URL</text>
+<text x="930" y="586" class="body" text-anchor="start">自定义类型解析</text></g>
+
+<g id="support-band" data-node="support-band"><rect x="40" y="690" width="1120" height="150" rx="14" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="60" y="718" class="layer" text-anchor="start">支撑组件</text></g>
+<g id="color" data-node="color"><rect x="40" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="60" y="768" class="name" text-anchor="start">Color</text>
+<text x="60" y="791" class="body" text-anchor="start">color.cpp · ANSI 主题</text>
+<text x="60" y="812" class="small" text-anchor="start">vscode / sublime / iterm2 · --color</text></g>
+<g id="config" data-node="config"><rect x="330" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="350" y="768" class="name" text-anchor="start">Config 集成</text>
+<text x="350" y="791" class="body" text-anchor="start">env 绑定 + 配置文件合并</text>
+<text x="350" y="812" class="small" text-anchor="start">.env/.ini/.json/.toml/.yaml</text></g>
+<g id="completion" data-node="completion"><rect x="620" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="640" y="768" class="name" text-anchor="start">Shell 补全</text>
+<text x="640" y="791" class="body" text-anchor="start">bash / zsh / fish / powershell</text>
+<text x="640" y="812" class="small" text-anchor="start">__complete 指令 · 可配置命令名</text></g>
+<g id="detail" data-node="detail"><rect x="910" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="930" y="768" class="name" text-anchor="start">detail / utils</text>
+<text x="930" y="791" class="body" text-anchor="start">value_parse.hpp · utils.hpp</text>
+<text x="930" y="812" class="small" text-anchor="start">值解析细节 · 工具函数</text></g>
+
+<g id="outputs" data-node="outputs"><rect x="40" y="930" width="1120" height="110" rx="14" fill="#edf5ff" stroke="#93b9e3" stroke-width="1.5"/>
+<text x="60" y="964" class="name" text-anchor="start">对外可观察行为（reference/compat）</text>
+<text x="60" y="992" class="body" text-anchor="start">help / usage / 错误渲染（可选着色） · 补全协议 · 对齐 Cobra v1.x 的 help/usage、解析语义与 completion 行为</text>
+<text x="60" y="1016" class="small" text-anchor="start">解析优先级：flag &gt; env &gt; config &gt; default · 未知配置扩展名拒绝 · TraverseChildren 下子命令发现与可选值分离</text></g>
+
+<text x="320" y="518" class="label" text-anchor="middle">解析</text>
+<text x="610" y="518" class="label" text-anchor="middle">定义</text>
+<text x="900" y="518" class="label" text-anchor="middle">取值</text>
+<text x="164" y="700" class="label" text-anchor="start" style="fill:#c2410c">渲染</text>
+<text x="454" y="700" class="label" text-anchor="start" style="fill:#7c3aed">合并</text>
+<text x="744" y="700" class="label" text-anchor="start">生成</text>
+<text x="1034" y="700" class="label" text-anchor="start">解析</text>
+<text x="40" y="1090" class="small" text-anchor="start">单头伞头 clasp.hpp 包含 color/command/flag/value；实现位于 src/{clasp,command,flag,color}.cpp，测试在 tests/，示例在 examples/。</text>
+<text x="40" y="1115" class="small" text-anchor="start">目标是对齐 Cobra v1.x 可观察行为而非复制其 Go API：解析语义、help/usage、completion 协议均以行为兼容为准。</text>
+</svg>

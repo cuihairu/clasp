@@ -20,6 +20,8 @@ features:
 footer: Apache-2.0 Licensed
 ---
 
+![Clasp 组件架构](/images/architecture-zh.svg)
+
 ## 这是啥
 
 Clasp 是一个 C++17 CLI 库：目标不是复制 Cobra 的 Go API，而是对齐 Cobra v1.x 的**可观测 CLI 行为**（help/usage、解析语义、completion 协议等）。

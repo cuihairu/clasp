@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1140" viewBox="0 0 1200 1140" role="img" aria-labelledby="title desc" xml:lang="en">
+<title id="title">Clasp · Component Architecture</title>
+<desc id="desc">Clasp is a C++17 CLI library aligning with Cobra v1.x observable behavior. The app defines Command and Flag and calls Execute(); clasp.hpp is the public umbrella header. Core layer: Command command tree (subcommands/aliases/hooks/args validators/lifecycle/templates), Parser pflag-style parsing, Flag flag definitions, Value type-safe value parsing. Support layer: Color ANSI themes, Config env + config file merge (flag &gt; env &gt; config &gt; default), Shell completion (bash/zsh/fish/powershell, __complete), detail value parsing and utils. Observable behavior: help/usage/error rendering, completion protocol, compatibility behavior.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" fill="context-stroke"/></marker></defs>
+<style>text{font-family:Arial,'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#172b4d}.title{font-size:30px;font-weight:700}.name{font-size:21px;font-weight:700}.body{font-size:15px;fill:#435570}.small{font-size:13px;fill:#52647b}.layer{font-size:18px;font-weight:700;fill:#334155}.label{font-size:14px;fill:#435570;paint-order:stroke;stroke:#f8fafc;stroke-width:5px;stroke-linejoin:round}.edge{fill:none;stroke-linejoin:round}.control{stroke-dasharray:7 5}</style>
+<rect width="1200" height="1140" rx="20" fill="#f8fafc"/>
+<text x="40" y="48" class="title" text-anchor="start">Clasp · Component Architecture</text>
+<text x="40" y="80" class="body" text-anchor="start">C++17 CLI library · command tree + pflag-like parsing · aligns with Cobra v1.x observable CLI behavior</text>
+
+<path d="M600 205 V270" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="app-umbrella" data-from="app" data-to="umbrella" d="M600 205 V270" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-command" data-from="umbrella" data-to="command" d="M600 360 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V395 H454 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-parser" data-from="umbrella" data-to="parser" d="M600 360 V395 H454 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V395 H744 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-flag" data-from="umbrella" data-to="flag" d="M600 360 V395 H744 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M600 360 V395 H1034 V430" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="umbrella-value" data-from="umbrella" data-to="value" d="M600 360 V395 H1034 V430" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+
+<path d="M290 525 H330" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="command-parser" data-from="command" data-to="parser" d="M290 525 H330" class="edge" style="stroke:#2563eb;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M580 525 H620" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="parser-flag" data-from="parser" data-to="flag" d="M580 525 H620" class="edge" style="stroke:#2563eb;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M870 525 H910" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="flag-value" data-from="flag" data-to="value" d="M870 525 H910" class="edge" style="stroke:#2563eb;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+
+<path d="M164 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="command-color" data-from="command" data-to="color" d="M164 620 V740" class="edge" style="stroke:#c2410c;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M454 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="parser-config" data-from="parser" data-to="config" d="M454 620 V740" class="edge" style="stroke:#7c3aed;stroke-width:2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M744 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="flag-completion" data-from="flag" data-to="completion" d="M744 620 V740" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M1034 620 V740" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="value-detail" data-from="value" data-to="detail" d="M1034 620 V740" class="edge" style="stroke:#475569;stroke-width:2" marker-end="url(#arrow)"/>
+
+<path d="M164 840 V930" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="color-output" data-from="color" data-to="outputs" d="M164 840 V930" class="edge" style="stroke:#c2410c;stroke-width:2" marker-end="url(#arrow)"/>
+<path d="M744 840 V930" fill="none" stroke="#f8fafc" stroke-width="9"/>
+<path id="completion-output" data-from="completion" data-to="outputs" d="M744 840 V930" class="edge" style="stroke:#087f5b;stroke-width:2" marker-end="url(#arrow)"/>
+
+<g id="app" data-node="app"><rect x="320" y="120" width="560" height="85" rx="14" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+<text x="342" y="154" class="name" text-anchor="start">Your CLI application</text>
+<text x="342" y="182" class="body" text-anchor="start">defines Command + Flag · calls Execute() to run the command tree</text></g>
+<g id="umbrella" data-node="umbrella"><rect x="240" y="270" width="720" height="90" rx="14" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.5"/>
+<text x="262" y="304" class="name" text-anchor="start">clasp.hpp — public umbrella header</text>
+<text x="262" y="332" class="body" text-anchor="start">includes color/command/flag/value · version macros CLASP_VERSION_MAJOR/MINOR/PATCH</text></g>
+
+<g id="command" data-node="command"><rect x="40" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="60" y="464" class="name" text-anchor="start">Command</text>
+<text x="60" y="486" class="small" text-anchor="start">command.hpp</text>
+<text x="60" y="514" class="body" text-anchor="start">command tree · subcommands / aliases</text>
+<text x="60" y="538" class="body" text-anchor="start">hooks · args validators</text>
+<text x="60" y="562" class="body" text-anchor="start">TraverseChildren</text>
+<text x="60" y="586" class="body" text-anchor="start">Execute lifecycle · templates</text></g>
+<g id="parser" data-node="parser"><rect x="330" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="350" y="464" class="name" text-anchor="start">Parser</text>
+<text x="350" y="486" class="small" text-anchor="start">parser.hpp</text>
+<text x="350" y="514" class="body" text-anchor="start">pflag-style: --k=v / -k=v</text>
+<text x="350" y="538" class="body" text-anchor="start">-abc short grouping · --no-foo negation</text>
+<text x="350" y="562" class="body" text-anchor="start">repeated flags · NoOptDefVal</text>
+<text x="350" y="586" class="body" text-anchor="start">subcommand vs optional value separation</text></g>
+<g id="flag" data-node="flag"><rect x="620" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="640" y="464" class="name" text-anchor="start">Flag</text>
+<text x="640" y="486" class="small" text-anchor="start">flag.hpp</text>
+<text x="640" y="514" class="body" text-anchor="start">persistent / local flags</text>
+<text x="640" y="538" class="body" text-anchor="start">required / hidden / deprecated</text>
+<text x="640" y="562" class="body" text-anchor="start">groups · repeated</text>
+<text x="640" y="586" class="body" text-anchor="start">FlagValue variant</text></g>
+<g id="value" data-node="value"><rect x="910" y="430" width="250" height="190" rx="14" fill="#eef8f5" stroke="#86c9b3" stroke-width="1.5"/>
+<text x="930" y="464" class="name" text-anchor="start">Value</text>
+<text x="930" y="486" class="small" text-anchor="start">value.hpp</text>
+<text x="930" y="514" class="body" text-anchor="start">type-safe value parsing</text>
+<text x="930" y="538" class="body" text-anchor="start">bytes / count / IP / CIDR</text>
+<text x="930" y="562" class="body" text-anchor="start">IPNet / IPMask / URL</text>
+<text x="930" y="586" class="body" text-anchor="start">custom type parsing</text></g>
+
+<g id="support-band" data-node="support-band"><rect x="40" y="690" width="1120" height="150" rx="14" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="60" y="718" class="layer" text-anchor="start">Supporting components</text></g>
+<g id="color" data-node="color"><rect x="40" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="60" y="768" class="name" text-anchor="start">Color</text>
+<text x="60" y="791" class="body" text-anchor="start">color.cpp · ANSI themes</text>
+<text x="60" y="812" class="small" text-anchor="start">vscode / sublime / iterm2 · --color</text></g>
+<g id="config" data-node="config"><rect x="330" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="350" y="768" class="name" text-anchor="start">Config integration</text>
+<text x="350" y="791" class="body" text-anchor="start">env binding + config file merge</text>
+<text x="350" y="812" class="small" text-anchor="start">.env/.ini/.json/.toml/.yaml</text></g>
+<g id="completion" data-node="completion"><rect x="620" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="640" y="768" class="name" text-anchor="start">Shell completion</text>
+<text x="640" y="791" class="body" text-anchor="start">bash / zsh / fish / powershell</text>
+<text x="640" y="812" class="small" text-anchor="start">__complete directive · configurable names</text></g>
+<g id="detail" data-node="detail"><rect x="910" y="740" width="250" height="84" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="930" y="768" class="name" text-anchor="start">detail / utils</text>
+<text x="930" y="791" class="body" text-anchor="start">value_parse.hpp · utils.hpp</text>
+<text x="930" y="812" class="small" text-anchor="start">value parsing details · helpers</text></g>
+
+<g id="outputs" data-node="outputs"><rect x="40" y="930" width="1120" height="110" rx="14" fill="#edf5ff" stroke="#93b9e3" stroke-width="1.5"/>
+<text x="60" y="964" class="name" text-anchor="start">Observable behavior (reference/compat)</text>
+<text x="60" y="992" class="body" text-anchor="start">help / usage / error rendering (optional color) · completion protocol · aligns with Cobra v1.x help/usage, parsing semantics and completion behavior</text>
+<text x="60" y="1016" class="small" text-anchor="start">precedence: flag &gt; env &gt; config &gt; default · unknown config extensions rejected · subcommand discovery separated from optional values under TraverseChildren</text></g>
+
+<text x="320" y="518" class="label" text-anchor="middle">parse</text>
+<text x="610" y="518" class="label" text-anchor="middle">define</text>
+<text x="900" y="518" class="label" text-anchor="middle">read</text>
+<text x="164" y="700" class="label" text-anchor="start" style="fill:#c2410c">render</text>
+<text x="454" y="700" class="label" text-anchor="start" style="fill:#7c3aed">merge</text>
+<text x="744" y="700" class="label" text-anchor="start">generate</text>
+<text x="1034" y="700" class="label" text-anchor="start">parse</text>
+<text x="40" y="1090" class="small" text-anchor="start">The umbrella header clasp.hpp includes color/command/flag/value; implementation lives in src/{clasp,command,flag,color}.cpp, tests in tests/, examples in examples/.</text>
+<text x="40" y="1115" class="small" text-anchor="start">The goal is to align with Cobra v1.x observable behavior rather than replicate its Go API: parsing semantics, help/usage and completion protocol are all behavior-compatible.</text>
+</svg>
