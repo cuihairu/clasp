@@ -14,14 +14,18 @@
 - help/usage/version：`--help/-h`、`help [cmd]`、default values 展示、排序开关、examples
 - completion：bash/zsh/fish/powershell + `__complete` candidates + directives
 - 外部源合并：`flag > env > config > default`
+- Cobra 类标准文案：常见失败信息（unknown command/flag + suggestions、needs-argument、invalid argument、required-flag-not-set）由 CTest 逐字节锁定（`examples/cobra_strings_example.cpp`）
+- pflag edge 交互：重复 bool、空 `--flag=`、负数值、位置参数交错、`NoOptDefVal` 两种形式、`--` end-of-flags、内联短值、重复值 last-wins——由行为测试钉死（`examples/pflag_edge_example.cpp`）
+- 各 shell 的 completion 指令：每个生成脚本（bash/zsh/fish/powershell）的 directive 处理逻辑由 CTest 断言；shell 运行时强制与逐字节脚本一致不在范围内
 
-## Should Support（Best-Effort）
+以上三条由原先的 “Should Support（Best-Effort）” 升级而来，各自带 example + CTest 覆盖（详见 `COMPAT.md`）。
 
-这些对 “Cobra-like feel” 很重要，但暂时不作为严格 contract（除非 CTest 锁定）：
+## Best-Effort Fidelity（已升级为 Must Support）
 
-- Cobra 默认英文文案/空白的逐字节一致
-- 更“怪”的 pflag edge cases（排序、错误文案细节、罕见交互）
-- completion 脚本在 shell/runtime 中体现的细节差异（Clasp 只输出 directives）
+下列各项原先为 best-effort，现为带 per-item example + CTest 锁定的兼容承诺（见上方 Must Support）：
+- Cobra 默认英文文案/空白的逐字节一致 → `cobra_strings_example.cpp`
+- 更“怪”的 pflag edge cases → `pflag_edge_example.cpp`
+- completion 脚本指令处理（逐 shell 断言）→ completion CTest 矩阵
 
 ## Non-Goals（明确不追）
 
@@ -34,7 +38,7 @@
 
 - 模板语言能力受限（无条件/循环/管道/func）
 - `--help/-h` 与 `--version` 作为内建 flags（即使未显式声明）
-- 内建类型面是子集（`bool/int/int64/uint64/float/double/duration/string` + 若干 helpers）
+- 内建类型面是子集（`bool/int/int64/uint32/uint64/float/double/duration/string` + narrow-width/bytes/count/ip/cidr/ipnet/ipmask/url/ipSlice/bytesBase64 helpers）
 - completion 细节依赖 shell/runtime
 - 错误文案不保证逐字节一致（除非用 CTest 锁定）
 

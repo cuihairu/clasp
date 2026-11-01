@@ -16,9 +16,13 @@ ctest --test-dir build --output-on-failure
 - `examples/args_example.cpp`: Args validators (`NoArgs/ExactArgs/RangeArgs`) + `SilenceUsage` / `SilenceErrors` behavior.
 - `examples/hooks_example.cpp`: Hook ordering (`PersistentPreRun`/`PreRun`/`PostRun`).
 - `examples/required_example.cpp`: Required flags.
+- `examples/deprecated_example.cpp`: Deprecated command/flag warnings (`deprecated()`).
 - `examples/flag_groups_example.cpp`: Mutually-exclusive / one-required / required-together groups.
+- `examples/group_example.cpp`: Command groups (`addGroup` / `groupId`; unknown group treated as ungrouped).
 - `examples/traverse_example.cpp`: `TraverseChildren` (child flags before subcommands).
+- `examples/traverse_completion_example.cpp`: `TraverseChildren` + completion (subcommand token not consumed as a flag value).
 - `examples/no_suggest_example.cpp`: Disable suggestions.
+- `examples/utils_suggest_example.cpp`: `utils::suggest` prefix/distance suggestions.
 - `examples/docs_example.cpp`: Markdown + manpage generation.
 - `examples/completion_example.cpp`: Shell completion generation (bash/zsh/fish/powershell).
 - `examples/dynamic_completion_example.cpp`: Dynamic completions (valid args + flag value completion).
@@ -46,13 +50,16 @@ ctest --test-dir build --output-on-failure
 - `examples/parser_external_example.cpp`: Parser external values (multi-source merge + count flags).
 - `examples/silence_errors_example.cpp`: `SilenceErrors` suppresses unknown-command output.
 - `examples/version_template_example.cpp`: Custom version template (`setVersionTemplate`).
+- `examples/custom_template_example.cpp`: Custom help/usage templates (`setHelpTemplate` / `setUsageTemplate`).
 - `examples/disable_flags_in_use_line_example.cpp`: Hide `[flags]` in the usage line (`disableFlagsInUseLine`).
 - `examples/flag_error_func_example.cpp`: Customize flag parse errors (`setFlagErrorFunc`).
+- `examples/flag_convert_example.cpp`: `Flag::convertToFlagValue` type conversion (bool/int/int64/uint32/uint64/float/double/duration/string).
 - `examples/help_command_rename_example.cpp`: Rename the built-in help command (`enableHelp`).
 - `examples/help_command_disabled_example.cpp`: Disable the built-in help command (`disableHelpCommand`).
 - `examples/count_example.cpp`: Count flags (`-vvv` style) via `withCountFlag` + `Parser::getCount`.
 - `examples/context_example.cpp`: Inherited command context (`setContext` / `runWithContext`).
 - `examples/config_example.cpp`: `.env`-style config + env binding precedence merge.
+- `examples/config_ini_example.cpp`: `.ini` / `.cfg` config (section keys flattened).
 - `examples/config_json_example.cpp` + `examples/config.json`: JSON config (nested flatten).
 - `examples/config_toml_example.cpp` + `examples/config.toml`: TOML config (basic tables + flatten).
 - `examples/config_yaml_example.cpp` + `examples/config.yaml`: YAML config (basic nested mappings + flatten).
@@ -60,4 +67,5 @@ ctest --test-dir build --output-on-failure
 - `examples/sorting_example.cpp` / `examples/no_sorting_example.cpp`: Command/flag sorting toggles.
 - `examples/execute_example.cpp`: Programmatic execution (`setArgs` + `execute()`).
 - `examples/hook_error_example.cpp`: Error-returning hooks (`*PreRunE/*PostRunE`) and `actionE`.
-- `examples/api_coverage_example.cpp`: Builder-style API surface coverage.
+
+Note: builder-style API surface coverage lives in `tests/api.cpp` (built as `api_test`, CTest `api_coverage`), not in `examples/`.

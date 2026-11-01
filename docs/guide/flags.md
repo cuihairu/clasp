@@ -4,7 +4,7 @@
 
 Use `withFlag(long, short, var, desc, defaultValue)` to declare flags. Built-in value types follow C++ types:
 
-- `bool/int/int64/uint64/float/double/std::chrono::milliseconds/std::string`
+- `bool/int/int64/uint32/uint64/float/double/std::chrono::milliseconds/std::string`
 - Extra helpers: `withCountFlag()`, `withBytesFlag()`, `withIPFlag/withCIDRFlag/withIPNetFlag/withIPMaskFlag/withURLFlag()`
 
 ## Common Parsing Semantics

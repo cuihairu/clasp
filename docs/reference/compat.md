@@ -14,14 +14,18 @@ These are "compatibility commitments": behavioral changes should include corresp
 - help/usage/version: `--help/-h`, `help [cmd]`, default values display, sorting toggles, examples
 - Completion: bash/zsh/fish/powershell + `__complete` candidates + directives
 - External source merging: `flag > env > config > default`
+- Canonical Cobra-like strings: common failure messages (unknown command/flag + suggestions, needs-argument, invalid argument, required-flag-not-set) are locked byte-for-byte by CTest (`examples/cobra_strings_example.cpp`)
+- pflag edge interactions: repeated bools, empty `--flag=`, negative-number values, intermixed positionals, `NoOptDefVal` both forms, `--` end-of-flags, inline short values, repeated values last-wins — pinned by behavior tests (`examples/pflag_edge_example.cpp`)
+- Completion directives per shell: the directive-handling logic of every generated script (bash/zsh/fish/powershell) is asserted by CTest; shell-runtime enforcement and byte-identical scripts remain out of scope
 
-## Should Support (Best-Effort)
+The three bullets above were promoted from the former "Should Support (Best-Effort Fidelity)" list; each now carries its own example + CTest coverage (see `COMPAT.md`).
 
-These are important for "Cobra-like feel" but not strict contracts (unless locked by CTest):
+## Best-Effort Fidelity (Promoted to Must Support)
 
-- Byte-for-byte consistency with Cobra's default English text/whitespace
-- More unusual pflag edge cases (sorting, error text details, rare interactions)
-- Completion script details in shell/runtime (Clasp only outputs directives)
+These were previously best-effort; they are now compatibility commitments with per-item example + CTest locks (see Must Support above):
+- Byte-for-byte consistency with Cobra's default English text/whitespace → `cobra_strings_example.cpp`
+- More unusual pflag edge cases (sorting, error text details, rare interactions) → `pflag_edge_example.cpp`
+- Completion script details in shell/runtime (Clasp outputs directives; per-shell directive handling is asserted) → completion CTest matrix
 
 ## Non-Goals (Explicitly Not Pursued)
 
@@ -34,7 +38,7 @@ These are important for "Cobra-like feel" but not strict contracts (unless locke
 
 - Template language capability limited (no conditions/loops/pipes/funcs)
 - `--help/-h` and `--version` as built-in flags (even when not explicitly declared)
-- Built-in type surface is a subset (`bool/int/int64/uint64/float/double/duration/string` + helpers)
+- Built-in type surface is a subset (`bool/int/int64/uint32/uint64/float/double/duration/string` + narrow-width/bytes/count/ip/cidr/ipnet/ipmask/url/ipSlice/bytesBase64 helpers)
 - Completion details depend on shell/runtime
 - Error text not guaranteed byte-for-byte consistent (unless locked by CTest)
 

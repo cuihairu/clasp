@@ -4,7 +4,7 @@
 
 使用 `withFlag(long, short, var, desc, defaultValue)` 声明 flag。内置值类型以 C++ 类型为准：
 
-- `bool/int/int64/uint64/float/double/std::chrono::milliseconds/std::string`
+- `bool/int/int64/uint32/uint64/float/double/std::chrono::milliseconds/std::string`
 - 额外 helpers：`withCountFlag()`、`withBytesFlag()`、`withIPFlag/withCIDRFlag/withIPNetFlag/withIPMaskFlag/withURLFlag()`
 
 ## 常见解析语义
