@@ -1,6 +1,6 @@
 # Clasp
 
-<p align="center"><a href="https://cuihairu.github.io/clasp//"><img src="https://img.shields.io/badge/docs-docs-blue" alt="docs"></a> <a href="https://cuihairu.github.io/clasp/"><img src="https://img.shields.io/badge/docs-docs-blue" alt="docs"></a></p>
+<p align="center"><a href="https://cuihairu.github.io/clasp//"><img src="https://img.shields.io/badge/docs-blue" alt="docs"></a></p>
 
 [![CI](https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/clasp/actions/workflows/ci.yml) [![Version](https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver)](https://github.com/cuihairu/clasp/tags) [![C++](https://img.shields.io/badge/C%2B%2B-17-blue)](https://en.cppreference.com/w/cpp/17) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Codecov](https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg)](https://codecov.io/gh/cuihairu/clasp)
 English | [简体中文](README.zh.md)
