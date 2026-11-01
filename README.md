@@ -1,8 +1,8 @@
 # Clasp
 
-<p align="center"><a href="https://cuihairu.github.io/clasp//"><img src="https://img.shields.io/badge/docs-blue" alt="docs"></a></p>
+<p align="center"><a href="https://cuihairu.github.io/clasp/"><img src="https://img.shields.io/badge/docs-blue" alt="docs"></a></p>
 
-[![CI](https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/clasp/actions/workflows/ci.yml) [![Version](https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver)](https://github.com/cuihairu/clasp/tags) [![C++](https://img.shields.io/badge/C%2B%2B-17-blue)](https://en.cppreference.com/w/cpp/17) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Codecov](https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg)](https://codecov.io/gh/cuihairu/clasp)
+<p align="center">[![CI](https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/clasp/actions/workflows/ci.yml) [![Version](https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver)](https://github.com/cuihairu/clasp/tags) [![C++](https://img.shields.io/badge/C%2B%2B-17-blue)](https://en.cppreference.com/w/cpp/17) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Codecov](https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg)](https://codecov.io/gh/cuihairu/clasp)</p>
 English | [简体中文](README.zh.md)
 
 **Clasp** is a modern C++ library designed for building powerful command-line applications. Inspired by Go's Cobra library, Clasp offers a straightforward API to define and organize commands, parse flags, and manage CLI application lifecycles.
@@ -85,7 +85,7 @@ Hello, Clasp!
 - `COMPAT.md`: what “Cobra-like” means for this project.
 - `CHANGELOG.md`: notable changes and release notes.
 - Public headers live under `include/clasp/` (`clasp/clasp.hpp` includes the main API).
-- `docs/`: VuePress site sources (optional).
+- `docs/`: VitePress site sources (optional).
 
 ## Behavior Notes
 
@@ -103,7 +103,7 @@ The test suite is broad, but coverage report generation depends on toolchain sup
 - GCC/Clang: configure with `-DCLASP_ENABLE_COVERAGE=ON` and use your usual `gcov`/`lcov` flow.
 - Visual Studio/MSVC: the library and tests build and run, but `CLASP_ENABLE_COVERAGE` does not instrument MSVC builds. Use Visual Studio code coverage tooling if you need a Windows coverage report.
 
-### VuePress Docs (Optional)
+### VitePress Docs (Optional)
 
 ```bash
 cd docs

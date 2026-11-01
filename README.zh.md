@@ -1,14 +1,10 @@
 # Clasp
 
-[![CI](https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/clasp/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver)](https://github.com/cuihairu/clasp/tags)
-[![C++](https://img.shields.io/badge/C%2B%2B-17-blue)](https://en.cppreference.com/w/cpp/17)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Codecov](https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg)](https://codecov.io/gh/cuihairu/clasp)
+<p align="center">[![CI](https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/clasp/actions/workflows/ci.yml) [![Version](https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver)](https://github.com/cuihairu/clasp/tags) [![C++](https://img.shields.io/badge/C%2B%2B-17-blue)](https://en.cppreference.com/w/cpp/17) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Codecov](https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg)](https://codecov.io/gh/cuihairu/clasp)</p>
 
 [English](README.md) | 简体中文
 
-<p align="center"><a href="https://cuihairu.github.io/clasp/zh//"><img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-blue" alt="docs"></a></p>
+<p align="center"><a href="https://cuihairu.github.io/clasp/zh/"><img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-blue" alt="docs"></a></p>
 
 **Clasp** 是一个用于构建强大命令行应用的现代 C++ 库。其设计灵感来自 Go 的 Cobra 库,Clasp 提供了简洁直观的 API 来定义和组织命令、解析 flag,以及管理 CLI 应用的完整生命周期。
 ## 特性
@@ -90,7 +86,7 @@ Hello, Clasp!
 - `COMPAT.md`:本项目对“类 Cobra(Cobra-like)”的具体界定。
 - `CHANGELOG.md`:重要变更与发布说明。
 - 公共头文件位于 `include/clasp/`(`clasp/clasp.hpp` 包含主要 API)。
-- `docs/`:VuePress 站点源码(可选)。
+- `docs/`:VitePress 站点源码(可选)。
 
 ## 行为说明
 
@@ -108,7 +104,7 @@ Hello, Clasp!
 - GCC/Clang:配置时加上 `-DCLASP_ENABLE_COVERAGE=ON`,并使用你惯用的 `gcov`/`lcov` 流程。
 - Visual Studio/MSVC:库和测试可以正常构建运行,但 `CLASP_ENABLE_COVERAGE` 不会为 MSVC 构建插桩。如需 Windows 覆盖率报告,请使用 Visual Studio 自带的代码覆盖率工具。
 
-### VuePress 文档(可选)
+### VitePress 文档(可选)
 
 ```bash
 cd docs
