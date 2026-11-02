@@ -84,3 +84,10 @@ Evidence: commit a2a7823 · 569/569 CTest green · 100% line/function/branch cov
 - [x] Phased rollout (example + CTest per gap)
 - [x] Compatibility and stability (error/output consistency, edge cases)
 - [x] Docs wrap-up (README + docs build)
+
+## Code Review Findings (2026-11-02)
+
+Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow) fixed in eccbea9.
+
+- [ ] `-v-2` count shorthand parses a negative increment (parser.hpp:1376-1398): the `-v<digits>` count form accepts a leading `-`, so `-v-2` records `-2` and `getCount` can go negative. pflag rejects this; reject a negative remainder.
+- [ ] Completion scripts interpolate the root command name and subcommand/flag word lists without shell escaping (command.hpp:3391-3511 (bash/zsh), 4172 (fish), 4330 & 4412 (powershell)). `bashCaseLabel`/`escapeDoubleQuotes` cover case labels and descriptions, but `rootName` and `joinWords(...)` are raw. Only reachable with command names containing shell metacharacters (developer-controlled); escape or document the assumption.
