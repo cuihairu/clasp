@@ -205,6 +205,82 @@ void testJsonBranchMatrix() {
     }
 }
 
+// Regression: deeply nested JSON must be rejected cleanly, not crash the host
+// with a stack overflow (parseObjectFlatten/skipArray/skipObject recurse without
+// a bound; config files are untrusted input).
+void testJsonNestingDepthLimit() {
+    const auto deepObject = [](int n) {
+        std::string s;
+        s.reserve(static_cast<std::size_t>(n) * 4 + 2);
+        for (int i = 0; i < n; ++i) s += "{\"a\":";
+        s += "1";
+        for (int i = 0; i < n; ++i) s += "}";
+        return s;
+    };
+    const auto deepArrayUnderKey = [](int n) {
+        std::string s;
+        s.reserve(static_cast<std::size_t>(n) * 2 + 6);
+        s += "{\"a\":";
+        for (int i = 0; i < n; ++i) s += "[";
+        s += "1";
+        for (int i = 0; i < n; ++i) s += "]";
+        s += "}";
+        return s;
+    };
+    // Alternating array/object nesting: exercises skipValue -> skipObject at depth.
+    const auto deepMixed = [](int n) {
+        std::string s;
+        s.reserve(static_cast<std::size_t>(n) * 7 + 4);
+        s += "{\"a\":[";
+        for (int i = 0; i < n; ++i) s += "{\"b\":[";
+        s += "1";
+        return s;
+    };
+
+    // Reasonable configs (a handful of levels) must still parse.
+    {
+        std::string errText;
+        const int rc = loadConfigContent(tmpPath("cpc_json_depth_ok.json"), deepObject(60), &errText);
+        expect(rc == 0, "json depth: moderate nesting accepted");
+    }
+
+    // Deep object nesting -> parseObjectFlatten depth guard.
+    {
+        std::string errText;
+        const int rc = loadConfigContent(tmpPath("cpc_json_depth_obj.json"), deepObject(200000), &errText);
+        expect(rc != 0, "json depth: deep object nesting rejected (no crash)");
+        expect(errText.find("failed to parse json config file") != std::string::npos,
+               "json depth: deep object rejection error text");
+    }
+
+    // Deep array nesting under a key -> skipArray depth guard.
+    {
+        std::string errText;
+        const int rc = loadConfigContent(tmpPath("cpc_json_depth_arr.json"), deepArrayUnderKey(200000), &errText);
+        expect(rc != 0, "json depth: deep array nesting rejected (no crash)");
+        expect(errText.find("failed to parse json config file") != std::string::npos,
+               "json depth: deep array rejection error text");
+    }
+
+    // Deep alternating array/object nesting -> skipObject depth guard.
+    {
+        std::string errText;
+        const int rc = loadConfigContent(tmpPath("cpc_json_depth_mixed.json"), deepMixed(200000), &errText);
+        expect(rc != 0, "json depth: deep mixed nesting rejected (no crash)");
+        expect(errText.find("failed to parse json config file") != std::string::npos,
+               "json depth: deep mixed rejection error text");
+    }
+
+    // Tight boundary: maxDepth-1 allowed, maxDepth rejected (no off-by-one drift).
+    {
+        std::string errText;
+        const int rcOk = loadConfigContent(tmpPath("cpc_json_depth_b1.json"), deepObject(128), &errText);
+        expect(rcOk == 0, "json depth: 128-level nesting accepted (at limit)");
+        const int rcNo = loadConfigContent(tmpPath("cpc_json_depth_b2.json"), deepObject(129), &errText);
+        expect(rcNo != 0, "json depth: 129-level nesting rejected (one past limit)");
+    }
+}
+
 // --- TOML parser -------------------------------------------------------------
 
 void testTomlBranchMatrix() {
@@ -512,6 +588,7 @@ int main() {
 
     testEnvLikeParsing();
     testJsonBranchMatrix();
+    testJsonNestingDepthLimit();
     testTomlBranchMatrix();
     testIniBranchMatrix();
     testYamlBranchMatrix();

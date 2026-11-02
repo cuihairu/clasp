@@ -3594,6 +3594,29 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
         const char* p{nullptr};
         const char* end{nullptr};
 
+        // Config files are untrusted input; unbounded recursion on deeply nested
+        // JSON would overflow the stack. Reject nesting past this depth (config
+        // keys flatten to "a.b.c" paths, so real configs nest a handful of levels).
+        enum : int { kMaxNestingDepth = 128 };
+        int depth{0};
+
+        struct DepthGuard {
+            JsonParse* jp;
+            bool ok;
+            explicit DepthGuard(JsonParse& j) : jp(&j), ok(j.enter()) {}
+            ~DepthGuard() {
+                if (ok) jp->leave();
+            }
+        };
+
+        bool enter() {
+            if (depth >= kMaxNestingDepth) return false;
+            ++depth;
+            return true;
+        }
+
+        void leave() { --depth; }
+
         static bool isWs(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
 
         void skipWs() {
@@ -3721,6 +3744,8 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
 
         bool skipArray() {
             if (!consume('[')) return false; // LCOV_EXCL_LINE (sole call site guarantees *p == '[')
+            const DepthGuard guard(*this);
+            if (!guard.ok) return false;
             skipWs();
             if (consume(']')) return true;
             while (true) {
@@ -3733,6 +3758,8 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
 
         bool skipObject() {
             if (!consume('{')) return false; // LCOV_EXCL_LINE (sole call site guarantees *p == '{')
+            const DepthGuard guard(*this);
+            if (!guard.ok) return false;
             skipWs();
             if (consume('}')) return true;
             while (true) {
@@ -3747,6 +3774,8 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
 
         bool parseObjectFlatten(FlatRaw& out, const std::string& prefix) {
             if (!consume('{')) return false;
+            const DepthGuard guard(*this);
+            if (!guard.ok) return false;
             skipWs();
             if (consume('}')) return true;
             while (true) {
