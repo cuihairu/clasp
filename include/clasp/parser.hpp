@@ -1381,7 +1381,7 @@ private:
                     bool numeric = true;
                     for (std::size_t j = 0; j < remainder.size(); ++j) {
                         const char ch = remainder[j];
-                        if (j == 0 && (ch == '+' || ch == '-')) continue;
+                        if (j == 0 && ch == '+') continue;
                         if (ch < '0' || ch > '9') {
                             numeric = false;
                             break;
@@ -1392,6 +1392,12 @@ private:
                         if (kindIt != kinds_.end() && !normalizeValue(canonical, v, kindIt->second)) return false; // LCOV_EXCL_LINE (unknown shorts already returned above, so the kind lookup always succeeds here)
                         recordFlagValue(canonical, std::move(v));
                         return true;
+                    }
+                    // pflag rejects a negative count increment; do not fall back to a single occurrence.
+                    if (remainder.front() == '-') {
+                        ok_ = false;
+                        error_ = "invalid argument \"" + remainder + "\" for \"" + key + "\"";
+                        return false;
                     }
                 }
                 recordFlagValue(canonical, "1");

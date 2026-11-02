@@ -1019,7 +1019,7 @@ void testShortGroupPaths() {
     }
     {
         auto p = makeParser({"-v-2"}, flags);
-        expect(p.ok() && p.getCount("--count") == -2, "count minus-signed remainder");
+        expect(!p.ok(), "count negative remainder rejected");
     }
     {
         auto p = makeParser({"-vvv"}, flags);
