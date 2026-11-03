@@ -1,6 +1,6 @@
 # Clasp
 
-<p align="center">[![CI](https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/clasp/actions/workflows/ci.yml) [![Version](https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver)](https://github.com/cuihairu/clasp/tags) [![C++](https://img.shields.io/badge/C%2B%2B-17-blue)](https://en.cppreference.com/w/cpp/17) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Codecov](https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg)](https://codecov.io/gh/cuihairu/clasp) [![文档](https://img.shields.io/badge/%E6%96%87%E6%A1%A3-blue)](https://cuihairu.github.io/clasp/zh/)</p>
+<p align="center"><a href="https://github.com/cuihairu/clasp/actions/workflows/ci.yml"><img src="https://github.com/cuihairu/clasp/actions/workflows/ci.yml/badge.svg" alt="CI"></a> <a href="https://github.com/cuihairu/clasp/tags"><img src="https://img.shields.io/github/v/tag/cuihairu/clasp?sort=semver" alt="Version"></a> <a href="https://en.cppreference.com/w/cpp/17"><img src="https://img.shields.io/badge/C%2B%2B-17-blue" alt="C%2B%2B"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a> <a href="https://codecov.io/gh/cuihairu/clasp"><img src="https://codecov.io/gh/cuihairu/clasp/branch/main/graph/badge.svg" alt="Codecov"></a> <a href="https://cuihairu.github.io/clasp/zh/"><img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-blue" alt="文档"></a></p>
 
 [English](README.md) | 简体中文
 
