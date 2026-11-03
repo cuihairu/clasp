@@ -96,13 +96,12 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 
 - [x] 审核发现：help 输出回归 —— `escapeDoubleQuotes` 现额外转义 `\` `$` 反引号（command.hpp:3267-3275），但同一函数仍被 `formatFlagForHelp` 复用渲染字符串 flag 默认值（command.hpp:2286），导致默认值含 `$`/`\`/反引号时 `--help` 显示多余反斜杠（如 `C:\path` 显示为 `"C:\\path"`）；现有测试无此类默认值用例，回归未被捕获 Fixed in commit fe1aa61 · include/clasp/command.hpp:2286,2653,3267-3288 · tests/coverage_final.cpp:250-283 · 569/569 CTest green
 - 不属实：bash 补全脚本经 source 加载不触发 histexpand（实测 `source "foo!bar"` 在交互式 bash 正常执行）
-- [ ] 审核发现：fish `-n` 条件的 `$` 转义不生效 —— `joinFishWords` 把 `$` 转义为 `\$`（command.hpp:3348-3354、4404），但 fish 会把 `-n` 条件字符串再作为命令求值，反斜杠被外层双引号解析消耗，子命令/别名名中的 `$VAR` 仍在运行时展开（既有行为，本次修复未覆盖该路径）
-- [ ] 审核发现：死代码 —— `joinWords`（command.hpp:3330）在本次改动后无调用点，`escapeFishSingleQuoted`（command.hpp:3319）定义后从未被调用，建议删除或接入
-- [ ] 审核发现：测试缺口 —— 新增补全转义测试仅做子串存在断言（tests/completion_coverage.cpp:907-975），未实际执行 bash/zsh/fish/powershell，故 zsh `#compdef "..."` 的引号解析、fish `-n` 运行时行为均未被端到端验证
+- [x] 审核发现：fish `-n` 条件的 `$` 转义不生效 —— `joinFishWords` 把 `$` 转义为 `\$`（command.hpp:3348-3354、4404），但 fish 会把 `-n` 条件字符串再作为命令求值，反斜杠被外层双引号解析消耗，子命令/别名名中的 `$VAR` 仍在运行时展开（既有行为，本次修复未覆盖该路径） Fixed in commit 4339438 · include/clasp/command.hpp:4421 · tests/completion_coverage.cpp:1014-1020 · 569/569 CTest green
+- [x] 审核发现：死代码 —— `joinWords`（command.hpp:3330）在本次改动后无调用点，`escapeFishSingleQuoted`（command.hpp:3319）定义后从未被调用，建议删除或接入 Fixed in commit 4339438 (joinWords removed; escapeFishSingleQuoted now used by fish -n condition) · include/clasp/command.hpp:2659,3362,4421 · 569/569 CTest green
+- [x] 审核发现：测试缺口 —— 新增补全转义测试仅做子串存在断言（tests/completion_coverage.cpp:907-975），未实际执行 bash/zsh/fish/powershell，故 zsh `#compdef "..."` 的引号解析、fish `-n` 运行时行为均未被端到端验证 Fixed in commit 38187d0 · tests/completion_coverage.cpp:1005-1093 (testShellEscapingEndToEnd) · 569/569 CTest green
 
 ## 审核发现（c48e9cff..HEAD 复核 · 已构建并运行 569/569 CTest 全绿 · 使用真实 bash/zsh/fish 实测）
 
-- [ ] 审核发现：fish 静态补全 `-n "__fish_seen_subcommand_from <sub>"` 条件在子命令名含单引号 `'` 时解析失败 —— `escapeFishDoubleQuoted` 不转义 `'`（command.hpp:4415），但 fish 会把 `-n` 字符串再作为 fish 代码求值（实测报 `Unexpected end of string, quotes are not balanced`），导致含撇号子命令（如 `don't`）的局部 flag 补全整体失效；这是本次新增 fish 转义路径未覆盖的缺口，比既有 `$` 运行时展开发现影响面更广
-- [ ] 审核发现：fish `-d "desc"` 描述中的反引号被过度转义 —— `escapeDoubleQuotes`（command.hpp:4403、4418）现转义 `` ` ``，但 fish 双引号内 `\`` 是字面反斜杠+反引号（实测 `"a\`b"` 输出 `a\`b`），含反引号描述在 fish 补全中多出一个反斜杠（纯显示层小瑕疵，bash 用例不受影响）
-- [ ] 审核发现：`escapeBashDoubleQuoted`（command.hpp:3298-3306）与 `escapeDoubleQuotes`（command.hpp:3268-3276）逐字节相同，属重复实现，建议合并以免后续转义集漂移
-- [ ] 审核发现：本轮修复未改变既有开放性结论 —— bash 双引号未转义 `!`（histexpand 下实测 `!b: event not found`）、fish `-n` 中 `$` 运行时展开、`joinWords`/`escapeFishSingleQuoted` 死代码、补全测试仅做子串断言未真正执行 shell；均在上一轮已登记，本轮仅补充实测证据，未复述
+- [x] 审核发现：fish 静态补全 `-n "__fish_seen_subcommand_from <sub>"` 条件在子命令名含单引号 `'` 时解析失败 —— `escapeFishDoubleQuoted` 不转义 `'`（command.hpp:4415），但 fish 会把 `-n` 字符串再作为 fish 代码求值（实测报 `Unexpected end of string, quotes are not balanced`），导致含撇号子命令（如 `don't`）的局部 flag 补全整体失效；这是本次新增 fish 转义路径未覆盖的缺口，比既有 `$` 运行时展开发现影响面更广 Fixed in commit 4339438 · include/clasp/command.hpp:3362,4421 (escapeFishSingleQuoted wraps -n condition) · tests/completion_coverage.cpp:1014-1015 · 569/569 CTest green
+- [x] 审核发现：fish `-d "desc"` 描述中的反引号被过度转义 —— `escapeDoubleQuotes`（command.hpp:4403、4418）现转义 `` ` ``，但 fish 双引号内 `\`` 是字面反斜杠+反引号（实测 `"a\`b"` 输出 `a\`b`），含反引号描述在 fish 补全中多出一个反斜杠（纯显示层小瑕疵，bash 用例不受影响） Fixed in commit 236656a · include/clasp/command.hpp:4393,4408 (fish -d uses escapeFishDoubleQuoted) · tests/completion_coverage.cpp:1016-1017 · 569/569 CTest green
+- [x] 审核发现：`escapeBashDoubleQuoted`（command.hpp:3298-3306）与 `escapeDoubleQuotes`（command.hpp:3268-3276）逐字节相同，属重复实现，建议合并以免后续转义集漂移 Fixed in commit e94e193 · include/clasp/command.hpp:3298-3300 (escapeBashDoubleQuoted delegates to escapeDoubleQuotes) · 569/569 CTest green
