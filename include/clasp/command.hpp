@@ -3297,13 +3297,7 @@ inline std::string Command::escapeBashWord(const std::string& s) {
 } // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::escapeBashDoubleQuoted(const std::string& s) {
-    std::string out;
-    out.reserve(s.size());
-    for (const char ch : s) {
-        if (ch == '"' || ch == '\\' || ch == '$' || ch == '`') out.push_back('\\');
-        out.push_back(ch);
-    }
-    return out;
+    return escapeDoubleQuotes(s);
 } // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::escapeFishWord(const std::string& s) {
