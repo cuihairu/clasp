@@ -4406,7 +4406,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         os << "complete -c " << fishRootName;
         if (!f.longName().empty()) os << " -l " << f.longName().substr(2);
         if (!f.shortName().empty()) os << " -s " << f.shortName().substr(1);
-        if (!f.description().empty()) os << " -d \"" << escapeDoubleQuotes(f.description()) << "\"";
+        if (!f.description().empty()) os << " -d \"" << escapeFishDoubleQuoted(f.description()) << "\"";
         os << "\n";
     }
     os << "complete -c " << fishRootName << " -l help -s h -d \"Help for this command\"\n";
@@ -4421,7 +4421,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
             os << "complete -c " << fishRootName << " -n " << escapeFishSingleQuoted("__fish_seen_subcommand_from " + joinFishConditionWords(inv));
             if (!f.longName().empty()) os << " -l " << f.longName().substr(2);
             if (!f.shortName().empty()) os << " -s " << f.shortName().substr(1);
-            if (!f.description().empty()) os << " -d \"" << escapeDoubleQuotes(f.description()) << "\"";
+            if (!f.description().empty()) os << " -d \"" << escapeFishDoubleQuoted(f.description()) << "\"";
             os << "\n";
         }
     }
