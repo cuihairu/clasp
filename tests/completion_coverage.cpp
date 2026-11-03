@@ -94,7 +94,7 @@ void testResolvedCompletionConfigFallback() {
     bare.printCompletionFish(fish);
     bare.printCompletionPowerShell(ps);
     expect(contains(bash.str(), "_bare_app_complete() {"), "config fallback: static bash");
-    expect(contains(zsh.str(), "#compdef bare-app"), "config fallback: zsh header");
+    expect(contains(zsh.str(), "#compdef \"bare-app\""), "config fallback: zsh header");
     expect(contains(fish.str(), "__clasp_bare_app_fish_complete"), "config fallback: default fish is dynamic");
     expect(contains(ps.str(), "Register-ArgumentCompleter"), "config fallback: powershell emitted");
 }
@@ -694,7 +694,7 @@ void testCompletionEntriesStaticScripts() {
 
     expect(contains(bash.str(), "\"staticapp sub\"|\"staticapp s\""), "static bash: alias case label");
     expect(contains(bash.str(), "COMPREPLY"), "static bash: COMPREPLY emitted");
-    expect(contains(zsh.str(), "#compdef staticapp"), "static zsh: header");
+    expect(contains(zsh.str(), "#compdef \"staticapp\""), "static zsh: header");
     expect(contains(fish.str(), "\"sub s help version\""), "static fish: root subcommand list");
     expect(contains(fish.str(), "-l version -d \"Version for this command\""), "static fish: version flag line");
     expect(contains(fish.str(), "-l longonly"), "static fish: long-only flag");
@@ -755,9 +755,9 @@ void testDynamicShellScripts() {
     root.printCompletionPowerShell(ps);
     expect(contains(bash.str(), "__completeNoDesc"), "dynamic bash: calls complete command");
     expect(contains(bash.str(), "ShellCompDirectiveError"), "dynamic bash: directive handling");
-    expect(contains(zsh.str(), "#compdef dynapp"), "dynamic zsh: header");
+    expect(contains(zsh.str(), "#compdef \"dynapp\""), "dynamic zsh: header");
     expect(contains(fish.str(), "__clasp_dynapp_fish_complete"), "dynamic fish: helper function");
-    expect(contains(fish.str(), " __complete "), "dynamic fish: uses desc command");
+    expect(contains(fish.str(), "\"__complete\""), "dynamic fish: uses desc command");
     expect(contains(ps.str(), "$__claspCompleteCmd = '__completeNoDesc'"), "dynamic powershell: complete command");
     expect(contains(ps.str(), "Register-ArgumentCompleter"), "dynamic powershell: registration");
 
@@ -768,7 +768,7 @@ void testDynamicShellScripts() {
     root2.enableCompletion(descOnly);
     std::ostringstream fish2;
     root2.printCompletionFish(fish2);
-    expect(contains(fish2.str(), " __complete "), "dynamic fish: desc-only config");
+    expect(contains(fish2.str(), "\"__complete\""), "dynamic fish: desc-only config");
 
     // Only the no-desc command name configured.
     clasp::Command::CompletionConfig noDescOnly;
@@ -777,7 +777,7 @@ void testDynamicShellScripts() {
     root3.enableCompletion(noDescOnly);
     std::ostringstream fish3;
     root3.printCompletionFish(fish3);
-    expect(contains(fish3.str(), " __completeNoDesc "), "dynamic fish: nodesc-only config");
+    expect(contains(fish3.str(), "\"__completeNoDesc\""), "dynamic fish: nodesc-only config");
 
     // Both names empty: fish falls back to the static script.
     clasp::Command::CompletionConfig noNames;
@@ -789,7 +789,7 @@ void testDynamicShellScripts() {
     root4.printCompletionFish(fish4);
     root4.printCompletionBash(bash4);
     root4.printCompletionPowerShell(ps4);
-    expect(contains(fish4.str(), "complete -c nonames -f -a"), "fish static fallback: static output");
+    expect(contains(fish4.str(), "complete -c \"nonames\" -f -a"), "fish static fallback: static output");
     expect(contains(bash4.str(), "_nonames_complete() {"), "bash static fallback: static output");
     expect(contains(ps4.str(), "$__claspSubs['nonames']"), "powershell static fallback: static output");
 
@@ -802,7 +802,7 @@ void testDynamicShellScripts() {
     root5.printCompletionFish(fish5);
     root5.printCompletionBash(bash5);
     root5.printCompletionPowerShell(ps5);
-    expect(contains(fish5.str(), "complete -c allstatic -f -a"), "fish addCompleteCommands=false: static");
+    expect(contains(fish5.str(), "complete -c \"allstatic\" -f -a"), "fish addCompleteCommands=false: static");
     expect(contains(bash5.str(), "_allstatic_complete() {"), "bash addCompleteCommands=false: static");
     expect(contains(ps5.str(), "$__claspSubs['allstatic']"), "powershell addCompleteCommands=false: static");
 
@@ -907,6 +907,64 @@ void testShellEscaping() {
     std::ostringstream eb;
     empty.printCompletionBash(eb);
     expect(!eb.str().empty(), "sanitize: empty name tolerated");
+
+    // Shell metacharacters in the root name must be quoted, not interpolated
+    // raw (defense-in-depth against generated-script injection).
+    clasp::Command meta("app;echo INJECTED", "Metachar root");
+    meta.enableCompletion(staticCfg);
+    meta.version("1.0");
+    clasp::Command metaSub("sub'$x`y\\z", "Metachar sub");
+    metaSub.addAlias("al\"ias`");
+    metaSub.withFlag("--fl\"ag", "-f", "fl\"ag", "desc $(echo `x`)", std::string(""));
+    meta.addCommand(std::move(metaSub));
+    std::ostringstream mbash, mzsh, mfish, mps;
+    meta.printCompletionBash(mbash);
+    meta.printCompletionZsh(mzsh);
+    meta.printCompletionFish(mfish);
+    meta.printCompletionPowerShell(mps);
+    const auto bashStr = mbash.str();
+    const auto zshStr = mzsh.str();
+    const auto fishStr = mfish.str();
+    const auto psStr = mps.str();
+    // Raw "app;echo INJECTED" must never appear as an unquoted command token.
+    expect(contains(bashStr, "\"app;echo INJECTED\""), "metachar bash: root quoted in cmd");
+    expect(contains(bashStr, "complete -F _app_echo_INJECTED_complete \"app;echo INJECTED\""),
+           "metachar bash: root quoted in complete line");
+    expect(contains(zshStr, "#compdef \"app;echo INJECTED\""), "metachar zsh: root quoted in compdef");
+    expect(contains(fishStr, "complete -c \"app;echo INJECTED\""), "metachar fish: root quoted in complete");
+    expect(contains(fishStr, "sub'\\$x`y\\\\z"), "metachar fish: apostrophe/quote sub quoted");
+    expect(contains(psStr, "Register-ArgumentCompleter -CommandName 'app;echo INJECTED'"),
+           "metachar powershell: root quoted in registration");
+    // Subcommand name with a single quote must be doubled inside the PowerShell map key.
+    expect(contains(psStr, "'app;echo INJECTED sub''$x`y\\z'"), "metachar powershell: sub quote doubled");
+    // No raw unquoted semicolon command injection may survive in the dynamic invocation line.
+    expect(!contains(bashStr, "done < <(app;echo"), "metachar bash: no raw root in dynamic invocation");
+    expect(!contains(fishStr, "set -l out (app;echo"), "metachar fish: no raw root in invocation");
+
+    // Dynamic scripts (default completion config) plus a root name containing
+    // every shell-special character: exercises the true branches of the
+    // escaping helpers and the dynamic invocation paths.
+    clasp::Command metaDyn("a\"$'`x\\y", "Metachar dynamic root");
+    metaDyn.enableCompletion();
+    clasp::Command metaDynSub("s'b`$", "Metachar dynamic sub");
+    metaDynSub.addAlias("q\"z");
+    metaDyn.addCommand(std::move(metaDynSub));
+    std::ostringstream dbash, dzsh, dfish, dps;
+    metaDyn.printCompletionBash(dbash);
+    metaDyn.printCompletionZsh(dzsh);
+    metaDyn.printCompletionFish(dfish);
+    metaDyn.printCompletionPowerShell(dps);
+    const auto dbashStr = dbash.str();
+    const auto dfishStr = dfish.str();
+    const auto dpsStr = dps.str();
+    // Root name must be fully quoted (double quotes in bash/fish, single in PS).
+    expect(contains(dbashStr, "\"a\\\"\\$'\\`x\\\\y\""), "metachar dynamic bash: root fully escaped");
+    expect(contains(dfishStr, "\"a\\\"\\$'`x\\\\y\""), "metachar dynamic fish: root fully escaped");
+    expect(contains(dpsStr, "Register-ArgumentCompleter -CommandName 'a\"$''`x\\y'"),
+           "metachar dynamic powershell: root single-quoted with doubled quote");
+    // No unquoted raw command token may survive in the dynamic invocation line.
+    expect(!contains(dbashStr, "done < <(a\"$"), "metachar dynamic bash: no raw root in invocation");
+    expect(!contains(dfishStr, "set -l out (a\"$"), "metachar dynamic fish: no raw root in invocation");
 }
 
 // ------------------------------------------------------------------

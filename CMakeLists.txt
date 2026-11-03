@@ -318,7 +318,7 @@ add_test(NAME completion_zsh_directive_keep_order COMMAND completion_example com
 set_tests_properties(completion_zsh_directive_keep_order PROPERTIES PASS_REGULAR_EXPRESSION "compopt -o nosort")
 
 add_test(NAME completion_fish COMMAND completion_example completion fish)
-set_tests_properties(completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c app")
+set_tests_properties(completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c \"app\"")
 
 add_test(NAME completion_fish_dynamic COMMAND completion_example completion fish)
 set_tests_properties(completion_fish_dynamic PROPERTIES PASS_REGULAR_EXPRESSION "__complete")
@@ -369,7 +369,7 @@ add_test(NAME keep_order_directive_bitmask COMMAND keep_order_example __complete
 set_tests_properties(keep_order_directive_bitmask PROPERTIES PASS_REGULAR_EXPRESSION ":36")
 
 add_test(NAME keep_order_fish_script_uses_keep_order COMMAND keep_order_example completion fish)
-set_tests_properties(keep_order_fish_script_uses_keep_order PROPERTIES PASS_REGULAR_EXPRESSION "complete -c app -f -k")
+set_tests_properties(keep_order_fish_script_uses_keep_order PROPERTIES PASS_REGULAR_EXPRESSION "complete -c \"app\" -f -k")
 
 add_executable(config_example examples/config_example.cpp)
 target_link_libraries(config_example PRIVATE clasp)
@@ -2096,7 +2096,7 @@ add_test(NAME directive_completion_zsh COMMAND directive_example completion zsh)
 set_tests_properties(directive_completion_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
 
 add_test(NAME directive_completion_fish COMMAND directive_example completion fish)
-set_tests_properties(directive_completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c app")
+set_tests_properties(directive_completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c \"app\"")
 
 add_test(NAME directive_completion_powershell COMMAND directive_example completion powershell)
 set_tests_properties(directive_completion_powershell PROPERTIES PASS_REGULAR_EXPRESSION "Register-ArgumentCompleter")

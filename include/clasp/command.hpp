@@ -2651,8 +2651,16 @@ private:
 
     std::vector<std::string> invocationNames() const;
     static std::string escapeDoubleQuotes(const std::string& s);
+    static std::string escapeBashWord(const std::string& s);
+    static std::string escapeBashDoubleQuoted(const std::string& s);
+    static std::string escapeFishWord(const std::string& s);
+    static std::string escapeFishDoubleQuoted(const std::string& s);
+    static std::string escapeFishSingleQuoted(const std::string& s);
     static std::string joinWords(const std::vector<std::string>& words);
+    static std::string joinBashWords(const std::vector<std::string>& words);
+    static std::string joinFishWords(const std::vector<std::string>& words);
     static std::string joinQuotedPowerShell(const std::vector<std::string>& words);
+    static std::string escapePowerShellSingleQuoted(const std::string& s);
     static std::string sanitizeIdentifier(const std::string& s);
     static std::string bashCaseLabel(const std::vector<std::string>& paths);
     std::vector<CompletionEntry> completionEntries() const;
@@ -3260,9 +3268,62 @@ inline std::string Command::escapeDoubleQuotes(const std::string& s) {
     std::string out;
     out.reserve(s.size());
     for (const char ch : s) {
-        if (ch == '"') out.push_back('\\');
+        if (ch == '"' || ch == '\\' || ch == '$' || ch == '`') out.push_back('\\');
         out.push_back(ch);
     }
+    return out;
+} // LCOV_EXCL_LINE (function cleanup block)
+
+inline std::string Command::escapeBashWord(const std::string& s) {
+    std::string out = "\"";
+    out.reserve(s.size() + 2);
+    for (const char ch : s) {
+        if (ch == '"' || ch == '\\' || ch == '$' || ch == '`') out.push_back('\\');
+        out.push_back(ch);
+    }
+    out.push_back('"');
+    return out;
+} // LCOV_EXCL_LINE (function cleanup block)
+
+inline std::string Command::escapeBashDoubleQuoted(const std::string& s) {
+    std::string out;
+    out.reserve(s.size());
+    for (const char ch : s) {
+        if (ch == '"' || ch == '\\' || ch == '$' || ch == '`') out.push_back('\\');
+        out.push_back(ch);
+    }
+    return out;
+} // LCOV_EXCL_LINE (function cleanup block)
+
+inline std::string Command::escapeFishWord(const std::string& s) {
+    std::string out = "\"";
+    out.reserve(s.size() + 2);
+    for (const char ch : s) {
+        if (ch == '"' || ch == '\\' || ch == '$') out.push_back('\\');
+        out.push_back(ch);
+    }
+    out.push_back('"');
+    return out;
+} // LCOV_EXCL_LINE (function cleanup block)
+
+inline std::string Command::escapeFishDoubleQuoted(const std::string& s) {
+    std::string out;
+    out.reserve(s.size());
+    for (const char ch : s) {
+        if (ch == '"' || ch == '\\' || ch == '$') out.push_back('\\');
+        out.push_back(ch);
+    }
+    return out;
+} // LCOV_EXCL_LINE (function cleanup block)
+
+inline std::string Command::escapeFishSingleQuoted(const std::string& s) {
+    std::string out = "'";
+    out.reserve(s.size() + 2);
+    for (const char ch : s) {
+        if (ch == '\'') out += "''";
+        else out.push_back(ch);
+    }
+    out.push_back('\'');
     return out;
 } // LCOV_EXCL_LINE (function cleanup block)
 
@@ -3271,6 +3332,24 @@ inline std::string Command::joinWords(const std::vector<std::string>& words) {
     for (std::size_t i = 0; i < words.size(); ++i) {
         if (i) oss << ' ';
         oss << words[i];
+    }
+    return oss.str();
+}
+
+inline std::string Command::joinBashWords(const std::vector<std::string>& words) {
+    std::ostringstream oss;
+    for (std::size_t i = 0; i < words.size(); ++i) {
+        if (i) oss << ' ';
+        oss << escapeBashDoubleQuoted(words[i]);
+    }
+    return oss.str();
+}
+
+inline std::string Command::joinFishWords(const std::vector<std::string>& words) {
+    std::ostringstream oss;
+    for (std::size_t i = 0; i < words.size(); ++i) {
+        if (i) oss << ' ';
+        oss << escapeFishDoubleQuoted(words[i]);
     }
     return oss.str();
 }
@@ -3293,6 +3372,17 @@ inline std::string Command::joinQuotedPowerShell(const std::vector<std::string>&
     }
     return oss.str();
 }
+
+inline std::string Command::escapePowerShellSingleQuoted(const std::string& s) {
+    std::string out = "'";
+    out.reserve(s.size() + 2);
+    for (const char ch : s) {
+        if (ch == '\'') out += "''";
+        else out.push_back(ch);
+    }
+    out.push_back('\'');
+    return out;
+} // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::sanitizeIdentifier(const std::string& s) {
     std::string out;
@@ -3383,11 +3473,12 @@ inline void Command::collectCompletionEntries(std::vector<CompletionEntry>& entr
 inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) const {
     const auto rootName = name_;
     const auto fn = "_" + sanitizeIdentifier(rootName) + "_complete";
+    const auto bashRootName = escapeBashWord(rootName);
 
     const auto cfg = resolvedCompletionConfig();
     const bool dynamicOk = cfg.addCompleteCommands && !cfg.completeNoDescCommandName.empty();
 
-    if (forZsh) os << "#compdef " << rootName << "\n\nautoload -U +X bashcompinit && bashcompinit\n\n";
+    if (forZsh) os << "#compdef " << bashRootName << "\n\nautoload -U +X bashcompinit && bashcompinit\n\n";
     os << "# bash completion for " << rootName << "\n";
 
     if (!dynamicOk) {
@@ -3396,7 +3487,7 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
         os << fn << "() {\n";
         os << "  local cur cmd subcommands flags i w\n";
         os << "  cur=\"${COMP_WORDS[COMP_CWORD]}\"\n";
-        os << "  cmd=\"" << rootName << "\"\n";
+        os << "  cmd=" << bashRootName << "\n";
         os << "  for ((i=1; i<COMP_CWORD; i++)); do\n";
         os << "    w=\"${COMP_WORDS[i]}\"\n";
         os << "    [[ \"$w\" == -* ]] && continue\n";
@@ -3404,7 +3495,7 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
         os << "    case \"$cmd\" in\n";
         for (const auto& e : entries) {
             os << "      " << bashCaseLabel(e.pathAlternatives) << ")\n";
-            os << "        subcommands=\"" << joinWords(e.subcommands) << "\"\n";
+            os << "        subcommands=\"" << joinBashWords(e.subcommands) << "\"\n";
             os << "        ;;\n";
         }
         os << "    esac\n";
@@ -3418,8 +3509,8 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
         os << "  case \"$cmd\" in\n";
         for (const auto& e : entries) {
             os << "    " << bashCaseLabel(e.pathAlternatives) << ")\n";
-            os << "      subcommands=\"" << joinWords(e.subcommands) << "\"\n";
-            os << "      flags=\"" << joinWords(e.flags) << "\"\n";
+            os << "      subcommands=\"" << joinBashWords(e.subcommands) << "\"\n";
+            os << "      flags=\"" << joinBashWords(e.flags) << "\"\n";
             os << "      ;;\n";
         }
         os << "  esac\n";
@@ -3429,7 +3520,7 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
         os << "    COMPREPLY=( $(compgen -W \"$subcommands\" -- \"$cur\") )\n";
         os << "  fi\n";
         os << "}\n";
-        os << "complete -F " << fn << " " << rootName << "\n";
+        os << "complete -F " << fn << " " << bashRootName << "\n";
         return;
     }
 
@@ -3452,7 +3543,7 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
     os << "  out=()\n";
     os << "  while IFS= read -r line; do\n";
     os << "    out+=(\"$line\")\n";
-    os << "  done < <(" << rootName << " " << cfg.completeNoDescCommandName << " \"${words[@]}\" \"$cur\" 2>/dev/null)\n";
+    os << "  done < <(" << bashRootName << " " << escapeBashWord(cfg.completeNoDescCommandName) << " \"${words[@]}\" \"$cur\" 2>/dev/null)\n";
     os << "  if [[ ${#out[@]} -eq 0 ]]; then\n";
     os << "    return 0\n";
     os << "  fi\n";
@@ -3508,7 +3599,7 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
     os << "    return 1\n";
     os << "  fi\n";
     os << "}\n";
-    os << "complete -F " << fn << " " << rootName << "\n";
+    os << "complete -F " << fn << " " << bashRootName << "\n";
 }
 
 inline std::unordered_map<std::string, std::string> Command::effectiveEnvBindings() const {
@@ -4169,6 +4260,7 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
 
 inline void Command::printCompletionFish(std::ostream& os) const {
     const auto rootName = name_;
+    const auto fishRootName = escapeFishWord(rootName);
     os << "# fish completion for " << rootName << "\n";
 
     const auto cfg = resolvedCompletionConfig();
@@ -4194,7 +4286,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         os << "    set -a words $eqflag\n";
         os << "    set prefix \"$eqflag=\"\n";
         os << "  end\n";
-        os << "  set -l out (" << rootName << " " << completeCmd << " $words $cur 2>/dev/null)\n";
+        os << "  set -l out (" << fishRootName << " " << escapeFishWord(completeCmd) << " $words $cur 2>/dev/null)\n";
         os << "  set -l directive 0\n";
         os << "  set -l lines\n";
         os << "  for line in $out\n";
@@ -4277,7 +4369,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         os << "  end\n";
         os << "end\n";
         // `-k` keeps the order of suggestions (fish sorts by default). Cobra's KeepOrder directive maps best to this.
-        os << "complete -c " << rootName << " -f -k -a '(" << fnName << ")'\n";
+        os << "complete -c " << fishRootName << " -f -k -a '(" << fnName << ")'\n";
         return;
     }
 
@@ -4289,19 +4381,19 @@ inline void Command::printCompletionFish(std::ostream& os) const {
     if (resolvedAddHelpCommand()) rootSubs.push_back(resolvedHelpCommandName());
     if (!resolvedVersion().empty()) rootSubs.push_back("version");
 
-    os << "complete -c " << rootName << " -f -a \"" << joinWords(rootSubs) << "\"\n";
+    os << "complete -c " << fishRootName << " -f -a \"" << joinFishWords(rootSubs) << "\"\n";
 
     // Global flags: include effective flags on root + built-ins.
     const auto rootFlags = effectiveFlags();
     for (const auto& f : rootFlags) {
-        os << "complete -c " << rootName;
+        os << "complete -c " << fishRootName;
         if (!f.longName().empty()) os << " -l " << f.longName().substr(2);
         if (!f.shortName().empty()) os << " -s " << f.shortName().substr(1);
         if (!f.description().empty()) os << " -d \"" << escapeDoubleQuotes(f.description()) << "\"";
         os << "\n";
     }
-    os << "complete -c " << rootName << " -l help -s h -d \"Help for this command\"\n";
-    if (!resolvedVersion().empty()) os << "complete -c " << rootName << " -l version -d \"Version for this command\"\n";
+    os << "complete -c " << fishRootName << " -l help -s h -d \"Help for this command\"\n";
+    if (!resolvedVersion().empty()) os << "complete -c " << fishRootName << " -l version -d \"Version for this command\"\n";
 
     // Local flags: enable when the subcommand token appears.
     for (const auto* sub : listVisibleSubcommands()) {
@@ -4309,7 +4401,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         const auto subFlags = sub->effectiveFlags();
         for (const auto& f : subFlags) {
             if (f.longName().empty() && f.shortName().empty()) continue;
-            os << "complete -c " << rootName << " -n \"__fish_seen_subcommand_from " << joinWords(inv) << "\"";
+            os << "complete -c " << fishRootName << " -n \"__fish_seen_subcommand_from " << joinFishWords(inv) << "\"";
             if (!f.longName().empty()) os << " -l " << f.longName().substr(2);
             if (!f.shortName().empty()) os << " -s " << f.shortName().substr(1);
             if (!f.description().empty()) os << " -d \"" << escapeDoubleQuotes(f.description()) << "\"";
@@ -4320,6 +4412,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
 
 inline void Command::printCompletionPowerShell(std::ostream& os) const {
     const auto rootName = name_;
+    const auto psRootName = escapePowerShellSingleQuoted(rootName);
     const auto cfg = resolvedCompletionConfig();
     const bool dynamicOk = cfg.addCompleteCommands && !cfg.completeNoDescCommandName.empty();
 
@@ -4327,7 +4420,7 @@ inline void Command::printCompletionPowerShell(std::ostream& os) const {
         os << "# PowerShell completion for " << rootName << "\n";
         os << "$__claspCompleteCmd = " << joinQuotedPowerShell({cfg.completeNoDescCommandName}) << "\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
 
-        os << "Register-ArgumentCompleter -CommandName " << rootName << " -ScriptBlock {\n";
+        os << "Register-ArgumentCompleter -CommandName " << psRootName << " -ScriptBlock {\n";
         os << "  param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)\n";
         os << "  $origWordToComplete = $wordToComplete\n";
         os << "  $tokens = @(); foreach ($e in $commandAst.CommandElements) { $tokens += $e.ToString() }\n";
@@ -4409,10 +4502,10 @@ inline void Command::printCompletionPowerShell(std::ostream& os) const {
         os << "$__claspFlags[" << joinQuotedPowerShell({e.path}) << "] = @(" << joinQuotedPowerShell(e.flags) << ")\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
     }
 
-    os << "Register-ArgumentCompleter -CommandName " << rootName << " -ScriptBlock {\n";
+    os << "Register-ArgumentCompleter -CommandName " << psRootName << " -ScriptBlock {\n";
     os << "  param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)\n";
     os << "  $tokens = @(); foreach ($e in $commandAst.CommandElements) { $tokens += $e.ToString() }\n";
-    os << "  $cmd = \"" << rootName << "\"\n";
+    os << "  $cmd = " << psRootName << "\n";
     os << "  for ($i = 1; $i -lt $tokens.Count; $i++) {\n";
     os << "    $t = $tokens[$i]\n";
     os << "    if ($t -like \"-*\") { continue }\n";
