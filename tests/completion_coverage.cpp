@@ -701,7 +701,7 @@ void testCompletionEntriesStaticScripts() {
     expect(contains(fish.str(), "-s x"), "static fish: short-only flag");
     expect(contains(fish.str(), "-l both -s b"), "static fish: both-name flag");
     expect(contains(fish.str(), "-d \"Say \\\"hi\\\"\""), "static fish: escaped quotes in description");
-    expect(contains(fish.str(), "__fish_seen_subcommand_from sub s"), "static fish: sub flag condition");
+    expect(contains(fish.str(), "'__fish_seen_subcommand_from \"sub\" \"s\"'"), "static fish: sub flag condition");
     expect(contains(ps.str(), "$__claspSubs['staticapp sub']"), "static powershell: sub map entry");
     expect(contains(ps.str(), "$__claspFlags['staticapp sub']"), "static powershell: flag map entry");
     expect(contains(ps.str(), "'sub', 's', 'help', 'version'"), "static powershell: quoted list");

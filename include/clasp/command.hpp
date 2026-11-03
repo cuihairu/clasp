@@ -2657,9 +2657,9 @@ private:
     static std::string escapeFishWord(const std::string& s);
     static std::string escapeFishDoubleQuoted(const std::string& s);
     static std::string escapeFishSingleQuoted(const std::string& s);
-    static std::string joinWords(const std::vector<std::string>& words);
     static std::string joinBashWords(const std::vector<std::string>& words);
     static std::string joinFishWords(const std::vector<std::string>& words);
+    static std::string joinFishConditionWords(const std::vector<std::string>& words);
     static std::string joinQuotedPowerShell(const std::vector<std::string>& words);
     static std::string escapePowerShellSingleQuoted(const std::string& s);
     static std::string sanitizeIdentifier(const std::string& s);
@@ -3327,26 +3327,6 @@ inline std::string Command::escapeFishDoubleQuoted(const std::string& s) {
     return out;
 } // LCOV_EXCL_LINE (function cleanup block)
 
-inline std::string Command::escapeFishSingleQuoted(const std::string& s) {
-    std::string out = "'";
-    out.reserve(s.size() + 2);
-    for (const char ch : s) {
-        if (ch == '\'') out += "''";
-        else out.push_back(ch);
-    }
-    out.push_back('\'');
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::joinWords(const std::vector<std::string>& words) {
-    std::ostringstream oss;
-    for (std::size_t i = 0; i < words.size(); ++i) {
-        if (i) oss << ' ';
-        oss << words[i];
-    }
-    return oss.str();
-}
-
 inline std::string Command::joinBashWords(const std::vector<std::string>& words) {
     std::ostringstream oss;
     for (std::size_t i = 0; i < words.size(); ++i) {
@@ -3363,6 +3343,32 @@ inline std::string Command::joinFishWords(const std::vector<std::string>& words)
         oss << escapeFishDoubleQuoted(words[i]);
     }
     return oss.str();
+}
+
+// Builds the fish `-n` condition string for `__fish_seen_subcommand_from`.
+// The condition is re-evaluated as fish code at completion time, so each word
+// must be emitted as a fully-quoted fish literal (double quotes with `"`, `\`
+// and `$` escaped). This keeps single quotes, dollars and backticks literal
+// instead of being interpreted on the second evaluation.
+inline std::string Command::joinFishConditionWords(const std::vector<std::string>& words) {
+    std::ostringstream oss;
+    for (std::size_t i = 0; i < words.size(); ++i) {
+        if (i) oss << ' ';
+        oss << '"' << escapeFishDoubleQuoted(words[i]) << '"';
+    }
+    return oss.str();
+}
+
+inline std::string Command::escapeFishSingleQuoted(const std::string& s) {
+    std::string out = "'";
+    out.reserve(s.size() + 2);
+    for (const char ch : s) {
+        if (ch == '\'') out += "\\'";
+        else if (ch == '\\') out += "\\\\";
+        else out.push_back(ch);
+    }
+    out.push_back('\'');
+    return out;
 }
 
 inline std::string Command::joinQuotedPowerShell(const std::vector<std::string>& words) {
@@ -4412,7 +4418,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         const auto subFlags = sub->effectiveFlags();
         for (const auto& f : subFlags) {
             if (f.longName().empty() && f.shortName().empty()) continue;
-            os << "complete -c " << fishRootName << " -n \"__fish_seen_subcommand_from " << joinFishWords(inv) << "\"";
+            os << "complete -c " << fishRootName << " -n " << escapeFishSingleQuoted("__fish_seen_subcommand_from " + joinFishConditionWords(inv));
             if (!f.longName().empty()) os << " -l " << f.longName().substr(2);
             if (!f.shortName().empty()) os << " -s " << f.shortName().substr(1);
             if (!f.description().empty()) os << " -d \"" << escapeDoubleQuotes(f.description()) << "\"";
