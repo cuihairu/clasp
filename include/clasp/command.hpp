@@ -2283,7 +2283,7 @@ private:
                     using T = std::decay_t<decltype(x)>;
                     if constexpr (std::is_same_v<T, std::string>) {
                         if (x.empty()) return std::nullopt;
-                        return std::string("\"") + escapeDoubleQuotes(x) + "\"";
+                        return std::string("\"") + escapeHelpString(x) + "\"";
                     } else if constexpr (std::is_same_v<T, std::chrono::milliseconds>) {
                         if (x.count() == 0) return std::nullopt;
                         return std::to_string(x.count()) + "ms";
@@ -2651,6 +2651,7 @@ private:
 
     std::vector<std::string> invocationNames() const;
     static std::string escapeDoubleQuotes(const std::string& s);
+    static std::string escapeHelpString(const std::string& s);
     static std::string escapeBashWord(const std::string& s);
     static std::string escapeBashDoubleQuoted(const std::string& s);
     static std::string escapeFishWord(const std::string& s);
@@ -3273,6 +3274,16 @@ inline std::string Command::escapeDoubleQuotes(const std::string& s) {
     }
     return out;
 } // LCOV_EXCL_LINE (function cleanup block)
+
+inline std::string Command::escapeHelpString(const std::string& s) {
+    std::string out;
+    out.reserve(s.size());
+    for (const char ch : s) {
+        if (ch == '"') out.push_back('\\');
+        out.push_back(ch);
+    }
+    return out;
+}
 
 inline std::string Command::escapeBashWord(const std::string& s) {
     std::string out = "\"";

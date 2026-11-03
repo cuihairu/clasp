@@ -262,6 +262,9 @@ void testHelpDefaultsAndTypes() {
     root.withFlag("--lim", "", "l", "L", std::uint64_t{99});
     root.withFlag("--ttl", "", "t", "T", std::chrono::milliseconds{250});
     root.withFlag("--name", "", "s", "S", std::string("he\"llo"));
+    root.withFlag("--path", "", "p", "P", std::string("C:\\tmp\\data"));
+    root.withFlag("--money", "", "m", "M", std::string("$HOME"));
+    root.withFlag("--cmd", "", "c", "C", std::string("echo `x`"));
     root.withFlag("--flag", "-f", "f", "F", true);
     const int rc = runArgs(root, {"--help"});
     expect(rc == 0, "help with typed defaults prints");
@@ -269,6 +272,10 @@ void testHelpDefaultsAndTypes() {
     expect(help.find("(default: 7)") != std::string::npos, "int default rendered");
     expect(help.find("(default: 250ms)") != std::string::npos, "duration default rendered");
     expect(help.find("he\\\"llo") != std::string::npos, "string default escaped");
+    expect(help.find("(default: \"C:\\tmp\\data\")") != std::string::npos, "string default keeps backslashes");
+    expect(help.find("(default: \"$HOME\")") != std::string::npos, "string default keeps dollar");
+    expect(help.find("(default: \"echo `x`\")") != std::string::npos, "string default keeps backticks");
+    expect(help.find("C:\\\\tmp\\\\data") == std::string::npos, "string default no doubled backslash");
 }
 
 // Usage and version templates exercise every placeholder corner of
