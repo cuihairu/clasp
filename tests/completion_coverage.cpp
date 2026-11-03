@@ -6,6 +6,14 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#ifndef _WIN32
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include <crtdbg.h>
 
@@ -968,6 +976,86 @@ void testShellEscaping() {
 }
 
 // ------------------------------------------------------------------
+// End-to-end shell verification: the generated fish `-n` condition must be
+// re-evaluated correctly when the subcommand name contains apostrophes,
+// dollars or backticks, and the bash/zsh scripts must source cleanly.
+// This closes the substring-only assertion gap.
+// ------------------------------------------------------------------
+void testShellEscapingEndToEnd() {
+#ifndef _WIN32
+    const bool haveBash = std::system("command -v bash >/dev/null 2>&1") == 0;
+    const bool haveZsh = std::system("command -v zsh >/dev/null 2>&1") == 0;
+    const bool haveFish = std::system("command -v fish >/dev/null 2>&1") == 0;
+    if (!haveBash && !haveZsh && !haveFish) return;
+
+    // A command tree whose names stress every shell-special character.
+    clasp::Command::CompletionConfig staticCfg;
+    staticCfg.addCompletionCommand = false;
+    staticCfg.addCompleteCommands = false;
+
+    clasp::Command root("e2eapp", "End-to-end root");
+    root.enableCompletion(staticCfg);
+    clasp::Command sub("don't", "Apostrophe sub");
+    sub.addAlias("$x");
+    sub.withFlag("--flag", "-f", "flag", "desc with `tick` and \"quote\"", std::string(""));
+    root.addCommand(std::move(sub));
+
+    std::ostringstream bashOs, zshOs, fishOs, psOs;
+    root.printCompletionBash(bashOs);
+    root.printCompletionZsh(zshOs);
+    root.printCompletionFish(fishOs);
+    root.printCompletionPowerShell(psOs);
+    const std::string bashScript = bashOs.str();
+    const std::string zshScript = zshOs.str();
+    const std::string fishScript = fishOs.str();
+    const std::string psScript = psOs.str();
+
+    // The generated fish -n condition must contain each subcommand word as a
+    // fully double-quoted literal so it survives the second evaluation.
+    expect(contains(fishScript, R"('__fish_seen_subcommand_from "don\'t" "\\$x"')"),
+           "e2e fish: condition quotes apostrophe and dollar words");
+    expect(contains(fishScript, R"(-d "desc with `tick` and \"quote\"")"),
+           "e2e fish: backtick in description stays literal");
+
+    const std::string dir = "/tmp/clasp_e2e_" + std::to_string(::getpid());
+    ::mkdir(dir.c_str(), 0700);
+    const std::string bashPath = dir + "/comp.bash";
+    const std::string zshPath = dir + "/comp.zsh";
+    const std::string fishPath = dir + "/comp.fish";
+
+    if (haveBash) {
+        std::ofstream bf(bashPath, std::ios::binary);
+        bf << bashScript;
+        bf.close();
+        // Interactive bash with history expansion enabled: source must not error.
+        const std::string cmd = "printf 'source " + bashPath + "\\necho SRC_OK\\n' | bash --norc -i >/dev/null 2>&1";
+        expect(std::system(cmd.c_str()) == 0, "e2e bash: script sources without histexpand error");
+    }
+
+    if (haveZsh) {
+        std::ofstream zf(zshPath, std::ios::binary);
+        zf << zshScript;
+        zf.close();
+        const std::string cmd = "zsh -fc 'autoload -Uz compinit && compinit >/dev/null 2>&1; source " + zshPath + " >/dev/null 2>&1'";
+        expect(std::system(cmd.c_str()) == 0, "e2e zsh: script sources cleanly");
+    }
+
+    if (haveFish) {
+        std::ofstream ff(fishPath, std::ios::binary);
+        ff << fishScript;
+        ff.close();
+        // The fish script must parse without a quote-balance error. The
+        // previous escaping left a raw apostrophe in the -n condition, which
+        // fish reports as "quotes are not balanced".
+        const std::string cmd = "fish -c 'source " + fishPath + " >/dev/null 2>&1'";
+        expect(std::system(cmd.c_str()) == 0, "e2e fish: script sources without quote-balance error");
+    }
+
+    ::rmdir(dir.c_str());
+#endif
+}
+
+// ------------------------------------------------------------------
 // enableCompletion(): registration variants.
 // ------------------------------------------------------------------
 void testEnableCompletionRegistration() {
@@ -1249,6 +1337,7 @@ int main() {
     testCompletionEntriesStaticScripts();
     testDynamicShellScripts();
     testShellEscaping();
+    testShellEscapingEndToEnd();
     testEnableCompletionRegistration();
     testNormalizeFlagKeyCompletion();
     testTraverseChildrenResolution();
