@@ -3334,7 +3334,10 @@ inline std::string Command::joinFishWords(const std::vector<std::string>& words)
     std::ostringstream oss;
     for (std::size_t i = 0; i < words.size(); ++i) {
         if (i) oss << ' ';
-        oss << escapeFishDoubleQuoted(words[i]);
+        // fish re-evaluates the `-a` argument list as code, so each word must
+        // be emitted as a fully-quoted fish literal (same rule as the -n
+        // condition). A bare apostrophe would otherwise break the parse.
+        oss << '"' << escapeFishDoubleQuoted(words[i]) << '"';
     }
     return oss.str();
 }
@@ -4392,7 +4395,10 @@ inline void Command::printCompletionFish(std::ostream& os) const {
     if (resolvedAddHelpCommand()) rootSubs.push_back(resolvedHelpCommandName());
     if (!resolvedVersion().empty()) rootSubs.push_back("version");
 
-    os << "complete -c " << fishRootName << " -f -a \"" << joinFishWords(rootSubs) << "\"\n";
+    // The `-a` argument list is re-evaluated as fish code at completion time,
+    // so it is emitted as a single-quoted literal containing fully-quoted
+    // words; a bare apostrophe would otherwise break the parse.
+    os << "complete -c " << fishRootName << " -f -a " << escapeFishSingleQuoted(joinFishWords(rootSubs)) << "\n";
 
     // Global flags: include effective flags on root + built-ins.
     const auto rootFlags = effectiveFlags();

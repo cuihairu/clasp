@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <filesystem>
 #endif
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include <crtdbg.h>
@@ -703,7 +704,7 @@ void testCompletionEntriesStaticScripts() {
     expect(contains(bash.str(), "\"staticapp sub\"|\"staticapp s\""), "static bash: alias case label");
     expect(contains(bash.str(), "COMPREPLY"), "static bash: COMPREPLY emitted");
     expect(contains(zsh.str(), "#compdef \"staticapp\""), "static zsh: header");
-    expect(contains(fish.str(), "\"sub s help version\""), "static fish: root subcommand list");
+    expect(contains(fish.str(), R"(-a '"sub" "s" "help" "version"')"), "static fish: root subcommand list");
     expect(contains(fish.str(), "-l version -d \"Version for this command\""), "static fish: version flag line");
     expect(contains(fish.str(), "-l longonly"), "static fish: long-only flag");
     expect(contains(fish.str(), "-s x"), "static fish: short-only flag");
@@ -740,7 +741,7 @@ void testCompletionEntriesStaticScripts() {
     root3.printCompletionBash(bash3);
     root3.printCompletionFish(fish3);
     root3.printCompletionPowerShell(ps3);
-    expect(contains(fish3.str(), "\"leaf l\""), "static fish: no help in subcommand list");
+    expect(contains(fish3.str(), R"(-a '"leaf" "l"')"), "static fish: no help in subcommand list");
     expect(!contains(fish3.str(), "\"leaf l help\""), "static fish: help command disabled");
     expect(!contains(bash3.str(), "\"nohelp help\""), "static bash: no help case label");
     expect(!contains(ps3.str(), "'nohelp help'"), "static powershell: no help entry");
@@ -940,7 +941,7 @@ void testShellEscaping() {
            "metachar bash: root quoted in complete line");
     expect(contains(zshStr, "#compdef \"app;echo INJECTED\""), "metachar zsh: root quoted in compdef");
     expect(contains(fishStr, "complete -c \"app;echo INJECTED\""), "metachar fish: root quoted in complete");
-    expect(contains(fishStr, "sub'\\$x`y\\\\z"), "metachar fish: apostrophe/quote sub quoted");
+    expect(contains(fishStr, R"('"sub\'\\$x`y\\\\z")"), "metachar fish: apostrophe/quote sub quoted");
     expect(contains(psStr, "Register-ArgumentCompleter -CommandName 'app;echo INJECTED'"),
            "metachar powershell: root quoted in registration");
     // Subcommand name with a single quote must be doubled inside the PowerShell map key.
@@ -1017,18 +1018,33 @@ void testShellEscapingEndToEnd() {
     expect(contains(fishScript, R"(-d "desc with `tick` and \"quote\"")"),
            "e2e fish: backtick in description stays literal");
 
-    const std::string dir = "/tmp/clasp_e2e_" + std::to_string(::getpid());
-    ::mkdir(dir.c_str(), 0700);
+    // Use a random, mode-0700 temp directory so the test cannot be raced by a
+    // pre-created predictable path and its scripts are cleaned up on exit.
+    std::error_code ec;
+    auto base = std::filesystem::temp_directory_path(ec);
+    if (ec) base = std::filesystem::current_path(ec);
+    std::string tmpl = (base / "clasp_e2e_XXXXXX").string();
+    std::vector<char> dirBuf(tmpl.begin(), tmpl.end());
+    dirBuf.push_back('\0');
+    char* madeDir = ::mkdtemp(dirBuf.data());
+    expect(madeDir != nullptr, "e2e: mkdtemp creates private temp dir");
+    if (!madeDir) return;
+    const std::string dir = madeDir;
     const std::string bashPath = dir + "/comp.bash";
     const std::string zshPath = dir + "/comp.zsh";
     const std::string fishPath = dir + "/comp.fish";
+    const std::string fishTestPath = dir + "/check.fish";
 
     if (haveBash) {
         std::ofstream bf(bashPath, std::ios::binary);
         bf << bashScript;
         bf.close();
-        // Interactive bash with history expansion enabled: source must not error.
-        const std::string cmd = "printf 'source " + bashPath + "\\necho SRC_OK\\n' | bash --norc -i >/dev/null 2>&1";
+        // Interactive bash with history expansion enabled: source must not
+        // error. The pipeline exit code is the source result, not the trailing
+        // echo, so a histexpand/syntax failure is actually detected.
+        const std::string cmd =
+            "printf 'source \"%s\" && echo SRC_OK || { echo SRC_FAIL; exit 1; }\\n' \""
+            + bashPath + "\" | bash --norc -i >/dev/null 2>&1";
         expect(std::system(cmd.c_str()) == 0, "e2e bash: script sources without histexpand error");
     }
 
@@ -1036,22 +1052,38 @@ void testShellEscapingEndToEnd() {
         std::ofstream zf(zshPath, std::ios::binary);
         zf << zshScript;
         zf.close();
-        const std::string cmd = "zsh -fc 'autoload -Uz compinit && compinit >/dev/null 2>&1; source " + zshPath + " >/dev/null 2>&1'";
-        expect(std::system(cmd.c_str()) == 0, "e2e zsh: script sources cleanly");
+        // Run compinit in an isolated ZDOTDIR so it cannot write .zcompdump
+        // into $HOME, and fail the test if either compinit or source fails.
+        const std::string cmd = "zsh -fc 'ZDOTDIR=\"" + dir + "\" autoload -Uz compinit && compinit >/dev/null 2>&1 && source \""
+                                + zshPath + "\" >/dev/null 2>&1'";
+        expect(std::system(cmd.c_str()) == 0, "e2e zsh: compinit + script source succeed");
     }
 
     if (haveFish) {
         std::ofstream ff(fishPath, std::ios::binary);
         ff << fishScript;
         ff.close();
-        // The fish script must parse without a quote-balance error. The
-        // previous escaping left a raw apostrophe in the -n condition, which
-        // fish reports as "quotes are not balanced".
-        const std::string cmd = "fish -c 'source " + fishPath + " >/dev/null 2>&1'";
-        expect(std::system(cmd.c_str()) == 0, "e2e fish: script sources without quote-balance error");
+        std::ofstream tf(fishTestPath, std::ios::binary);
+        tf << "source \"" << fishPath << "\"\n";
+        tf << "set -l subs (complete -C \"e2eapp \")\n";
+        tf << "if not contains -- \"don't\" $subs; exit 1; end\n";
+        tf << "if not contains -- '$x' $subs; exit 1; end\n";
+        tf << "set -l apos (complete -C \"e2eapp don\\'t --\")\n";
+        tf << "if not string match -q -- \"--flag*\" $apos; exit 1; end\n";
+        tf << "set -l x OTHERVAL\n";
+        tf << "set -l literal (complete -C 'e2eapp \\$x --')\n";
+        tf << "if not string match -q -- \"--flag*\" $literal; exit 1; end\n";
+        tf << "set -l dollar (complete -C \"e2eapp $x --\")\n";
+        tf << "if string match -q -- \"--flag*\" $dollar; exit 1; end\n";
+        tf.close();
+        // The fish script must parse, and the -n condition must be re-evaluated
+        // at runtime: `don't` must enable the local flag, while `$x` must stay
+        // literal and therefore not enable it.
+        const std::string cmd = "fish -N \"" + fishTestPath + "\" >/dev/null 2>&1";
+        expect(std::system(cmd.c_str()) == 0, "e2e fish: -n condition re-evaluates apostrophe and dollar");
     }
 
-    ::rmdir(dir.c_str());
+    std::filesystem::remove_all(dir, ec);
 #endif
 }
 
