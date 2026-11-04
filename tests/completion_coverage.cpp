@@ -1,6 +1,7 @@
 // Coverage tests for completion internals (shell script generation,
 // completion entries, value completion).
 #include <exception>
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -998,6 +999,11 @@ void testShellEscapingEndToEnd() {
     root.enableCompletion(staticCfg);
     clasp::Command sub("don't", "Apostrophe sub");
     sub.addAlias("$x");
+    // Command-substitution-shaped aliases must survive the -a and -n second
+    // evaluation as literals, not be executed as fish code.
+    sub.addAlias("`cmd`");
+    sub.addAlias("$(cmdx)");
+    sub.addAlias("(paren)");
     sub.withFlag("--flag", "-f", "flag", "desc with `tick` and \"quote\"", std::string(""));
     root.addCommand(std::move(sub));
 
@@ -1013,8 +1019,8 @@ void testShellEscapingEndToEnd() {
 
     // The generated fish -n condition must contain each subcommand word as a
     // fully double-quoted literal so it survives the second evaluation.
-    expect(contains(fishScript, R"('__fish_seen_subcommand_from "don\'t" "\\$x"')"),
-           "e2e fish: condition quotes apostrophe and dollar words");
+    expect(contains(fishScript, R"fish('__fish_seen_subcommand_from "don\'t" "\\$x" "`cmd`" "\\$(cmdx)" "(paren)"')fish"),
+           "e2e fish: condition quotes apostrophe/dollar/substitution words");
     expect(contains(fishScript, R"(-d "desc with `tick` and \"quote\"")"),
            "e2e fish: backtick in description stays literal");
 
@@ -1039,9 +1045,11 @@ void testShellEscapingEndToEnd() {
         std::ofstream bf(bashPath, std::ios::binary);
         bf << bashScript;
         bf.close();
-        // Interactive bash with history expansion enabled: source must not
-        // error. The pipeline exit code is the source result, not the trailing
-        // echo, so a histexpand/syntax failure is actually detected.
+        // Interactive bash: source must not error. The script has no `!`, so
+        // history expansion does not actually fire here; the pipeline only
+        // detects a syntax error (or a non-interactive failure) in the
+        // generated script. The pipeline exit code is the source result, not
+        // the trailing echo, so a syntax failure is actually detected.
         const std::string cmd =
             "printf 'source \"%s\" && echo SRC_OK || { echo SRC_FAIL; exit 1; }\\n' \""
             + bashPath + "\" | bash --norc -i >/dev/null 2>&1";
@@ -1052,11 +1060,17 @@ void testShellEscapingEndToEnd() {
         std::ofstream zf(zshPath, std::ios::binary);
         zf << zshScript;
         zf.close();
-        // Run compinit in an isolated ZDOTDIR so it cannot write .zcompdump
-        // into $HOME, and fail the test if either compinit or source fails.
-        const std::string cmd = "zsh -fc 'ZDOTDIR=\"" + dir + "\" autoload -Uz compinit && compinit >/dev/null 2>&1 && source \""
-                                + zshPath + "\" >/dev/null 2>&1'";
-        expect(std::system(cmd.c_str()) == 0, "e2e zsh: compinit + script source succeed");
+        // Export ZDOTDIR (not a prefix assignment) so compinit actually
+        // inherits it and writes .zcompdump into the isolated dir instead of
+        // $HOME; HOME is also redirected so no user dir is polluted. The test
+        // fails unless .zcompdump lands in the isolated dir and not in HOME.
+        const std::string zshHome = dir + "/home";
+        std::filesystem::create_directories(zshHome, ec);
+        const std::string cmd = "zsh -fc 'export HOME=\"" + zshHome + "\"; export ZDOTDIR=\"" + dir
+                                + "\"; autoload -Uz compinit && compinit >/dev/null 2>&1 && test -f \"" + dir
+                                + "/.zcompdump\" && test ! -f \"" + zshHome
+                                + "/.zcompdump\" && source \"" + zshPath + "\" >/dev/null 2>&1'";
+        expect(std::system(cmd.c_str()) == 0, "e2e zsh: compinit isolated via exported ZDOTDIR + source succeed");
     }
 
     if (haveFish) {
@@ -1065,9 +1079,21 @@ void testShellEscapingEndToEnd() {
         ff.close();
         std::ofstream tf(fishTestPath, std::ios::binary);
         tf << "source \"" << fishPath << "\"\n";
+        // Marker commands: if any command-substitution shape is executed on the
+        // second evaluation, its output replaces the literal word in the
+        // generated completion list, which the assertions below detect.
+        tf << "function cmd; echo CMD_EXECUTED_BACKTICK; end\n";
+        tf << "function cmdx; echo CMD_EXECUTED_CMDX; end\n";
+        tf << "function paren; echo CMD_EXECUTED_PAREN; end\n";
         tf << "set -l subs (complete -C \"e2eapp \")\n";
         tf << "if not contains -- \"don't\" $subs; exit 1; end\n";
         tf << "if not contains -- '$x' $subs; exit 1; end\n";
+        tf << "if not contains -- '`cmd`' $subs; exit 1; end\n";
+        tf << "if not contains -- '$(cmdx)' $subs; exit 1; end\n";
+        tf << "if not contains -- '(paren)' $subs; exit 1; end\n";
+        tf << "if contains -- CMD_EXECUTED_BACKTICK $subs; exit 1; end\n";
+        tf << "if contains -- CMD_EXECUTED_CMDX $subs; exit 1; end\n";
+        tf << "if contains -- CMD_EXECUTED_PAREN $subs; exit 1; end\n";
         tf << "set -l apos (complete -C \"e2eapp don\\'t --\")\n";
         tf << "if not string match -q -- \"--flag*\" $apos; exit 1; end\n";
         tf << "set -l x OTHERVAL\n";
@@ -1075,6 +1101,16 @@ void testShellEscapingEndToEnd() {
         tf << "if not string match -q -- \"--flag*\" $literal; exit 1; end\n";
         tf << "set -l dollar (complete -C \"e2eapp $x --\")\n";
         tf << "if string match -q -- \"--flag*\" $dollar; exit 1; end\n";
+        // Command-substitution-shaped tokens must stay literal in the -n
+        // condition too: each enables the local flag without running the
+        // substitution (else the condition word no longer matches and the
+        // flag is not offered, and the marker output would leak).
+        tf << "set -l back (complete -C 'e2eapp `cmd` --')\n";
+        tf << "if not string match -q -- \"--flag*\" $back; exit 1; end\n";
+        tf << "set -l dpar (complete -C 'e2eapp $(cmdx) --')\n";
+        tf << "if not string match -q -- \"--flag*\" $dpar; exit 1; end\n";
+        tf << "set -l par (complete -C 'e2eapp (paren) --')\n";
+        tf << "if not string match -q -- \"--flag*\" $par; exit 1; end\n";
         tf.close();
         // The fish script must parse, and the -n condition must be re-evaluated
         // at runtime: `don't` must enable the local flag, while `$x` must stay
@@ -1083,7 +1119,10 @@ void testShellEscapingEndToEnd() {
         expect(std::system(cmd.c_str()) == 0, "e2e fish: -n condition re-evaluates apostrophe and dollar");
     }
 
-    std::filesystem::remove_all(dir, ec);
+    // Cleanup must succeed: a silent /tmp leak is exactly what the earlier
+    // mkdtemp/mkdir change was meant to fix, so surface any failure here.
+    const std::uintmax_t removed = std::filesystem::remove_all(dir, ec);
+    expect(!ec && removed != 0, "e2e: temp dir removed without error");
 #endif
 }
 
