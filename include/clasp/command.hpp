@@ -2656,6 +2656,7 @@ private:
     static std::string escapeBashDoubleQuoted(const std::string& s);
     static std::string escapeFishWord(const std::string& s);
     static std::string escapeFishDoubleQuoted(const std::string& s);
+    static std::string escapeFishSingleQuotedContent(const std::string& s);
     static std::string escapeFishSingleQuoted(const std::string& s);
     static std::string joinBashWords(const std::vector<std::string>& words);
     static std::string joinFishWords(const std::vector<std::string>& words);
@@ -3283,7 +3284,7 @@ inline std::string Command::escapeHelpString(const std::string& s) {
         out.push_back(ch);
     }
     return out;
-}
+} // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::escapeBashWord(const std::string& s) {
     std::string out = "\"";
@@ -3335,26 +3336,46 @@ inline std::string Command::joinFishWords(const std::vector<std::string>& words)
     for (std::size_t i = 0; i < words.size(); ++i) {
         if (i) oss << ' ';
         // fish re-evaluates the `-a` argument list as code, so each word must
-        // be emitted as a fully-quoted fish literal (same rule as the -n
-        // condition). A bare apostrophe would otherwise break the parse.
-        oss << '"' << escapeFishDoubleQuoted(words[i]) << '"';
+        // be emitted as a fully-quoted fish literal. Single quotes never
+        // expand `$`, backticks or `()` in fish, so they are the only quoting
+        // form that stays literal in *every* evaluation context (unlike
+        // double quotes, whose escape semantics depend on whether fish treats
+        // the string as a `complete` argument or as ordinary code). A bare
+        // apostrophe is escaped with `\'` inside the single quotes.
+        oss << "'" << escapeFishSingleQuotedContent(words[i]) << "'";
     }
     return oss.str();
 }
 
 // Builds the fish `-n` condition string for `__fish_seen_subcommand_from`.
 // The condition is re-evaluated as fish code at completion time, so each word
-// must be emitted as a fully-quoted fish literal (double quotes with `"`, `\`
-// and `$` escaped). This keeps single quotes, dollars and backticks literal
-// instead of being interpreted on the second evaluation.
+// must be emitted as a fully-quoted fish literal. Single quotes (with `'`
+// escaped as `\'`) keep dollars, backticks and command substitutions literal in every
+// evaluation context, so the condition does not depend on fish's `complete`
+// argument handling to avoid executing `$(...)`/`` `...` ``.
 inline std::string Command::joinFishConditionWords(const std::vector<std::string>& words) {
     std::ostringstream oss;
     for (std::size_t i = 0; i < words.size(); ++i) {
         if (i) oss << ' ';
-        oss << '"' << escapeFishDoubleQuoted(words[i]) << '"';
+        oss << "'" << escapeFishSingleQuotedContent(words[i]) << "'";
     }
     return oss.str();
 }
+
+inline std::string Command::escapeFishSingleQuotedContent(const std::string& s) {
+    std::string out;
+    out.reserve(s.size());
+    for (const char ch : s) {
+        // Inside a fish single-quoted string, a `'` is escaped by a preceding
+        // `\` (fish does not support the POSIX `''` doubling inside single
+        // quotes; that would concatenate two adjacent strings). `\` itself is
+        // literal in single quotes but is doubled by the outer
+        // escapeFishSingleQuoted wrapper, so it survives the round trip.
+        if (ch == '\'') out += "\\'";
+        else out.push_back(ch);
+    }
+    return out;
+} // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::escapeFishSingleQuoted(const std::string& s) {
     std::string out = "'";
@@ -3366,7 +3387,7 @@ inline std::string Command::escapeFishSingleQuoted(const std::string& s) {
     }
     out.push_back('\'');
     return out;
-}
+} // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::joinQuotedPowerShell(const std::vector<std::string>& words) {
     auto escapeSingleQuoted = [](const std::string& s) {

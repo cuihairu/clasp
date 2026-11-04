@@ -705,13 +705,13 @@ void testCompletionEntriesStaticScripts() {
     expect(contains(bash.str(), "\"staticapp sub\"|\"staticapp s\""), "static bash: alias case label");
     expect(contains(bash.str(), "COMPREPLY"), "static bash: COMPREPLY emitted");
     expect(contains(zsh.str(), "#compdef \"staticapp\""), "static zsh: header");
-    expect(contains(fish.str(), R"(-a '"sub" "s" "help" "version"')"), "static fish: root subcommand list");
+    expect(contains(fish.str(), R"(-a '\'sub\' \'s\' \'help\' \'version\'')"), "static fish: root subcommand list");
     expect(contains(fish.str(), "-l version -d \"Version for this command\""), "static fish: version flag line");
     expect(contains(fish.str(), "-l longonly"), "static fish: long-only flag");
     expect(contains(fish.str(), "-s x"), "static fish: short-only flag");
     expect(contains(fish.str(), "-l both -s b"), "static fish: both-name flag");
     expect(contains(fish.str(), "-d \"Say \\\"hi\\\"\""), "static fish: escaped quotes in description");
-    expect(contains(fish.str(), "'__fish_seen_subcommand_from \"sub\" \"s\"'"), "static fish: sub flag condition");
+    expect(contains(fish.str(), R"('__fish_seen_subcommand_from \'sub\' \'s\'')"), "static fish: sub flag condition");
     expect(contains(ps.str(), "$__claspSubs['staticapp sub']"), "static powershell: sub map entry");
     expect(contains(ps.str(), "$__claspFlags['staticapp sub']"), "static powershell: flag map entry");
     expect(contains(ps.str(), "'sub', 's', 'help', 'version'"), "static powershell: quoted list");
@@ -742,7 +742,7 @@ void testCompletionEntriesStaticScripts() {
     root3.printCompletionBash(bash3);
     root3.printCompletionFish(fish3);
     root3.printCompletionPowerShell(ps3);
-    expect(contains(fish3.str(), R"(-a '"leaf" "l"')"), "static fish: no help in subcommand list");
+    expect(contains(fish3.str(), R"(-a '\'leaf\' \'l\'')"), "static fish: no help in subcommand list");
     expect(!contains(fish3.str(), "\"leaf l help\""), "static fish: help command disabled");
     expect(!contains(bash3.str(), "\"nohelp help\""), "static bash: no help case label");
     expect(!contains(ps3.str(), "'nohelp help'"), "static powershell: no help entry");
@@ -942,7 +942,7 @@ void testShellEscaping() {
            "metachar bash: root quoted in complete line");
     expect(contains(zshStr, "#compdef \"app;echo INJECTED\""), "metachar zsh: root quoted in compdef");
     expect(contains(fishStr, "complete -c \"app;echo INJECTED\""), "metachar fish: root quoted in complete");
-    expect(contains(fishStr, R"('"sub\'\\$x`y\\\\z")"), "metachar fish: apostrophe/quote sub quoted");
+    expect(contains(fishStr, R"(\'sub\\\'$x`y\\z\')"), "metachar fish: apostrophe/quote sub quoted");
     expect(contains(psStr, "Register-ArgumentCompleter -CommandName 'app;echo INJECTED'"),
            "metachar powershell: root quoted in registration");
     // Subcommand name with a single quote must be doubled inside the PowerShell map key.
@@ -1018,8 +1018,9 @@ void testShellEscapingEndToEnd() {
     const std::string psScript = psOs.str();
 
     // The generated fish -n condition must contain each subcommand word as a
-    // fully double-quoted literal so it survives the second evaluation.
-    expect(contains(fishScript, R"fish('__fish_seen_subcommand_from "don\'t" "\\$x" "`cmd`" "\\$(cmdx)" "(paren)"')fish"),
+    // fully single-quoted literal so it survives the second evaluation
+    // without executing command substitutions in any fish evaluation context.
+    expect(contains(fishScript, R"fish('__fish_seen_subcommand_from \'don\\\'t\' \'$x\' \'`cmd`\' \'$(cmdx)\' \'(paren)\'')fish"),
            "e2e fish: condition quotes apostrophe/dollar/substitution words");
     expect(contains(fishScript, R"(-d "desc with `tick` and \"quote\"")"),
            "e2e fish: backtick in description stays literal");
@@ -1053,7 +1054,7 @@ void testShellEscapingEndToEnd() {
         const std::string cmd =
             "printf 'source \"%s\" && echo SRC_OK || { echo SRC_FAIL; exit 1; }\\n' \""
             + bashPath + "\" | bash --norc -i >/dev/null 2>&1";
-        expect(std::system(cmd.c_str()) == 0, "e2e bash: script sources without histexpand error");
+        expect(std::system(cmd.c_str()) == 0, "e2e bash: script sources without syntax error");
     }
 
     if (haveZsh) {
@@ -1065,7 +1066,8 @@ void testShellEscapingEndToEnd() {
         // $HOME; HOME is also redirected so no user dir is polluted. The test
         // fails unless .zcompdump lands in the isolated dir and not in HOME.
         const std::string zshHome = dir + "/home";
-        std::filesystem::create_directories(zshHome, ec);
+        const bool zshHomeCreated = std::filesystem::create_directories(zshHome, ec);
+        expect(!ec && zshHomeCreated, "e2e zsh: isolated HOME directory created without error");
         const std::string cmd = "zsh -fc 'export HOME=\"" + zshHome + "\"; export ZDOTDIR=\"" + dir
                                 + "\"; autoload -Uz compinit && compinit >/dev/null 2>&1 && test -f \"" + dir
                                 + "/.zcompdump\" && test ! -f \"" + zshHome
