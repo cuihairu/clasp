@@ -131,3 +131,4 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 - [x] 审核发现：本轮 diff 未见问题（f80cba94..HEAD）。 审核通过，无需改动
 - [x] 审核发现：本轮 diff 未见问题（18c55024..HEAD）。 rev-list: `794b03e docs: mark audit pass for diff f80cba94..HEAD`；经 `git show` 确认该区间唯一提交仅修改 todo.md（docs-only），无代码/配置改动。
 - [x] 审核发现：本轮 diff 未见问题（794b03ef..HEAD）。 rev-list: `68ae290 todo: tick clean audit for 18c55024..HEAD`；经 `git show` 确认该区间唯一提交仅修改 todo.md（docs-only），无代码/配置改动；569/569 CTest green（build-audit）
+- [x] 审核发现：本轮 diff 未见问题（68ae290a..HEAD）。 rev-list: `bfded17 todo: tick clean audit for 794b03ef..HEAD`；经 `git show` 确认该区间唯一提交仅修改 todo.md（docs-only），无代码/配置改动；569/569 CTest green（build-audit）
