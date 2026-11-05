@@ -3366,12 +3366,11 @@ inline std::string Command::escapeFishSingleQuotedContent(const std::string& s) 
     std::string out;
     out.reserve(s.size());
     for (const char ch : s) {
-        // Inside a fish single-quoted string, a `'` is escaped by a preceding
-        // `\` (fish does not support the POSIX `''` doubling inside single
-        // quotes; that would concatenate two adjacent strings). `\` itself is
-        // literal in single quotes but is doubled by the outer
-        // escapeFishSingleQuoted wrapper, so it survives the round trip.
+        // Inside a fish single-quoted string, `'` is escaped by a preceding
+        // `\`. Escape every backslash too: otherwise an odd trailing backslash
+        // escapes the closing quote when fish re-evaluates the generated list.
         if (ch == '\'') out += "\\'";
+        else if (ch == '\\') out += "\\\\";
         else out.push_back(ch);
     }
     return out;

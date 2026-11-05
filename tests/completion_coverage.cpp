@@ -942,7 +942,7 @@ void testShellEscaping() {
            "metachar bash: root quoted in complete line");
     expect(contains(zshStr, "#compdef \"app;echo INJECTED\""), "metachar zsh: root quoted in compdef");
     expect(contains(fishStr, "complete -c \"app;echo INJECTED\""), "metachar fish: root quoted in complete");
-    expect(contains(fishStr, R"(\'sub\\\'$x`y\\z\')"), "metachar fish: apostrophe/quote sub quoted");
+    expect(contains(fishStr, R"(\'sub\\\'$x`y\\\\z\')"), "metachar fish: apostrophe/quote sub quoted");
     expect(contains(psStr, "Register-ArgumentCompleter -CommandName 'app;echo INJECTED'"),
            "metachar powershell: root quoted in registration");
     // Subcommand name with a single quote must be doubled inside the PowerShell map key.
@@ -1004,6 +1004,10 @@ void testShellEscapingEndToEnd() {
     sub.addAlias("`cmd`");
     sub.addAlias("$(cmdx)");
     sub.addAlias("(paren)");
+    // A trailing backslash (odd count) is the poison token for fish single
+    // quotes: unescaped, it escapes the closing quote on the second
+    // evaluation and the generated script stops parsing.
+    sub.addAlias("bs\\");
     sub.withFlag("--flag", "-f", "flag", "desc with `tick` and \"quote\"", std::string(""));
     root.addCommand(std::move(sub));
 
@@ -1020,8 +1024,8 @@ void testShellEscapingEndToEnd() {
     // The generated fish -n condition must contain each subcommand word as a
     // fully single-quoted literal so it survives the second evaluation
     // without executing command substitutions in any fish evaluation context.
-    expect(contains(fishScript, R"fish('__fish_seen_subcommand_from \'don\\\'t\' \'$x\' \'`cmd`\' \'$(cmdx)\' \'(paren)\'')fish"),
-           "e2e fish: condition quotes apostrophe/dollar/substitution words");
+    expect(contains(fishScript, R"fish('__fish_seen_subcommand_from \'don\\\'t\' \'$x\' \'`cmd`\' \'$(cmdx)\' \'(paren)\' \'bs\\\\\'')fish"),
+           "e2e fish: condition quotes apostrophe/dollar/substitution/backslash words");
     expect(contains(fishScript, R"(-d "desc with `tick` and \"quote\"")"),
            "e2e fish: backtick in description stays literal");
 
@@ -1093,6 +1097,7 @@ void testShellEscapingEndToEnd() {
         tf << "if not contains -- '`cmd`' $subs; exit 1; end\n";
         tf << "if not contains -- '$(cmdx)' $subs; exit 1; end\n";
         tf << "if not contains -- '(paren)' $subs; exit 1; end\n";
+        tf << "if not contains -- 'bs\\\\' $subs; exit 1; end\n";
         tf << "if contains -- CMD_EXECUTED_BACKTICK $subs; exit 1; end\n";
         tf << "if contains -- CMD_EXECUTED_CMDX $subs; exit 1; end\n";
         tf << "if contains -- CMD_EXECUTED_PAREN $subs; exit 1; end\n";
@@ -1113,6 +1118,11 @@ void testShellEscapingEndToEnd() {
         tf << "if not string match -q -- \"--flag*\" $dpar; exit 1; end\n";
         tf << "set -l par (complete -C 'e2eapp (paren) --')\n";
         tf << "if not string match -q -- \"--flag*\" $par; exit 1; end\n";
+        // The trailing-backslash subcommand must reach the -n condition as the
+        // literal token `bs\` (the commandline spells it `bs\\\\` so fish
+        // tokenizes one backslash, not an escaped space) and enable the flag.
+        tf << "set -l bsq (complete -C 'e2eapp bs\\\\\\\\ --')\n";
+        tf << "if not string match -q -- \"--flag*\" $bsq; exit 1; end\n";
         tf.close();
         // The fish script must parse, and the -n condition must be re-evaluated
         // at runtime: `don't` must enable the local flag, while `$x` must stay
