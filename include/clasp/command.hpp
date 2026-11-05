@@ -3377,15 +3377,11 @@ inline std::string Command::escapeFishSingleQuotedContent(const std::string& s) 
 } // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::escapeFishSingleQuoted(const std::string& s) {
-    std::string out = "'";
-    out.reserve(s.size() + 2);
-    for (const char ch : s) {
-        if (ch == '\'') out += "\\'";
-        else if (ch == '\\') out += "\\\\";
-        else out.push_back(ch);
-    }
-    out.push_back('\'');
-    return out;
+    // The outer wrapper must produce the same content escaping as the inner
+    // helper so the `-a`/`-n` double-encoding round-trip stays consistent.
+    // Delegating here keeps the two escaping rules in lock-step; editing only
+    // one of them would silently corrupt the fish completion script.
+    return "'" + escapeFishSingleQuotedContent(s) + "'";
 } // LCOV_EXCL_LINE (function cleanup block)
 
 inline std::string Command::joinQuotedPowerShell(const std::vector<std::string>& words) {

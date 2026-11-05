@@ -1008,6 +1008,13 @@ void testShellEscapingEndToEnd() {
     // quotes: unescaped, it escapes the closing quote on the second
     // evaluation and the generated script stops parsing.
     sub.addAlias("bs\\");
+    // Even counts of backslashes (two, and two in the middle of a word) are
+    // the silent regression: without per-backslash escaping, `bs\\` survives
+    // the first evaluation as two backslashes but the second evaluation
+    // collapses the pair to one (`\\` -> `\`), so the word is corrupted
+    // without any parse error to catch it. Pin the round-trip here.
+    sub.addAlias("bs\\\\");
+    sub.addAlias("a\\\\b");
     sub.withFlag("--flag", "-f", "flag", "desc with `tick` and \"quote\"", std::string(""));
     root.addCommand(std::move(sub));
 
@@ -1024,7 +1031,7 @@ void testShellEscapingEndToEnd() {
     // The generated fish -n condition must contain each subcommand word as a
     // fully single-quoted literal so it survives the second evaluation
     // without executing command substitutions in any fish evaluation context.
-    expect(contains(fishScript, R"fish('__fish_seen_subcommand_from \'don\\\'t\' \'$x\' \'`cmd`\' \'$(cmdx)\' \'(paren)\' \'bs\\\\\'')fish"),
+    expect(contains(fishScript, R"fish('__fish_seen_subcommand_from \'don\\\'t\' \'$x\' \'`cmd`\' \'$(cmdx)\' \'(paren)\' \'bs\\\\\' \'bs\\\\\\\\\' \'a\\\\\\\\b\'')fish"),
            "e2e fish: condition quotes apostrophe/dollar/substitution/backslash words");
     expect(contains(fishScript, R"(-d "desc with `tick` and \"quote\"")"),
            "e2e fish: backtick in description stays literal");
@@ -1098,6 +1105,11 @@ void testShellEscapingEndToEnd() {
         tf << "if not contains -- '$(cmdx)' $subs; exit 1; end\n";
         tf << "if not contains -- '(paren)' $subs; exit 1; end\n";
         tf << "if not contains -- 'bs\\\\' $subs; exit 1; end\n";
+        // Even backslash counts must round-trip intact through the second
+        // evaluation: `bs\\` (two trailing) and `a\\b` (two in the middle)
+        // would otherwise be silently collapsed to one backslash each.
+        tf << "if not contains -- 'bs\\\\\\\\' $subs; exit 1; end\n";
+        tf << "if not contains -- 'a\\\\\\\\b' $subs; exit 1; end\n";
         tf << "if contains -- CMD_EXECUTED_BACKTICK $subs; exit 1; end\n";
         tf << "if contains -- CMD_EXECUTED_CMDX $subs; exit 1; end\n";
         tf << "if contains -- CMD_EXECUTED_PAREN $subs; exit 1; end\n";
@@ -1123,6 +1135,15 @@ void testShellEscapingEndToEnd() {
         // tokenizes one backslash, not an escaped space) and enable the flag.
         tf << "set -l bsq (complete -C 'e2eapp bs\\\\\\\\ --')\n";
         tf << "if not string match -q -- \"--flag*\" $bsq; exit 1; end\n";
+        // The even-backslash aliases must reach the -n condition as their
+        // literal two-backslash tokens and enable the flag too. `complete -C`
+        // re-tokenizes its argument, so the command line must carry eight
+        // backslash bytes (`bs\\\\\\\\` / `a\\\\\\\\b` in the source) to
+        // collapse to the two-backslash token fish compares against.
+        tf << "set -l bsq2 (complete -C 'e2eapp bs\\\\\\\\\\\\\\\\ --')\n";
+        tf << "if not string match -q -- \"--flag*\" $bsq2; exit 1; end\n";
+        tf << "set -l amid (complete -C 'e2eapp a\\\\\\\\\\\\\\\\b --')\n";
+        tf << "if not string match -q -- \"--flag*\" $amid; exit 1; end\n";
         tf.close();
         // The fish script must parse, and the -n condition must be re-evaluated
         // at runtime: `don't` must enable the local flag, while `$x` must stay
