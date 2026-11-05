@@ -129,3 +129,4 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 
 - [x] 审核发现：本轮 diff（c8c418cc..HEAD = f80cba9）经 fish 4.2.1 实测 + completion_coverage_test 全绿确认修复正确、未引入新问题；唯余两条已开放待办（双段转义双实现需手工同步 include/clasp/command.hpp:3379-3389、偶数反斜杠覆盖缺口 tests/completion_coverage.cpp:1010），不重复登记 Fixed · 两条待办均已在本轮解决（双实现归一 include/clasp/command.hpp:3379-3383；偶数反斜杠断言 tests/completion_coverage.cpp:1010-1145）+ 569/569 CTest green
 - [x] 审核发现：本轮 diff 未见问题（f80cba94..HEAD）。 审核通过，无需改动
+- [x] 审核发现：本轮 diff 未见问题（18c55024..HEAD）。 rev-list: `794b03e docs: mark audit pass for diff f80cba94..HEAD`；经 `git show` 确认该区间唯一提交仅修改 todo.md（docs-only），无代码/配置改动。
