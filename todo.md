@@ -132,3 +132,30 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 - [x] 审核发现：本轮 diff 未见问题（18c55024..HEAD）。 rev-list: `794b03e docs: mark audit pass for diff f80cba94..HEAD`；经 `git show` 确认该区间唯一提交仅修改 todo.md（docs-only），无代码/配置改动。
 - [x] 审核发现：本轮 diff 未见问题（794b03ef..HEAD）。 rev-list: `68ae290 todo: tick clean audit for 18c55024..HEAD`；经 `git show` 确认该区间唯一提交仅修改 todo.md（docs-only），无代码/配置改动；569/569 CTest green（build-audit）
 - [x] 审核发现：本轮 diff 未见问题（68ae290a..HEAD）。 rev-list: `bfded17 todo: tick clean audit for 794b03ef..HEAD`；经 `git show` 确认该区间唯一提交仅修改 todo.md（docs-only），无代码/配置改动；569/569 CTest green（build-audit）
+
+## 源码分层分析 2026-11-07
+
+### a) 抽象层清单
+
+- 契约、构建与打包：定义 C++17、版本一致性、CMake target/install/export 与可选示例测试；代表模块 `CMakeLists.txt:2`、`cmake/claspConfig.cmake.in:3`。
+- 命令树与应用模型：以 `Command`/`Flag` 承载子命令所有权、标志声明、回调和继承配置；代表模块 `include/clasp/command.hpp:69`、`include/clasp/flag.hpp:23`。
+- 执行编排：解析执行节点，串联 parser、help/version、外部源、校验、钩子和动作；代表模块 `include/clasp/command.hpp:1376`、`include/clasp/command.hpp:3034`。
+- Token 解析与类型校验：把 `argv` 变成有序显式值，校验/规范化基础类型和注解扩展类型；代表模块 `include/clasp/parser.hpp:44`、`include/clasp/parser.hpp:1125`。
+- 外部源集成：读取进程环境与配置文件，扁平化映射并按优先级注入 parser；代表模块 `include/clasp/command.hpp:3673`、`include/clasp/command.hpp:4205`。
+- 表现、导出与终端适配：生成 help/usage/version/Markdown/roff，并通过 color 适配终端能力；代表模块 `include/clasp/command.hpp:1494`、`src/color.cpp:14`。
+- 补全协议与 Shell 生成：安装动态 complete 命令、生成四种 shell 脚本并统一上下文解析；代表模块 `include/clasp/command.hpp:4560`、`include/clasp/command.hpp:2815`。
+- 消费验证与文档契约：用 examples、unit/CTest 与双语文档固定 API 和可见行为；代表模块 `examples/basic_example.cpp:7`、`tests/execute.cpp:7`、`docs/guide/index.md:3`。
+
+### b) 超大文件候选
+
+- [ ] LAY-001 [P1] 拆分 include/clasp/command.hpp（4675 行）——命令模型、执行编排、外部源解析、表现导出和补全协议共享一个类/头，状态与关注点过度耦合（include/clasp/command.hpp:3189）。
+- [ ] LAY-002 [P1] 拆分 include/clasp/parser.hpp（1478 行）——token 解码、内存状态、访问优先级和十余种类型校验器同在一个泛型类（include/clasp/parser.hpp:1125）。
+- [ ] LAY-003 [P2] 拆分 CMakeLists.txt（2438 行）——根构建、安装、示例定义和逐条行为断言混在同一文件，测试矩阵难以维护（CMakeLists.txt:93）。
+- [ ] LAY-004 [P2] 拆分 tests/completion_coverage.cpp（1464 行）——补全协议、shell 转义和端到端树断言集中，可按 Bash/Zsh/Fish/PowerShell 分域（tests/completion_coverage.cpp:1）。
+- [ ] LAY-005 [P2] 拆分 tests/branch_parser.cpp（1129 行）——命令分支解析、建议、遍历与错误输出覆盖集中，适合按执行解析阶段拆分（tests/branch_parser.cpp:1）。
+
+### c) 目录/分类问题
+
+- `src/command.cpp` 只含注释却参与库编译，而 `Command` 实际定义在头文件；目录布局暗示实现分离，但当前没有对应实现单元（src/command.cpp:1、CMakeLists.txt:39）。
+- `packaging/vcpkg/portfile.cmake` 仍引用 `v0.1.0` 且 `SHA512 0`，与当前 `CMakeLists.txt` 和伞形头的 `0.1.2` 版本契约不一致（packaging/vcpkg/portfile.cmake:4、packaging/vcpkg/portfile.cmake:5、CMakeLists.txt:2、include/clasp/clasp.hpp:9）。
+- 根 `CMakeLists.txt` 在主构建脚本中内联大量示例 target、CTest 名称和精确输出断言，测试契约与库构建配置没有目录/文件边界（CMakeLists.txt:93、CMakeLists.txt:2340）。

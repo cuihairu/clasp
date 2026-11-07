@@ -40,6 +40,8 @@ export default defineConfig({
             {
               text: 'Reference',
               items: [
+                { text: 'Architecture', link: '/reference/architecture' },
+                { text: 'Glossary', link: '/reference/glossary' },
                 { text: 'Compatibility', link: '/reference/compat' },
                 { text: 'API', link: '/reference/api' },
                 { text: 'Examples', link: '/reference/examples' }
@@ -90,6 +92,8 @@ export default defineConfig({
             {
               text: '参考',
               items: [
+                { text: '架构', link: '/zh/reference/architecture' },
+                { text: '术语表', link: '/zh/reference/glossary' },
                 { text: '兼容性', link: '/zh/reference/compat' },
                 { text: 'API', link: '/zh/reference/api' },
                 { text: '示例', link: '/zh/reference/examples' }
