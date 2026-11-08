@@ -1,0 +1,2596 @@
+# CTest behavior assertions for Clasp examples. Included from the root
+# CMakeLists.txt after examples.cmake so every referenced example target exists.
+
+
+add_test(NAME basic_help COMMAND basic_example help)
+set_tests_properties(basic_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+
+add_test(NAME basic_help_sub COMMAND basic_example help print)
+set_tests_properties(basic_help_sub PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME basic_help_examples COMMAND basic_example --help)
+set_tests_properties(basic_help_examples PROPERTIES PASS_REGULAR_EXPRESSION "Examples:")
+
+
+add_test(NAME basic_help_shows_defaults COMMAND basic_example help print)
+set_tests_properties(basic_help_shows_defaults PROPERTIES PASS_REGULAR_EXPRESSION "\\(default: \\\"Hello, World!\\\"\\)")
+
+
+add_test(NAME basic_help_shows_types COMMAND basic_example help print)
+set_tests_properties(basic_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "--message string")
+
+
+add_test(NAME basic_unknown COMMAND basic_example nope)
+set_tests_properties(basic_unknown PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==])
+
+
+add_test(NAME basic_missing_flag_value COMMAND basic_example print --message)
+set_tests_properties(basic_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME basic_unknown_cmd_suggest COMMAND basic_example prnit)
+set_tests_properties(basic_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"prnit\" for \"app\"\r?
+\r?
+Did you mean this\?\r?
+  print\r?
+\r?
+Run 'app --help' for usage\.\r?
+]==])
+
+
+add_test(NAME basic_unknown_cmd_prefix_suggest COMMAND basic_example pri)
+set_tests_properties(basic_unknown_cmd_prefix_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"pri\" for \"app\"\r?
+\r?
+Did you mean this\?\r?
+  print\r?
+\r?
+Run 'app --help' for usage\.\r?
+]==])
+
+
+add_test(NAME basic_unknown_flag_suggest COMMAND basic_example print --mesage hi)
+set_tests_properties(basic_unknown_flag_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --mesage\r?
+\r?
+Did you mean this\?\r?
+  --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME basic_no_args_prints_help COMMAND basic_example)
+set_tests_properties(basic_no_args_prints_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+
+add_test(NAME basic_persistent_flag_before_sub COMMAND basic_example --verbose print --message hi)
+set_tests_properties(basic_persistent_flag_before_sub PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
+
+
+add_test(NAME basic_short_group COMMAND basic_example -vq print --message hi)
+set_tests_properties(basic_short_group PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
+
+
+add_test(NAME basic_bool_negation COMMAND basic_example --no-verbose print --message hi)
+set_tests_properties(basic_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
+
+
+add_test(NAME basic_short_value_inline COMMAND basic_example print -mhi)
+set_tests_properties(basic_short_value_inline PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
+
+
+add_test(NAME basic_short_value_eq COMMAND basic_example print -m=hi)
+set_tests_properties(basic_short_value_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
+
+
+add_test(NAME basic_end_of_flags COMMAND basic_example print -- --message hi)
+set_tests_properties(basic_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello, World!\r?
+$]==])
+
+
+add_test(NAME basic_end_of_flags_preserves_before COMMAND basic_example print --message hi -- --message bye)
+set_tests_properties(basic_end_of_flags_preserves_before PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
+
+
+add_test(NAME basic_alias COMMAND basic_example p --message hi)
+set_tests_properties(basic_alias PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+$]==])
+
+
+add_test(NAME args_noargs_ok COMMAND args_example noargs)
+set_tests_properties(args_noargs_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok\r?
+$]==])
+
+
+add_test(NAME args_noargs_fail_shows_usage COMMAND args_example noargs x)
+set_tests_properties(args_noargs_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts no arguments\r?
+\r?
+Usage: app noargs \[flags\]\r?
+]==])
+
+
+add_test(NAME args_exact_fail_shows_usage COMMAND args_example exact one)
+set_tests_properties(args_exact_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts 2 arg\(s\)\r?
+\r?
+Usage: app exact \[flags\]\r?
+]==])
+
+
+add_test(NAME args_range_fail_shows_usage COMMAND args_example range a b c)
+set_tests_properties(args_range_fail_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts between 1 and 2 arg\(s\)\r?
+\r?
+Usage: app range \[flags\]\r?
+]==])
+
+
+add_test(NAME args_silence_usage_hides_usage COMMAND args_example silence_usage)
+set_tests_properties(args_silence_usage_hides_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts 1 arg\(s\)\r?
+$]==] FAIL_REGULAR_EXPRESSION "Usage:")
+
+
+add_test(NAME args_silence_errors_hides_error COMMAND args_example silence_errors)
+set_tests_properties(args_silence_errors_hides_error PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app silence_errors \[flags\]\r?
+$]==] FAIL_REGULAR_EXPRESSION "Error:")
+
+
+# Success paths: with exactly 1 arg the silenced commands still run their action.
+add_test(NAME args_silence_usage_ok COMMAND args_example silence_usage x)
+set_tests_properties(args_silence_usage_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^unreachable\r?
+$]==])
+
+
+add_test(NAME args_silence_errors_ok COMMAND args_example silence_errors x)
+set_tests_properties(args_silence_errors_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^unreachable\r?
+$]==])
+
+
+add_test(NAME basic_invalid_bool_eq COMMAND basic_example --verbose=maybe print --message hi)
+set_tests_properties(basic_invalid_bool_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: invalid argument \"maybe\" for \"--verbose\"\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME basic_disable_flag_parsing COMMAND basic_example raw --help --x -y)
+set_tests_properties(basic_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION [==[^--help --x -y\r?
+$]==])
+
+
+add_test(NAME basic_version_flag COMMAND basic_example --version)
+set_tests_properties(basic_version_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^0\.1\.0\r?
+$]==])
+
+
+add_test(NAME basic_version_cmd COMMAND basic_example version)
+set_tests_properties(basic_version_cmd PROPERTIES PASS_REGULAR_EXPRESSION [==[^0\.1\.0\r?
+$]==])
+
+
+add_test(NAME hooks_order COMMAND hooks_example parent child)
+set_tests_properties(hooks_order PROPERTIES PASS_REGULAR_EXPRESSION "root-pre.*parent-pre.*child-pre.*run.*child-post.*parent-post.*root-post")
+
+
+add_test(NAME required_missing COMMAND required_example do)
+set_tests_properties(required_missing PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: required flag not set: --name\r?
+\r?
+Usage: app do \[flags\]\r?
+]==])
+
+
+add_test(NAME required_ok COMMAND required_example do --name bob)
+set_tests_properties(required_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^bob\r?
+$]==])
+
+
+add_test(NAME required_empty_value_ok COMMAND required_example do --name=)
+
+
+add_test(NAME docs_markdown COMMAND docs_example)
+set_tests_properties(docs_markdown PROPERTIES PASS_REGULAR_EXPRESSION [==[# app]==])
+
+
+add_test(NAME docs_manpage COMMAND docs_example)
+set_tests_properties(docs_manpage PROPERTIES PASS_REGULAR_EXPRESSION [==[MANPAGE
+.TH "app" "1"]==])
+
+
+add_test(NAME completion_bash COMMAND completion_example completion bash)
+set_tests_properties(completion_bash PROPERTIES PASS_REGULAR_EXPRESSION "complete -F")
+
+
+add_test(NAME completion_bash_dynamic COMMAND completion_example completion bash)
+set_tests_properties(completion_bash_dynamic PROPERTIES PASS_REGULAR_EXPRESSION "__completeNoDesc")
+
+
+add_test(NAME completion_bash_directive_filter_dirs COMMAND completion_example completion bash)
+set_tests_properties(completion_bash_directive_filter_dirs PROPERTIES PASS_REGULAR_EXPRESSION "compgen -d")
+
+
+add_test(NAME completion_bash_directive_filter_ext COMMAND completion_example completion bash)
+set_tests_properties(completion_bash_directive_filter_ext PROPERTIES PASS_REGULAR_EXPRESSION "compgen -f -X")
+
+
+add_test(NAME completion_bash_directive_keep_order COMMAND completion_example completion bash)
+set_tests_properties(completion_bash_directive_keep_order PROPERTIES PASS_REGULAR_EXPRESSION "compopt -o nosort")
+
+
+add_test(NAME completion_bash_eq_split COMMAND completion_example completion bash)
+set_tests_properties(completion_bash_eq_split PROPERTIES PASS_REGULAR_EXPRESSION "cur%%=\\*")
+
+
+add_test(NAME completion_zsh COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
+
+
+add_test(NAME completion_zsh_dynamic COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh_dynamic PROPERTIES PASS_REGULAR_EXPRESSION "__completeNoDesc")
+
+
+# zsh reuses the bash script via bashcompinit; its directive handling must be
+# present too (dirs / file-ext filter / keep-order).
+add_test(NAME completion_zsh_directive_dirs COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh_directive_dirs PROPERTIES PASS_REGULAR_EXPRESSION "compgen -d")
+
+
+add_test(NAME completion_zsh_directive_ext COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh_directive_ext PROPERTIES PASS_REGULAR_EXPRESSION "compgen -f -X")
+
+
+add_test(NAME completion_zsh_directive_keep_order COMMAND completion_example completion zsh)
+set_tests_properties(completion_zsh_directive_keep_order PROPERTIES PASS_REGULAR_EXPRESSION "compopt -o nosort")
+
+
+add_test(NAME completion_fish COMMAND completion_example completion fish)
+set_tests_properties(completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c \"app\"")
+
+
+add_test(NAME completion_fish_dynamic COMMAND completion_example completion fish)
+set_tests_properties(completion_fish_dynamic PROPERTIES PASS_REGULAR_EXPRESSION "__complete")
+
+
+add_test(NAME completion_fish_dynamic_directives COMMAND completion_example completion fish)
+set_tests_properties(completion_fish_dynamic_directives PROPERTIES PASS_REGULAR_EXPRESSION "__fish_complete_directories.*command ls -1")
+
+
+add_test(NAME completion_powershell COMMAND completion_example completion powershell)
+set_tests_properties(completion_powershell PROPERTIES PASS_REGULAR_EXPRESSION "Register-ArgumentCompleter")
+
+
+add_test(NAME completion_powershell_dynamic COMMAND completion_example completion powershell)
+set_tests_properties(completion_powershell_dynamic PROPERTIES PASS_REGULAR_EXPRESSION "__completeNoDesc")
+
+
+add_test(NAME completion_powershell_eq_split COMMAND completion_example completion powershell)
+set_tests_properties(completion_powershell_eq_split PROPERTIES PASS_REGULAR_EXPRESSION "\\$origWordToComplete")
+
+
+add_test(NAME completion_complete_no_desc_includes_version COMMAND completion_example __completeNoDesc --)
+set_tests_properties(completion_complete_no_desc_includes_version PROPERTIES PASS_REGULAR_EXPRESSION "--version")
+
+
+add_test(NAME dynamic_complete_flag_filename_candidates COMMAND file_completion_example __completeNoDesc open --config y)
+set_tests_properties(dynamic_complete_flag_filename_candidates PROPERTIES PASS_REGULAR_EXPRESSION "yaml")
+
+
+add_test(NAME dynamic_complete_flag_filename_candidates_path_prefix COMMAND file_completion_example __completeNoDesc open --config /)
+set_tests_properties(dynamic_complete_flag_filename_candidates_path_prefix PROPERTIES PASS_REGULAR_EXPRESSION "yaml")
+
+
+add_test(NAME dynamic_complete_flag_filename_directive COMMAND file_completion_example __completeNoDesc open --config y)
+set_tests_properties(dynamic_complete_flag_filename_directive PROPERTIES PASS_REGULAR_EXPRESSION ":8")
+
+
+add_test(NAME dynamic_complete_flag_dirname_directive COMMAND file_completion_example __completeNoDesc open --out-dir a)
+set_tests_properties(dynamic_complete_flag_dirname_directive PROPERTIES PASS_REGULAR_EXPRESSION ":16")
+
+
+add_test(NAME completion_fish_dynamic_filter_dirs COMMAND file_completion_example completion fish)
+set_tests_properties(completion_fish_dynamic_filter_dirs PROPERTIES PASS_REGULAR_EXPRESSION "__fish_complete_directories")
+
+
+add_test(NAME completion_fish_dynamic_filter_ext COMMAND file_completion_example completion fish)
+set_tests_properties(completion_fish_dynamic_filter_ext PROPERTIES PASS_REGULAR_EXPRESSION "command ls -1")
+
+
+add_test(NAME completion_fish_eq_split COMMAND file_completion_example completion fish)
+set_tests_properties(completion_fish_eq_split PROPERTIES PASS_REGULAR_EXPRESSION "string split -m1 '='.*set prefix.*echo \\$prefix")
+
+
+add_test(NAME keep_order_directive_bitmask COMMAND keep_order_example __completeNoDesc fruit a)
+set_tests_properties(keep_order_directive_bitmask PROPERTIES PASS_REGULAR_EXPRESSION ":36")
+
+
+add_test(NAME keep_order_fish_script_uses_keep_order COMMAND keep_order_example completion fish)
+set_tests_properties(keep_order_fish_script_uses_keep_order PROPERTIES PASS_REGULAR_EXPRESSION "complete -c \"app\" -f -k")
+
+
+add_test(NAME config_from_file COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.env)
+set_tests_properties(config_from_file PROPERTIES PASS_REGULAR_EXPRESSION "fromfile")
+
+
+add_test(NAME config_env_overrides COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.env)
+set_tests_properties(config_env_overrides PROPERTIES ENVIRONMENT "APP_MESSAGE=fromenv" PASS_REGULAR_EXPRESSION "fromenv")
+
+
+add_test(NAME config_flag_overrides_env COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.env --message fromcli)
+set_tests_properties(config_flag_overrides_env PROPERTIES ENVIRONMENT "APP_MESSAGE=fromenv" PASS_REGULAR_EXPRESSION "fromcli")
+
+
+add_test(NAME config_from_json COMMAND config_json_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.json)
+set_tests_properties(config_from_json PROPERTIES PASS_REGULAR_EXPRESSION "message=fromjson.*nested_mode=deep")
+
+
+add_test(NAME config_from_toml COMMAND config_toml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.toml)
+set_tests_properties(config_from_toml PROPERTIES PASS_REGULAR_EXPRESSION "message=fromtoml.*nested_mode=deep")
+
+
+add_test(NAME config_from_yaml COMMAND config_yaml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.yaml)
+set_tests_properties(config_from_yaml PROPERTIES PASS_REGULAR_EXPRESSION "message=fromyaml.*nested_mode=deep")
+
+
+add_test(NAME config_list_from_json COMMAND config_list_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_list.json)
+set_tests_properties(config_list_from_json PROPERTIES PASS_REGULAR_EXPRESSION "tags=a,b,c")
+
+
+add_test(NAME config_list_from_yaml COMMAND config_list_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_list.yaml)
+set_tests_properties(config_list_from_yaml PROPERTIES PASS_REGULAR_EXPRESSION "tags=a,b,c")
+
+
+add_test(NAME config_list_from_toml COMMAND config_list_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_list.toml)
+set_tests_properties(config_list_from_toml PROPERTIES PASS_REGULAR_EXPRESSION "tags=a,b,c")
+
+
+add_test(NAME config_list_cli_overrides COMMAND config_list_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_list.json --tag x)
+set_tests_properties(config_list_cli_overrides PROPERTIES PASS_REGULAR_EXPRESSION "tags=x")
+
+
+add_test(NAME config_from_ini COMMAND config_ini_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.ini)
+set_tests_properties(config_from_ini PROPERTIES PASS_REGULAR_EXPRESSION "message=fromini.*nested_mode=deep")
+
+
+# .cfg extension should use INI parser too
+add_test(NAME config_from_cfg COMMAND config_ini_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config.ini)
+set_tests_properties(config_from_cfg PROPERTIES PASS_REGULAR_EXPRESSION "message=fromini.*nested_mode=deep")
+
+
+# --- Config edge-case tests ---
+
+# Unknown extension should be rejected
+add_test(NAME config_unknown_ext COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_unknown.xyz)
+set_tests_properties(config_unknown_ext PROPERTIES PASS_REGULAR_EXPRESSION "unsupported config file format")
+
+
+# Malformed JSON should report parse error
+add_test(NAME config_bad_json COMMAND config_json_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_bad.json)
+set_tests_properties(config_bad_json PROPERTIES PASS_REGULAR_EXPRESSION "failed to parse json config file")
+
+
+# Malformed TOML should report parse error
+add_test(NAME config_bad_toml COMMAND config_toml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_bad.toml)
+set_tests_properties(config_bad_toml PROPERTIES PASS_REGULAR_EXPRESSION "failed to parse toml config file")
+
+
+# YAML subset parser: unsupported features (inline arrays) are silently ignored, only scalar values kept
+add_test(NAME config_yaml_subset_ignores_inline_array COMMAND config_yaml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_bad.yaml)
+set_tests_properties(config_yaml_subset_ignores_inline_array PROPERTIES PASS_REGULAR_EXPRESSION "message=ok nested_mode=none")
+
+
+# Empty config files should not crash — env-like
+add_test(NAME config_empty_env COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.env)
+set_tests_properties(config_empty_env PROPERTIES PASS_REGULAR_EXPRESSION "default")
+
+
+# Empty config files should not crash — JSON (empty object, no keys override)
+add_test(NAME config_empty_json COMMAND config_json_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.json)
+set_tests_properties(config_empty_json PROPERTIES PASS_REGULAR_EXPRESSION "message=\n")
+
+
+# Empty config files should not crash — TOML (no keys, defaults preserved)
+add_test(NAME config_empty_toml COMMAND config_toml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.toml)
+set_tests_properties(config_empty_toml PROPERTIES PASS_REGULAR_EXPRESSION "message=default nested_mode=none")
+
+
+# Empty config files should not crash — YAML (no keys, defaults preserved)
+add_test(NAME config_empty_yaml COMMAND config_yaml_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.yaml)
+set_tests_properties(config_empty_yaml PROPERTIES PASS_REGULAR_EXPRESSION "message=default nested_mode=none")
+
+
+# Empty config files should not crash — INI (no keys, defaults preserved)
+add_test(NAME config_empty_ini COMMAND config_ini_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/config_empty.ini)
+set_tests_properties(config_empty_ini PROPERTIES PASS_REGULAR_EXPRESSION "message=default nested_mode=none")
+
+
+# Non-existent config file should report open error
+add_test(NAME config_missing_file COMMAND config_example do --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/nonexistent.env)
+set_tests_properties(config_missing_file PROPERTIES PASS_REGULAR_EXPRESSION "failed to open config file")
+
+
+add_test(NAME traverse_local_flag_before_sub COMMAND traverse_example --message hi print)
+set_tests_properties(traverse_local_flag_before_sub PROPERTIES PASS_REGULAR_EXPRESSION "hi")
+
+
+add_test(NAME flag_groups_mutually_exclusive COMMAND flag_groups_example do --a --b --name bob --user u --pass p)
+set_tests_properties(flag_groups_mutually_exclusive PROPERTIES PASS_REGULAR_EXPRESSION "mutually exclusive")
+
+
+add_test(NAME flag_groups_one_required COMMAND flag_groups_example do --user u --pass p)
+set_tests_properties(flag_groups_one_required PROPERTIES PASS_REGULAR_EXPRESSION "at least one of the flags in the group is required")
+
+
+add_test(NAME flag_groups_required_together COMMAND flag_groups_example do --name bob --user u)
+set_tests_properties(flag_groups_required_together PROPERTIES PASS_REGULAR_EXPRESSION "flags must be set together")
+
+
+add_test(NAME flag_groups_ok COMMAND flag_groups_example do --a --name bob --user u --pass p)
+set_tests_properties(flag_groups_ok PROPERTIES PASS_REGULAR_EXPRESSION "ok a=true")
+
+
+add_test(NAME no_suggest_unknown_flag COMMAND no_suggest_example print --mesage hi)
+set_tests_properties(no_suggest_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION "unknown flag" FAIL_REGULAR_EXPRESSION "Did you mean this\\?")
+
+
+add_test(NAME dynamic_complete_subcommands COMMAND dynamic_completion_example __completeNoDesc p)
+set_tests_properties(dynamic_complete_subcommands PROPERTIES PASS_REGULAR_EXPRESSION "paint")
+
+
+add_test(NAME dynamic_complete_valid_args COMMAND dynamic_completion_example __completeNoDesc fruit a)
+set_tests_properties(dynamic_complete_valid_args PROPERTIES PASS_REGULAR_EXPRESSION "apple")
+
+
+add_test(NAME dynamic_complete_flag_value COMMAND dynamic_completion_example __completeNoDesc paint --color r)
+set_tests_properties(dynamic_complete_flag_value PROPERTIES PASS_REGULAR_EXPRESSION "red")
+
+
+add_test(NAME dynamic_complete_flag_value_short COMMAND dynamic_completion_example __completeNoDesc paint -c r)
+set_tests_properties(dynamic_complete_flag_value_short PROPERTIES PASS_REGULAR_EXPRESSION "red")
+
+
+add_test(NAME dynamic_complete_flag_value_eq_short COMMAND dynamic_completion_example __completeNoDesc paint -c=r)
+set_tests_properties(dynamic_complete_flag_value_eq_short PROPERTIES PASS_REGULAR_EXPRESSION "-c=red")
+
+
+add_test(NAME dynamic_complete_flag_names_short COMMAND dynamic_completion_example __completeNoDesc paint -)
+set_tests_properties(dynamic_complete_flag_names_short PROPERTIES PASS_REGULAR_EXPRESSION "-c")
+
+
+add_test(NAME dynamic_complete_flag_value_eq COMMAND dynamic_completion_example __completeNoDesc paint --color=r)
+set_tests_properties(dynamic_complete_flag_value_eq PROPERTIES PASS_REGULAR_EXPRESSION "--color=red")
+
+
+add_test(NAME dynamic_complete_flag_names COMMAND dynamic_completion_example __completeNoDesc paint --)
+set_tests_properties(dynamic_complete_flag_names PROPERTIES PASS_REGULAR_EXPRESSION "--color")
+
+
+add_test(NAME parser_knobs_allow_unknown_consumes_value COMMAND parser_knobs_example unknown_ok --mystery value)
+set_tests_properties(parser_knobs_allow_unknown_consumes_value PROPERTIES PASS_REGULAR_EXPRESSION "verbose=false args=\\[\\]")
+
+
+add_test(NAME parser_knobs_allow_unknown_does_not_consume_other_flags COMMAND parser_knobs_example unknown_ok --mystery -v)
+set_tests_properties(parser_knobs_allow_unknown_does_not_consume_other_flags PROPERTIES PASS_REGULAR_EXPRESSION "verbose=true args=\\[\\]")
+
+
+add_test(NAME parser_knobs_allow_unknown_eq_consumes_token_only COMMAND parser_knobs_example unknown_ok --mystery=val leftover)
+set_tests_properties(parser_knobs_allow_unknown_eq_consumes_token_only PROPERTIES PASS_REGULAR_EXPRESSION "verbose=false args=\\[leftover\\]")
+
+
+add_test(NAME parser_knobs_allow_unknown_short_unknown_not_last_does_not_consume COMMAND parser_knobs_example unknown_ok -xv value)
+set_tests_properties(parser_knobs_allow_unknown_short_unknown_not_last_does_not_consume PROPERTIES PASS_REGULAR_EXPRESSION "verbose=true args=\\[value\\]")
+
+
+add_test(NAME parser_knobs_allow_unknown_short_unknown_last_consumes COMMAND parser_knobs_example unknown_ok -vx value)
+set_tests_properties(parser_knobs_allow_unknown_short_unknown_last_consumes PROPERTIES PASS_REGULAR_EXPRESSION "verbose=true args=\\[\\]")
+
+
+add_test(NAME parser_knobs_no_short_group COMMAND parser_knobs_example no_group -vq)
+set_tests_properties(parser_knobs_no_short_group PROPERTIES PASS_REGULAR_EXPRESSION "unknown flag: -vq")
+
+
+add_test(NAME parser_knobs_no_bool_negation COMMAND parser_knobs_example no_neg --no-verbose)
+set_tests_properties(parser_knobs_no_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "unknown flag: --no-verbose")
+
+
+add_test(NAME sorting_commands_default COMMAND sorting_example --help)
+set_tests_properties(sorting_commands_default PROPERTIES PASS_REGULAR_EXPRESSION [==[Commands:
+  a - A cmd
+  b - B cmd]==])
+
+
+add_test(NAME sorting_flags_default COMMAND sorting_example --help)
+set_tests_properties(sorting_flags_default PROPERTIES PASS_REGULAR_EXPRESSION [==[Flags:
+  --alpha - A flag
+  -h, --help - Help for this command
+  --zeta - Z flag]==])
+
+
+add_test(NAME sorting_commands_disabled COMMAND no_sorting_example --help)
+set_tests_properties(sorting_commands_disabled PROPERTIES PASS_REGULAR_EXPRESSION [==[Commands:
+  b - B cmd
+  a - A cmd]==])
+
+
+add_test(NAME sorting_flags_disabled COMMAND no_sorting_example --help)
+set_tests_properties(sorting_flags_disabled PROPERTIES PASS_REGULAR_EXPRESSION [==[Flags:
+  --zeta - Z flag
+  --alpha - A flag
+  -h, --help - Help for this command]==])
+
+
+add_test(NAME group_help COMMAND group_example --help)
+set_tests_properties(group_help PROPERTIES PASS_REGULAR_EXPRESSION [==[Commands:
+  (zulu - Zulu cmd.*ghost - Ghost cmd|ghost - Ghost cmd.*zulu - Zulu cmd)
+
+Core Commands:
+  alpha - Alpha cmd
+
+Extra Commands:
+  beta - Beta cmd]==])
+
+
+add_test(NAME execute_set_args COMMAND execute_example)
+set_tests_properties(execute_set_args PROPERTIES PASS_REGULAR_EXPRESSION "from-execute")
+
+
+add_test(NAME version_template_flag COMMAND version_template_example --version)
+set_tests_properties(version_template_flag PROPERTIES PASS_REGULAR_EXPRESSION "app=1\\.2\\.3")
+
+
+add_test(NAME version_template_subcommand_flag COMMAND version_template_example sub --version)
+set_tests_properties(version_template_subcommand_flag PROPERTIES PASS_REGULAR_EXPRESSION "app sub=1\\.2\\.3")
+
+
+add_test(NAME usage_line_no_flags_root COMMAND disable_flags_in_use_line_example --help)
+set_tests_properties(usage_line_no_flags_root PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app \\[command\\]" FAIL_REGULAR_EXPRESSION "\\[flags\\]")
+
+
+add_test(NAME usage_line_flags_subcommand COMMAND disable_flags_in_use_line_example help sub)
+set_tests_properties(usage_line_flags_subcommand PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app sub \\[flags\\]" )
+
+
+add_test(NAME flag_error_func_unknown_flag COMMAND flag_error_func_example --nope)
+set_tests_properties(flag_error_func_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION "Error: FLAGERR: unknown flag: --nope")
+
+
+add_test(NAME help_command_renamed COMMAND help_command_rename_example assist print)
+set_tests_properties(help_command_renamed PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app print")
+
+
+add_test(NAME help_command_default_name_no_longer_works COMMAND help_command_rename_example help print)
+set_tests_properties(help_command_default_name_no_longer_works PROPERTIES PASS_REGULAR_EXPRESSION "unknown command \"help\"")
+
+
+add_test(NAME help_command_disabled COMMAND help_command_disabled_example help print)
+set_tests_properties(help_command_disabled PROPERTIES PASS_REGULAR_EXPRESSION "unknown command \"help\"")
+
+
+add_test(NAME help_flag_still_works_without_help_command COMMAND help_command_disabled_example --help)
+set_tests_properties(help_flag_still_works_without_help_command PROPERTIES PASS_REGULAR_EXPRESSION "Usage: app \\[command\\]" )
+
+
+add_test(NAME count_short_group COMMAND count_example -vvv)
+set_tests_properties(count_short_group PROPERTIES PASS_REGULAR_EXPRESSION "count=3 occ=3 args=")
+
+
+add_test(NAME count_long_repeat COMMAND count_example --verbose --verbose)
+set_tests_properties(count_long_repeat PROPERTIES PASS_REGULAR_EXPRESSION "count=2 occ=2 args=")
+
+
+add_test(NAME count_long_value_and_repeat COMMAND count_example --verbose=3 --verbose)
+set_tests_properties(count_long_value_and_repeat PROPERTIES PASS_REGULAR_EXPRESSION "count=4 occ=2 args=")
+
+
+add_test(NAME count_hex_value_and_repeat COMMAND count_example --verbose=0x3 --verbose)
+set_tests_properties(count_hex_value_and_repeat PROPERTIES PASS_REGULAR_EXPRESSION "count=4 occ=2 args=")
+
+
+add_test(NAME count_does_not_consume_next_arg COMMAND count_example --verbose 3)
+set_tests_properties(count_does_not_consume_next_arg PROPERTIES PASS_REGULAR_EXPRESSION "count=1 occ=1 args=3")
+
+
+add_test(NAME context_inherited COMMAND context_example show)
+set_tests_properties(context_inherited PROPERTIES PASS_REGULAR_EXPRESSION "ctx=rootctx")
+
+
+add_test(NAME custom_help_template COMMAND custom_template_example --help)
+set_tests_properties(custom_help_template PROPERTIES PASS_REGULAR_EXPRESSION "HELP>>Usage: app")
+
+
+add_test(NAME custom_usage_template COMMAND custom_template_example --mystery)
+set_tests_properties(custom_usage_template PROPERTIES PASS_REGULAR_EXPRESSION "USAGE>>Usage: app")
+
+
+add_test(NAME normalize_flag_name COMMAND normalize_example --message_text hi)
+set_tests_properties(normalize_flag_name PROPERTIES PASS_REGULAR_EXPRESSION "message=hi")
+
+
+add_test(NAME normalize_bool_negation COMMAND normalize_example --no-do_thing)
+set_tests_properties(normalize_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "doThingSeen=true")
+
+
+add_test(NAME noopt_value_omitted COMMAND noopt_example --mode --other)
+set_tests_properties(noopt_value_omitted PROPERTIES PASS_REGULAR_EXPRESSION "mode=auto.*other=true")
+
+
+add_test(NAME noopt_value_provided COMMAND noopt_example --mode manual)
+set_tests_properties(noopt_value_provided PROPERTIES PASS_REGULAR_EXPRESSION "mode=manual")
+
+
+add_test(NAME noopt_before_subcommand COMMAND noopt_example --mode show)
+set_tests_properties(noopt_before_subcommand PROPERTIES PASS_REGULAR_EXPRESSION "mode=auto")
+
+
+add_test(NAME repeat_last_wins COMMAND repeat_example --tag a --tag b)
+set_tests_properties(repeat_last_wins PROPERTIES PASS_REGULAR_EXPRESSION "last=b")
+
+
+add_test(NAME repeat_split_and_repeat COMMAND repeat_example --tag a,b --tag c)
+set_tests_properties(repeat_split_and_repeat PROPERTIES PASS_REGULAR_EXPRESSION "tags=a\\|b\\|c")
+
+
+add_test(NAME repeat_short_flag COMMAND repeat_example -t a -t b)
+set_tests_properties(repeat_short_flag PROPERTIES PASS_REGULAR_EXPRESSION "tags=a\\|b")
+
+
+add_test(NAME types_defaults COMMAND types_example)
+set_tests_properties(types_defaults PROPERTIES PASS_REGULAR_EXPRESSION "i64=-1.*u32=0.*u64=0.*pi=3\\.14.*timeout_ms=1500")
+
+
+add_test(NAME types_parse_values COMMAND types_example --i64 -5 --u32 9 --u64 7 --pi 2.5 --timeout 2s)
+set_tests_properties(types_parse_values PROPERTIES PASS_REGULAR_EXPRESSION "i64=-5.*u32=9.*u64=7.*pi=2\\.5.*timeout_ms=2000")
+
+
+add_test(NAME types_parse_hex_values COMMAND types_example --i64 0x10 --u32 0x10 --u64 0xff)
+set_tests_properties(types_parse_hex_values PROPERTIES PASS_REGULAR_EXPRESSION "i64=16.*u32=16.*u64=255")
+
+
+add_test(NAME types_parse_duration_compound COMMAND types_example --timeout 1s500ms)
+set_tests_properties(types_parse_duration_compound PROPERTIES PASS_REGULAR_EXPRESSION "timeout_ms=1500")
+
+
+add_test(NAME types_parse_duration_zero COMMAND types_example --timeout 0)
+set_tests_properties(types_parse_duration_zero PROPERTIES PASS_REGULAR_EXPRESSION "timeout_ms=0")
+
+
+add_test(NAME types_invalid_i64_trailing COMMAND types_example --i64 1,2)
+set_tests_properties(types_invalid_i64_trailing PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "1,2" for "--i64"]==])
+
+
+add_test(NAME types_invalid_u64_negative COMMAND types_example --u64 -1)
+set_tests_properties(types_invalid_u64_negative PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "-1" for "--u64"]==])
+
+
+add_test(NAME types_invalid_u32_negative COMMAND types_example --u32 -1)
+set_tests_properties(types_invalid_u32_negative PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "-1" for "--u32"]==])
+
+
+add_test(NAME types_invalid_pi_trailing COMMAND types_example --pi 3.14x)
+set_tests_properties(types_invalid_pi_trailing PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "3.14x" for "--pi"]==])
+
+
+add_test(NAME types_invalid_timeout_unit COMMAND types_example --timeout 5q)
+set_tests_properties(types_invalid_timeout_unit PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "5q" for "--timeout"]==])
+
+
+add_test(NAME net_help_shows_types COMMAND net_example help show)
+set_tests_properties(net_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "(--ip ip.*--cidr cidr)|(--cidr cidr.*--ip ip)")
+
+
+add_test(NAME net_ip_ipv6_canonical COMMAND net_example show --ip 2001:db8:0:0:0:0:2:1)
+set_tests_properties(net_ip_ipv6_canonical PROPERTIES PASS_REGULAR_EXPRESSION "ip=2001:db8::2:1")
+
+
+add_test(NAME net_ip_ipv4_canonical COMMAND net_example show --ip 10.0.0.1)
+set_tests_properties(net_ip_ipv4_canonical PROPERTIES PASS_REGULAR_EXPRESSION "ip=10\\.0\\.0\\.1")
+
+
+add_test(NAME net_cidr_v4_masks COMMAND net_example show --cidr 10.0.1.2/8)
+set_tests_properties(net_cidr_v4_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=10.0.0.0/8")
+
+
+add_test(NAME net_cidr_v4_partial_byte_masks COMMAND net_example show --cidr 10.0.0.1/9)
+set_tests_properties(net_cidr_v4_partial_byte_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=10\\.0\\.0\\.0/9")
+
+
+add_test(NAME net_cidr_v6_masks COMMAND net_example show --cidr 2001:db8::1/32)
+set_tests_properties(net_cidr_v6_masks PROPERTIES PASS_REGULAR_EXPRESSION "cidr=2001:db8::/32")
+
+
+add_test(NAME net_invalid_ip COMMAND net_example show --ip 999.0.0.1)
+set_tests_properties(net_invalid_ip PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "999.0.0.1" for "--ip".*Usage: app show]==])
+
+
+add_test(NAME net_invalid_cidr_prefix COMMAND net_example show --cidr 10.0.0.1/33)
+set_tests_properties(net_invalid_cidr_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "10.0.0.1/33" for "--cidr".*Usage: app show]==])
+
+
+add_test(NAME net_extra_help_shows_types COMMAND net_extra_example help show)
+set_tests_properties(net_extra_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "(--ipnet ipnet.*--mask ipmask)|(--mask ipmask.*--ipnet ipnet)")
+
+
+add_test(NAME net_extra_ipnet_masks COMMAND net_extra_example show --ipnet 10.0.1.2/8)
+set_tests_properties(net_extra_ipnet_masks PROPERTIES PASS_REGULAR_EXPRESSION "ipnet=10.0.0.0/8")
+
+
+add_test(NAME net_extra_mask_ok COMMAND net_extra_example show --mask 255.255.255.0)
+set_tests_properties(net_extra_mask_ok PROPERTIES PASS_REGULAR_EXPRESSION "mask=255.255.255.0")
+
+
+add_test(NAME net_extra_invalid_mask COMMAND net_extra_example show --mask 255.0.255.0)
+set_tests_properties(net_extra_invalid_mask PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "255.0.255.0" for "--mask".*Usage: app show]==])
+
+
+add_test(NAME net_extra_empty_mask_ok COMMAND net_extra_example show --mask=)
+set_tests_properties(net_extra_empty_mask_ok PROPERTIES PASS_REGULAR_EXPRESSION "mask=")
+
+
+add_test(NAME net_extra_ipv6_mask_rejected COMMAND net_extra_example show --mask 2001:db8::1)
+set_tests_properties(net_extra_ipv6_mask_rejected PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "2001:db8::1" for "--mask".*Usage: app show]==])
+
+
+add_test(NAME url_help_shows_type COMMAND url_example help show)
+set_tests_properties(url_help_shows_type PROPERTIES PASS_REGULAR_EXPRESSION "--url url")
+
+
+add_test(NAME url_canonicalizes_scheme_host COMMAND url_example show --url HTTP://Example.COM/a)
+set_tests_properties(url_canonicalizes_scheme_host PROPERTIES PASS_REGULAR_EXPRESSION "url=http://example\\.com/a")
+
+
+add_test(NAME url_invalid_scheme COMMAND url_example show --url 1http://example.com/a)
+set_tests_properties(url_invalid_scheme PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "1http://example.com/a" for "--url".*Usage: app show]==])
+
+
+add_test(NAME url_invalid_empty_authority COMMAND url_example show --url http:///a)
+set_tests_properties(url_invalid_empty_authority PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "http:///a" for "--url".*Usage: app show]==])
+
+
+add_test(NAME url_relative_ok COMMAND url_example show --url foo/bar)
+set_tests_properties(url_relative_ok PROPERTIES PASS_REGULAR_EXPRESSION "url=foo/bar")
+
+
+add_test(NAME url_empty_ok COMMAND url_example show --url=)
+set_tests_properties(url_empty_ok PROPERTIES PASS_REGULAR_EXPRESSION "url=")
+
+
+add_test(NAME flag_convert_bool_empty COMMAND flag_convert_example bool)
+set_tests_properties(flag_convert_bool_empty PROPERTIES PASS_REGULAR_EXPRESSION "bool=false")
+
+
+add_test(NAME flag_convert_bool_whitespace COMMAND flag_convert_example bool "   ")
+set_tests_properties(flag_convert_bool_whitespace PROPERTIES PASS_REGULAR_EXPRESSION "bool=false")
+
+
+add_test(NAME flag_convert_bool_true COMMAND flag_convert_example bool true)
+set_tests_properties(flag_convert_bool_true PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+
+add_test(NAME flag_convert_bool_true_1 COMMAND flag_convert_example bool 1)
+set_tests_properties(flag_convert_bool_true_1 PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+
+add_test(NAME flag_convert_bool_true_True COMMAND flag_convert_example bool True)
+set_tests_properties(flag_convert_bool_true_True PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+
+add_test(NAME flag_convert_bool_true_TRUE COMMAND flag_convert_example bool TRUE)
+set_tests_properties(flag_convert_bool_true_TRUE PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+
+add_test(NAME flag_convert_bool_true_on COMMAND flag_convert_example bool on)
+set_tests_properties(flag_convert_bool_true_on PROPERTIES PASS_REGULAR_EXPRESSION "bool=true")
+
+
+add_test(NAME flag_convert_bool_false COMMAND flag_convert_example bool false)
+set_tests_properties(flag_convert_bool_false PROPERTIES PASS_REGULAR_EXPRESSION "bool=false")
+
+
+add_test(NAME flag_convert_int COMMAND flag_convert_example int 42)
+set_tests_properties(flag_convert_int PROPERTIES PASS_REGULAR_EXPRESSION "int=42")
+
+
+add_test(NAME flag_convert_int64 COMMAND flag_convert_example int64 -5)
+set_tests_properties(flag_convert_int64 PROPERTIES PASS_REGULAR_EXPRESSION "int64=-5")
+
+
+add_test(NAME flag_convert_uint32_dec COMMAND flag_convert_example uint32 9)
+set_tests_properties(flag_convert_uint32_dec PROPERTIES PASS_REGULAR_EXPRESSION "uint32=9")
+
+
+add_test(NAME flag_convert_uint32_hex COMMAND flag_convert_example uint32 0x10)
+set_tests_properties(flag_convert_uint32_hex PROPERTIES PASS_REGULAR_EXPRESSION "uint32=16")
+
+
+add_test(NAME flag_convert_uint64_dec COMMAND flag_convert_example uint64 7)
+set_tests_properties(flag_convert_uint64_dec PROPERTIES PASS_REGULAR_EXPRESSION "uint64=7")
+
+
+add_test(NAME flag_convert_uint64_hex COMMAND flag_convert_example uint64 0x10)
+set_tests_properties(flag_convert_uint64_hex PROPERTIES PASS_REGULAR_EXPRESSION "uint64=16")
+
+
+add_test(NAME flag_convert_float COMMAND flag_convert_example float 1.5)
+set_tests_properties(flag_convert_float PROPERTIES PASS_REGULAR_EXPRESSION "float=1\\.500000")
+
+
+add_test(NAME flag_convert_double COMMAND flag_convert_example double 1.5)
+set_tests_properties(flag_convert_double PROPERTIES PASS_REGULAR_EXPRESSION "double=1\\.500000")
+
+
+add_test(NAME flag_convert_duration_seconds COMMAND flag_convert_example duration 2s)
+set_tests_properties(flag_convert_duration_seconds PROPERTIES PASS_REGULAR_EXPRESSION "duration_ms=2000")
+
+
+add_test(NAME flag_convert_duration_composite COMMAND flag_convert_example duration 1m30s)
+set_tests_properties(flag_convert_duration_composite PROPERTIES PASS_REGULAR_EXPRESSION "duration_ms=90000")
+
+
+add_test(NAME flag_convert_string COMMAND flag_convert_example string hello)
+set_tests_properties(flag_convert_string PROPERTIES PASS_REGULAR_EXPRESSION "string=hello")
+
+
+# Test error/exception paths for convertToFlagValue
+add_test(NAME flag_convert_bool_invalid COMMAND flag_convert_example bool invalid)
+set_tests_properties(flag_convert_bool_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid bool")
+
+
+add_test(NAME flag_convert_int_invalid COMMAND flag_convert_example int invalid)
+set_tests_properties(flag_convert_int_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid int")
+
+
+add_test(NAME flag_convert_int64_invalid COMMAND flag_convert_example int64 invalid)
+set_tests_properties(flag_convert_int64_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid int64")
+
+
+add_test(NAME flag_convert_uint32_negative COMMAND flag_convert_example uint32 -1)
+set_tests_properties(flag_convert_uint32_negative PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid uint32")
+
+
+add_test(NAME flag_convert_uint32_invalid COMMAND flag_convert_example uint32 invalid)
+set_tests_properties(flag_convert_uint32_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid uint32")
+
+
+add_test(NAME flag_convert_uint64_negative COMMAND flag_convert_example uint64 -1)
+set_tests_properties(flag_convert_uint64_negative PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid uint64")
+
+
+add_test(NAME flag_convert_uint64_invalid COMMAND flag_convert_example uint64 invalid)
+set_tests_properties(flag_convert_uint64_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid uint64")
+
+
+add_test(NAME flag_convert_float_invalid COMMAND flag_convert_example float invalid)
+set_tests_properties(flag_convert_float_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid float")
+
+
+add_test(NAME flag_convert_double_invalid COMMAND flag_convert_example double invalid)
+set_tests_properties(flag_convert_double_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid double")
+
+
+add_test(NAME flag_convert_duration_invalid COMMAND flag_convert_example duration invalid)
+set_tests_properties(flag_convert_duration_invalid PROPERTIES PASS_REGULAR_EXPRESSION "error:.*invalid duration")
+
+
+add_test(NAME external_typed_env_ok COMMAND external_typed_example)
+set_tests_properties(external_typed_env_ok PROPERTIES
+  ENVIRONMENT "APP_I64=-5;APP_U64=7;APP_TIMEOUT=2s"
+  PASS_REGULAR_EXPRESSION "i64=-5.*u64=7.*timeout_ms=2000")
+
+
+add_test(NAME external_typed_env_invalid_i64 COMMAND external_typed_example)
+set_tests_properties(external_typed_env_invalid_i64 PROPERTIES
+  ENVIRONMENT "APP_I64=1,2"
+  PASS_REGULAR_EXPRESSION [==[invalid argument "1,2" for "--i64"]==])
+
+
+add_test(NAME external_typed_env_invalid_timeout COMMAND external_typed_example)
+set_tests_properties(external_typed_env_invalid_timeout PROPERTIES
+  ENVIRONMENT "APP_TIMEOUT=5q"
+  PASS_REGULAR_EXPRESSION [==[invalid argument "5q" for "--timeout"]==])
+
+
+add_test(NAME bytes_help_shows_type COMMAND bytes_example --help)
+set_tests_properties(bytes_help_shows_type PROPERTIES PASS_REGULAR_EXPRESSION "--limit bytes")
+
+
+add_test(NAME bytes_default COMMAND bytes_example)
+set_tests_properties(bytes_default PROPERTIES PASS_REGULAR_EXPRESSION "limit=0")
+
+
+add_test(NAME bytes_parse_kb COMMAND bytes_example --limit 1KB)
+set_tests_properties(bytes_parse_kb PROPERTIES PASS_REGULAR_EXPRESSION "limit=1024")
+
+
+add_test(NAME bytes_parse_mib_fraction COMMAND bytes_example --limit 1.5MiB)
+set_tests_properties(bytes_parse_mib_fraction PROPERTIES PASS_REGULAR_EXPRESSION "limit=1572864")
+
+
+add_test(NAME bytes_parse_hex COMMAND bytes_example --limit 0x10)
+set_tests_properties(bytes_parse_hex PROPERTIES PASS_REGULAR_EXPRESSION "limit=16")
+
+
+add_test(NAME bytes_env_ok COMMAND bytes_example)
+set_tests_properties(bytes_env_ok PROPERTIES ENVIRONMENT "APP_LIMIT=2G" PASS_REGULAR_EXPRESSION "limit=2147483648")
+
+
+add_test(NAME bytes_invalid_unit COMMAND bytes_example --limit 1XB)
+set_tests_properties(bytes_invalid_unit PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "1XB" for "--limit"]==])
+
+
+add_test(NAME bytes_invalid_negative COMMAND bytes_example --limit -1)
+set_tests_properties(bytes_invalid_negative PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "-1" for "--limit"]==])
+
+
+add_test(NAME completion_directive_override COMMAND directive_example __completeNoDesc fruit a)
+set_tests_properties(completion_directive_override PROPERTIES PASS_REGULAR_EXPRESSION ":8")
+
+
+add_test(NAME completion_custom_command_name COMMAND completion_naming_example --help)
+set_tests_properties(completion_custom_command_name PROPERTIES PASS_REGULAR_EXPRESSION "comp - Generate shell completion scripts")
+
+
+add_test(NAME completion_custom_powershell_script_internal_name COMMAND completion_naming_example comp powershell)
+set_tests_properties(completion_custom_powershell_script_internal_name PROPERTIES PASS_REGULAR_EXPRESSION "__cnd")
+
+
+add_test(NAME completion_custom_script_internal_name COMMAND completion_naming_example comp bash)
+set_tests_properties(completion_custom_script_internal_name PROPERTIES PASS_REGULAR_EXPRESSION "__cnd")
+
+
+add_test(NAME completion_custom_internal_name COMMAND completion_naming_example __cnd p)
+set_tests_properties(completion_custom_internal_name PROPERTIES PASS_REGULAR_EXPRESSION "paint")
+
+
+add_test(NAME completion_custom_fish_script_internal_name COMMAND completion_naming_example comp fish)
+set_tests_properties(completion_custom_fish_script_internal_name PROPERTIES PASS_REGULAR_EXPRESSION "__c")
+
+
+add_test(NAME pflag_string_slice_splits COMMAND pflag_types_example show --names a,b --names c)
+set_tests_properties(pflag_string_slice_splits PROPERTIES PASS_REGULAR_EXPRESSION "names=a\\|b\\|c")
+
+
+add_test(NAME pflag_string_array_no_split COMMAND pflag_types_example show --tags a,b --tags c)
+set_tests_properties(pflag_string_array_no_split PROPERTIES PASS_REGULAR_EXPRESSION "tags=a,b\\|c")
+
+
+add_test(NAME pflag_string_map_parses COMMAND pflag_types_example show --labels a=1,b=2 --labels c=3)
+set_tests_properties(pflag_string_map_parses PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=1\\|b=2\\|c=3")
+
+
+add_test(NAME pflag_bool_slice_splits COMMAND pflag_types_example show --gates true,false --gates yes)
+set_tests_properties(pflag_bool_slice_splits PROPERTIES PASS_REGULAR_EXPRESSION "gates=true\\|false\\|true")
+
+
+add_test(NAME pflag_int_slice_splits COMMAND pflag_types_example show --ports 1,2 --ports 3)
+set_tests_properties(pflag_int_slice_splits PROPERTIES PASS_REGULAR_EXPRESSION "ports=1\\|2\\|3")
+
+
+add_test(NAME pflag_int_array COMMAND pflag_types_example show --nums 1 --nums 2)
+set_tests_properties(pflag_int_array PROPERTIES PASS_REGULAR_EXPRESSION "nums=1\\|2")
+
+
+add_test(NAME pflag_map_int64 COMMAND pflag_types_example show --big a=1,b=2 --big c=3)
+set_tests_properties(pflag_map_int64 PROPERTIES PASS_REGULAR_EXPRESSION "big=a=1\\|b=2\\|c=3")
+
+
+add_test(NAME pflag_map_bool COMMAND pflag_types_example show --toggles a=true --toggles b=false,c=yes)
+set_tests_properties(pflag_map_bool PROPERTIES PASS_REGULAR_EXPRESSION "toggles=a=true\\|b=false\\|c=true")
+
+
+add_test(NAME pflag_uint32_slice_splits COMMAND pflag_types_example show --u32s 1,2 --u32s 3)
+set_tests_properties(pflag_uint32_slice_splits PROPERTIES PASS_REGULAR_EXPRESSION "u32s=1\\|2\\|3")
+
+
+add_test(NAME pflag_map_uint32 COMMAND pflag_types_example show --small a=1,b=2 --small c=3)
+set_tests_properties(pflag_map_uint32 PROPERTIES PASS_REGULAR_EXPRESSION "small=a=1\\|b=2\\|c=3")
+
+
+add_test(NAME pflag_types2_help_shows_types COMMAND pflag_types2_example help show)
+set_tests_properties(pflag_types2_help_shows_types PROPERTIES PASS_REGULAR_EXPRESSION "(--small int8.*--offset uint.*--ips ipSlice.*--blob bytesBase64)|(--blob bytesBase64.*--ips ipSlice.*--offset uint.*--small int8)")
+
+
+add_test(NAME pflag_types2_parse_all COMMAND pflag_types2_example show --small 5 --medium 300 --wide 70000 --port 80 --vlan 4094 --offset 100000 --plevel 7 --ips 10.0.0.1,10.0.0.2 --blob SGVsbG8= --ratios a=1.5,b=2.5)
+set_tests_properties(pflag_types2_parse_all PROPERTIES PASS_REGULAR_EXPRESSION "small=5.*medium=300.*wide=70000.*port=80.*vlan=4094.*offset=100000.*plevel=7.*ips=10\\.0\\.0\\.1\\|10\\.0\\.0\\.2.*blob=72\\|101\\|108\\|108\\|111.*ratios=a=1\\.500000\\|b=2\\.500000")
+
+
+add_test(NAME pflag_types2_defaults COMMAND pflag_types2_example show)
+set_tests_properties(pflag_types2_defaults PROPERTIES PASS_REGULAR_EXPRESSION "small=0.*port=0.*vlan=0.*plevel=3.*ips=.*blob=")
+
+
+add_test(NAME pflag_types2_slices_arrays COMMAND pflag_types2_example show --small 1 --small 2 --small 3 --port 4 --port 5 --port 6 --medium 7 --vlan 8 --vlan 9 --ints8 10,11 --uints16 12,13)
+set_tests_properties(pflag_types2_slices_arrays PROPERTIES PASS_REGULAR_EXPRESSION "small_slice=1\\|2\\|3.*port_slice=4\\|5\\|6.*ints8_slice=10\\|11.*uints16_slice=12\\|13.*small_array=1\\|2\\|3.*port_array=4\\|5\\|6.*medium_array=7.*vlan_array=8\\|9")
+
+
+add_test(NAME pflag_types2_int8_overflow COMMAND pflag_types2_example show --small 300)
+set_tests_properties(pflag_types2_int8_overflow PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "300" for "--small"]==])
+
+
+add_test(NAME pflag_types2_int8_negative COMMAND pflag_types2_example show --small -128)
+set_tests_properties(pflag_types2_int8_negative PROPERTIES PASS_REGULAR_EXPRESSION "small=-128")
+
+
+add_test(NAME pflag_types2_uint8_overflow COMMAND pflag_types2_example show --port 256)
+set_tests_properties(pflag_types2_uint8_overflow PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "256" for "--port"]==])
+
+
+add_test(NAME pflag_types2_uint16_overflow COMMAND pflag_types2_example show --vlan 65536)
+set_tests_properties(pflag_types2_uint16_overflow PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "65536" for "--vlan"]==])
+
+
+add_test(NAME pflag_types2_uint_negative COMMAND pflag_types2_example show --offset -1)
+set_tests_properties(pflag_types2_uint_negative PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "-1" for "--offset"]==])
+
+
+add_test(NAME pflag_types2_ipslice_canonical COMMAND pflag_types2_example show --ips 2001:db8:0:0:0:0:2:1,10.0.1.2)
+set_tests_properties(pflag_types2_ipslice_canonical PROPERTIES PASS_REGULAR_EXPRESSION "ips=2001:db8::2:1\\|10\\.0\\.1\\.2")
+
+
+add_test(NAME pflag_types2_ipslice_invalid COMMAND pflag_types2_example show --ips 999.0.0.1)
+set_tests_properties(pflag_types2_ipslice_invalid PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "999.0.0.1" for "--ips"]==])
+
+
+add_test(NAME pflag_types2_base64_canonical COMMAND pflag_types2_example show --blob aGVsbG8=)
+set_tests_properties(pflag_types2_base64_canonical PROPERTIES PASS_REGULAR_EXPRESSION "blob=104\\|101\\|108\\|108\\|111")
+
+
+add_test(NAME pflag_types2_base64_empty COMMAND pflag_types2_example show --blob=)
+set_tests_properties(pflag_types2_base64_empty PROPERTIES PASS_REGULAR_EXPRESSION "blob=")
+
+
+add_test(NAME pflag_types2_base64_invalid COMMAND pflag_types2_example show --blob xx)
+set_tests_properties(pflag_types2_base64_invalid PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "xx" for "--blob"]==])
+
+
+add_test(NAME pflag_types2_base64_double_pad COMMAND pflag_types2_example show --blob ab==)
+set_tests_properties(pflag_types2_base64_double_pad PROPERTIES PASS_REGULAR_EXPRESSION "blob=105")
+
+
+add_test(NAME pflag_types2_base64_alphabet_symbols COMMAND pflag_types2_example show --blob ab+/)
+set_tests_properties(pflag_types2_base64_alphabet_symbols PROPERTIES PASS_REGULAR_EXPRESSION "blob=105\\|191\\|191")
+
+
+add_test(NAME pflag_types2_string_to_float COMMAND pflag_types2_example show --ratios a=1.5,b=2.5)
+set_tests_properties(pflag_types2_string_to_float PROPERTIES PASS_REGULAR_EXPRESSION "ratios=a=1\\.500000\\|b=2\\.500000")
+
+
+# Invalid base64 with valid length: each quad position must reject an
+# out-of-alphabet character (per-position range checks in the main loop).
+add_test(NAME pflag_types2_base64_invalid_pos0 COMMAND pflag_types2_example show --blob "*bcd")
+set_tests_properties(pflag_types2_base64_invalid_pos0 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument ".bcd" for "--blob"]==])
+
+
+add_test(NAME pflag_types2_base64_invalid_pos1 COMMAND pflag_types2_example show --blob "a*cd")
+set_tests_properties(pflag_types2_base64_invalid_pos1 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "a.cd" for "--blob"]==])
+
+
+# Characters past the base64 alphabet ('{', '@') walk the full valueOf()
+# range chain before returning -1.
+add_test(NAME pflag_types2_base64_invalid_range_fallthrough COMMAND pflag_types2_example show --blob "ab{@")
+set_tests_properties(pflag_types2_base64_invalid_range_fallthrough PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "ab.@" for "--blob"]==])
+
+
+add_test(NAME pflag_types2_base64_invalid_pos3 COMMAND pflag_types2_example show --blob "abc*")
+set_tests_properties(pflag_types2_base64_invalid_pos3 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "abc." for "--blob"]==])
+
+
+# Tail decode (padded inputs): invalid chars at either tail slot, and at the
+# single-pad third slot.
+add_test(NAME pflag_types2_base64_invalid_tail0 COMMAND pflag_types2_example show --blob "*b==")
+set_tests_properties(pflag_types2_base64_invalid_tail0 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument ".b==" for "--blob"]==])
+
+
+add_test(NAME pflag_types2_base64_invalid_tail1 COMMAND pflag_types2_example show --blob "a*==")
+set_tests_properties(pflag_types2_base64_invalid_tail1 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "a.==" for "--blob"]==])
+
+
+add_test(NAME pflag_types2_base64_invalid_tail_pad1 COMMAND pflag_types2_example show --blob "ab*=")
+set_tests_properties(pflag_types2_base64_invalid_tail_pad1 PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "ab.=" for "--blob"]==])
+
+
+# Empty CSV segments are dropped by the split (empty-part branch).
+add_test(NAME pflag_types2_ipslice_empty_segment COMMAND pflag_types2_example show --ips 10.0.0.1,,10.0.0.2)
+set_tests_properties(pflag_types2_ipslice_empty_segment PROPERTIES PASS_REGULAR_EXPRESSION "ips=10\\.0\\.0\\.1\\|10\\.0\\.0\\.2")
+
+
+add_test(NAME utils_suggest_prefix_branch COMMAND utils_suggest_example pri print)
+set_tests_properties(utils_suggest_prefix_branch PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+
+add_test(NAME utils_suggest_distance_branch COMMAND utils_suggest_example prnit print)
+set_tests_properties(utils_suggest_distance_branch PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+
+add_test(NAME traverse_completion_flag_before_sub_skips_value COMMAND traverse_completion_example __completeNoDesc --message hi p)
+set_tests_properties(traverse_completion_flag_before_sub_skips_value PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+
+add_test(NAME traverse_completion_short_group_skips_value COMMAND traverse_completion_example __completeNoDesc -vm hi p)
+set_tests_properties(traverse_completion_short_group_skips_value PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+
+add_test(NAME traverse_completion_bool_negation COMMAND traverse_completion_example __completeNoDesc --no-verbose p)
+set_tests_properties(traverse_completion_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "print")
+
+
+add_test(NAME deprecated_command_and_flag_warn COMMAND deprecated_example old --old-flag)
+set_tests_properties(deprecated_command_and_flag_warn PROPERTIES
+  PASS_REGULAR_EXPRESSION [==[deprecated: use `app new` instead.*Flag \"--old-flag\" is deprecated: use `--new-flag` instead]==])
+
+
+add_test(NAME custom_value_default COMMAND custom_value_example show)
+set_tests_properties(custom_value_default PROPERTIES PASS_REGULAR_EXPRESSION "info")
+
+
+add_test(NAME custom_value_ok COMMAND custom_value_example show --level debug)
+set_tests_properties(custom_value_ok PROPERTIES PASS_REGULAR_EXPRESSION "debug")
+
+
+add_test(NAME custom_value_info COMMAND custom_value_example show --level info)
+set_tests_properties(custom_value_info PROPERTIES PASS_REGULAR_EXPRESSION "^info")
+
+
+add_test(NAME custom_value_config COMMAND custom_value_example show --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/custom_value.env)
+set_tests_properties(custom_value_config PROPERTIES PASS_REGULAR_EXPRESSION "warn")
+
+
+add_test(NAME custom_value_env_overrides_config COMMAND custom_value_example show --config ${CMAKE_CURRENT_SOURCE_DIR}/examples/custom_value.env)
+set_tests_properties(custom_value_env_overrides_config PROPERTIES ENVIRONMENT "APP_LEVEL=error" PASS_REGULAR_EXPRESSION "error")
+
+
+add_test(NAME custom_value_repeat_last_wins COMMAND custom_value_example show --level debug --level warn)
+set_tests_properties(custom_value_repeat_last_wins PROPERTIES PASS_REGULAR_EXPRESSION "warn")
+
+
+add_test(NAME custom_value_invalid COMMAND custom_value_example show --level loud)
+set_tests_properties(custom_value_invalid PROPERTIES PASS_REGULAR_EXPRESSION "invalid level")
+
+
+add_test(NAME custom_value_help_shows_type COMMAND custom_value_example help show)
+set_tests_properties(custom_value_help_shows_type PROPERTIES PASS_REGULAR_EXPRESSION "--level level")
+
+
+add_test(NAME float_flag_ok COMMAND float_flag_example --ratio 1.5)
+set_tests_properties(float_flag_ok PROPERTIES PASS_REGULAR_EXPRESSION "ratio=1\\.5")
+
+
+add_test(NAME float_flag_invalid COMMAND float_flag_example --ratio 1,2)
+set_tests_properties(float_flag_invalid PROPERTIES PASS_REGULAR_EXPRESSION [==[invalid argument "1,2" for "--ratio".*Usage: app]==])
+
+
+add_test(NAME api_coverage COMMAND api_test)
+set_tests_properties(api_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME command_coverage COMMAND command_test)
+set_tests_properties(command_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME completion_coverage COMMAND completion_test)
+set_tests_properties(completion_coverage PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME exec_basic_action COMMAND execute_test sub --name hello)
+set_tests_properties(exec_basic_action PROPERTIES PASS_REGULAR_EXPRESSION "action:hello")
+
+
+add_test(NAME exec_unknown_command COMMAND execute_test nope)
+set_tests_properties(exec_unknown_command PROPERTIES PASS_REGULAR_EXPRESSION "unknown command")
+
+
+add_test(NAME exec_unknown_flag COMMAND execute_test sub --bogus x)
+set_tests_properties(exec_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION "unknown flag")
+
+
+add_test(NAME exec_missing_required COMMAND execute_test sub)
+set_tests_properties(exec_missing_required PROPERTIES PASS_REGULAR_EXPRESSION "required flag")
+
+
+add_test(NAME exec_help_output COMMAND execute_test help sub)
+set_tests_properties(exec_help_output PROPERTIES PASS_REGULAR_EXPRESSION "Usage:")
+
+
+add_test(NAME exec_version_output COMMAND execute_test --version)
+set_tests_properties(exec_version_output PROPERTIES PASS_REGULAR_EXPRESSION "1\\.0\\.0")
+
+
+add_test(NAME exec_alias COMMAND execute_test s --name hi)
+set_tests_properties(exec_alias PROPERTIES PASS_REGULAR_EXPRESSION "action:hi")
+
+
+add_test(NAME exec_deprecated_warn COMMAND execute_test sub --name ok --old val)
+set_tests_properties(exec_deprecated_warn PROPERTIES PASS_REGULAR_EXPRESSION "deprecated")
+
+
+add_test(NAME exec_hook_order COMMAND execute_test sub --name x)
+set_tests_properties(exec_hook_order PROPERTIES PASS_REGULAR_EXPRESSION "ppre:.*pre:.*action:.*post:.*ppost")
+
+
+add_test(NAME exec_hook_error COMMAND execute_test err)
+set_tests_properties(exec_hook_error PROPERTIES PASS_REGULAR_EXPRESSION "hook failed")
+
+
+add_test(NAME exec_bool_negation COMMAND execute_test sub --name x --no-debug)
+set_tests_properties(exec_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "debug=0")
+
+
+add_test(NAME exec_flag_groups_exclusive COMMAND execute_test sub2 --a v --c v)
+set_tests_properties(exec_flag_groups_exclusive PROPERTIES PASS_REGULAR_EXPRESSION "mutually exclusive")
+
+
+add_test(NAME exec_flag_groups_one_required COMMAND execute_test sub2)
+set_tests_properties(exec_flag_groups_one_required PROPERTIES PASS_REGULAR_EXPRESSION "at least one")
+
+
+add_test(NAME exec_flag_groups_together COMMAND execute_test sub2 --a v --user u)
+set_tests_properties(exec_flag_groups_together PROPERTIES PASS_REGULAR_EXPRESSION "must be set together")
+
+
+add_test(NAME exec_traverse_children COMMAND execute_test trav --name global sub)
+set_tests_properties(exec_traverse_children PROPERTIES PASS_REGULAR_EXPRESSION "trav name=global")
+
+
+add_test(NAME exec_silence_usage COMMAND execute_test quiet nope)
+set_tests_properties(exec_silence_usage PROPERTIES FAIL_REGULAR_EXPRESSION "Usage:")
+
+
+add_test(NAME exec_disable_flag_parsing COMMAND execute_test raw --flag value)
+set_tests_properties(exec_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION "raw:--flag,value")
+
+
+add_test(NAME exec_allow_unknown COMMAND execute_test flex --name x --bogus val)
+set_tests_properties(exec_allow_unknown PROPERTIES PASS_REGULAR_EXPRESSION "ok name=x")
+
+
+add_test(NAME exec_count_flag COMMAND execute_test sub --name x -vvv)
+set_tests_properties(exec_count_flag PROPERTIES PASS_REGULAR_EXPRESSION "verbose=3")
+
+
+add_test(NAME exec_repeat_flag COMMAND execute_test sub --name x --tag a --tag b)
+set_tests_properties(exec_repeat_flag PROPERTIES PASS_REGULAR_EXPRESSION "tags=a,b")
+
+
+add_test(NAME exec_positionals COMMAND execute_test sub --name x arg1 arg2)
+set_tests_properties(exec_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos:arg1,arg2")
+
+
+add_test(NAME exec_suggestions COMMAND execute_test sbu)
+set_tests_properties(exec_suggestions PROPERTIES PASS_REGULAR_EXPRESSION "Did you mean")
+
+
+add_test(NAME parser_occurrences COMMAND parser_test -vvv)
+set_tests_properties(parser_occurrences PROPERTIES PASS_REGULAR_EXPRESSION "occ=3")
+
+
+add_test(NAME parser_explicit_value COMMAND parser_test --name explicit)
+set_tests_properties(parser_explicit_value PROPERTIES PASS_REGULAR_EXPRESSION "explicit=yes")
+
+
+add_test(NAME parser_default_not_explicit COMMAND parser_test)
+set_tests_properties(parser_default_not_explicit PROPERTIES PASS_REGULAR_EXPRESSION "explicit=no default=no")
+
+
+add_test(NAME parser_flag_values_split COMMAND parser_test --list a,b,c)
+set_tests_properties(parser_flag_values_split PROPERTIES PASS_REGULAR_EXPRESSION "split=3")
+
+
+add_test(NAME parser_positionals COMMAND parser_test --name x arg1 arg2)
+set_tests_properties(parser_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos=arg1,arg2")
+
+
+add_test(NAME parser_flag_map COMMAND parser_test --map k1=v1,k2=v2)
+set_tests_properties(parser_flag_map PROPERTIES PASS_REGULAR_EXPRESSION "map_k1=v1")
+
+
+add_test(NAME parser_has_value COMMAND parser_test --name x)
+set_tests_properties(parser_has_value PROPERTIES PASS_REGULAR_EXPRESSION "has_name=yes has_missing=no")
+
+
+add_test(NAME parser_get_slice COMMAND parser_test --name x)
+set_tests_properties(parser_get_slice PROPERTIES PASS_REGULAR_EXPRESSION "slice=1")
+
+
+add_test(NAME template_version COMMAND template_test --version)
+set_tests_properties(template_version PROPERTIES PASS_REGULAR_EXPRESSION "AppVersion:1\\.0\\.0")
+
+
+add_test(NAME template_help COMMAND template_test --help)
+set_tests_properties(template_help PROPERTIES PASS_REGULAR_EXPRESSION "CUSTOM_HELP")
+
+
+add_test(NAME utils_test_run COMMAND utils_test)
+set_tests_properties(utils_test_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME parser_advanced_run COMMAND parser_advanced_test)
+set_tests_properties(parser_advanced_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME command_advanced_run COMMAND command_advanced_test)
+set_tests_properties(command_advanced_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME special_flags_run COMMAND special_flags_test)
+set_tests_properties(special_flags_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME parser_misc_run COMMAND parser_misc_test)
+set_tests_properties(parser_misc_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME command_misc_run COMMAND command_misc_test)
+set_tests_properties(command_misc_run PROPERTIES PASS_REGULAR_EXPRESSION "ok")
+
+
+add_test(NAME value_parse_run COMMAND value_parse_test)
+set_tests_properties(value_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME value_run COMMAND value_test)
+set_tests_properties(value_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME parser_gaps_run COMMAND parser_gaps_test)
+set_tests_properties(parser_gaps_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME command_gaps_run COMMAND command_gaps_test)
+set_tests_properties(command_gaps_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME coverage_final_run COMMAND coverage_final_test)
+set_tests_properties(coverage_final_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME color_run COMMAND color_test)
+set_tests_properties(color_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME parser_edge_run COMMAND parser_edge_test)
+set_tests_properties(parser_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME command_edge_run COMMAND command_edge_test)
+set_tests_properties(command_edge_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME command_coverage_run COMMAND command_coverage_test)
+set_tests_properties(command_coverage_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_help COMMAND run_coverage_test help)
+set_tests_properties(run_help PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_help_sub COMMAND run_coverage_test help-sub)
+set_tests_properties(run_help_sub PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_version COMMAND run_coverage_test version)
+set_tests_properties(run_version PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_version_cmd COMMAND run_coverage_test version-cmd)
+set_tests_properties(run_version_cmd PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_unknown_cmd COMMAND run_coverage_test unknown-cmd)
+set_tests_properties(run_unknown_cmd PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_unknown_flag COMMAND run_coverage_test unknown-flag)
+set_tests_properties(run_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_missing_required COMMAND run_coverage_test missing-required)
+set_tests_properties(run_missing_required PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_action COMMAND run_coverage_test action)
+set_tests_properties(run_action PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+
+add_test(NAME run_sub_action COMMAND run_coverage_test sub-action)
+set_tests_properties(run_sub_action PROPERTIES PASS_REGULAR_EXPRESSION "sub action")
+
+
+add_test(NAME run_hooks COMMAND run_coverage_test hooks)
+set_tests_properties(run_hooks PROPERTIES PASS_REGULAR_EXPRESSION "ppre.*pre.*action.*post.*ppost")
+
+
+add_test(NAME run_hook_error COMMAND run_coverage_test hook-error)
+set_tests_properties(run_hook_error PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME run_custom_help COMMAND run_coverage_test custom-help)
+set_tests_properties(run_custom_help PROPERTIES PASS_REGULAR_EXPRESSION "Custom help for app")
+
+
+add_test(NAME run_custom_usage COMMAND run_coverage_test custom-usage)
+set_tests_properties(run_custom_usage PROPERTIES PASS_REGULAR_EXPRESSION "Custom usage for app")
+
+
+add_test(NAME run_custom_flag_error COMMAND run_coverage_test custom-flag-error)
+set_tests_properties(run_custom_flag_error PROPERTIES PASS_REGULAR_EXPRESSION "Custom error.*unknown flag")
+
+
+add_test(NAME run_version_template COMMAND run_coverage_test version-template)
+set_tests_properties(run_version_template PROPERTIES PASS_REGULAR_EXPRESSION "app v1.0.0")
+
+
+add_test(NAME run_help_template COMMAND run_coverage_test help-template)
+set_tests_properties(run_help_template PROPERTIES PASS_REGULAR_EXPRESSION "CUSTOM_HELP")
+
+
+add_test(NAME run_usage_template COMMAND run_coverage_test usage-template)
+set_tests_properties(run_usage_template PROPERTIES PASS_REGULAR_EXPRESSION "CUSTOM_USAGE")
+
+
+add_test(NAME run_examples COMMAND run_coverage_test examples)
+set_tests_properties(run_examples PROPERTIES PASS_REGULAR_EXPRESSION "Examples:")
+
+
+add_test(NAME run_groups COMMAND run_coverage_test groups)
+set_tests_properties(run_groups PROPERTIES PASS_REGULAR_EXPRESSION "Core Commands")
+
+
+add_test(NAME run_aliases COMMAND run_coverage_test aliases)
+set_tests_properties(run_aliases PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+
+add_test(NAME run_end_of_flags COMMAND run_coverage_test end-of-flags)
+set_tests_properties(run_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION "action:default")
+
+
+add_test(NAME run_bool_negation COMMAND run_coverage_test bool-negation)
+set_tests_properties(run_bool_negation PROPERTIES PASS_REGULAR_EXPRESSION "verbose:false")
+
+
+add_test(NAME run_short_flag_grouping COMMAND run_coverage_test short-flag-grouping)
+set_tests_properties(run_short_flag_grouping PROPERTIES PASS_REGULAR_EXPRESSION "verbose:true.*quiet:true")
+
+
+add_test(NAME run_normalize_flag_keys COMMAND run_coverage_test normalize-flag-keys)
+set_tests_properties(run_normalize_flag_keys PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+
+add_test(NAME run_config_file COMMAND run_coverage_test config-file)
+set_tests_properties(run_config_file PROPERTIES PASS_REGULAR_EXPRESSION "failed to open config file")
+
+
+add_test(NAME run_env_binding COMMAND run_coverage_test env-binding)
+set_tests_properties(run_env_binding PROPERTIES PASS_REGULAR_EXPRESSION "action:default")
+
+
+add_test(NAME run_suggestions COMMAND run_coverage_test suggestions)
+set_tests_properties(run_suggestions PROPERTIES PASS_REGULAR_EXPRESSION "Did you mean")
+
+
+add_test(NAME run_no_suggest COMMAND run_coverage_test no-suggest)
+set_tests_properties(run_no_suggest PROPERTIES PASS_REGULAR_EXPRESSION "unknown command")
+
+
+add_test(NAME run_disable_flag_parsing COMMAND run_coverage_test disable-flag-parsing)
+set_tests_properties(run_disable_flag_parsing PROPERTIES PASS_REGULAR_EXPRESSION "args:.*--name.*test.*-v")
+
+
+add_test(NAME run_allow_unknown_flags COMMAND run_coverage_test allow-unknown-flags)
+set_tests_properties(run_allow_unknown_flags PROPERTIES PASS_REGULAR_EXPRESSION "action:test")
+
+
+add_test(NAME run_traverse_children COMMAND run_coverage_test traverse-children)
+set_tests_properties(run_traverse_children PROPERTIES PASS_REGULAR_EXPRESSION "sub:test")
+
+
+add_test(NAME run_silence_usage COMMAND run_coverage_test silence-usage)
+set_tests_properties(run_silence_usage PROPERTIES FAIL_REGULAR_EXPRESSION "Usage:")
+
+
+add_test(NAME run_silence_errors COMMAND run_coverage_test silence-errors)
+set_tests_properties(run_silence_errors PROPERTIES FAIL_REGULAR_EXPRESSION "Error:")
+
+
+add_test(NAME run_deprecated_cmd COMMAND run_coverage_test deprecated-cmd)
+set_tests_properties(run_deprecated_cmd PROPERTIES PASS_REGULAR_EXPRESSION "deprecated")
+
+
+add_test(NAME run_deprecated_flag COMMAND run_coverage_test deprecated-flag)
+set_tests_properties(run_deprecated_flag PROPERTIES PASS_REGULAR_EXPRESSION "deprecated")
+
+
+add_test(NAME run_flag_groups COMMAND run_coverage_test flag-groups)
+set_tests_properties(run_flag_groups PROPERTIES PASS_REGULAR_EXPRESSION "mutually exclusive")
+
+
+add_test(NAME run_required_together COMMAND run_coverage_test required-together)
+set_tests_properties(run_required_together PROPERTIES PASS_REGULAR_EXPRESSION "must be set together")
+
+
+add_test(NAME run_one_required COMMAND run_coverage_test one-required)
+set_tests_properties(run_one_required PROPERTIES PASS_REGULAR_EXPRESSION "at least one")
+
+
+add_test(NAME run_args_validation COMMAND run_coverage_test args-validation)
+set_tests_properties(run_args_validation PROPERTIES PASS_REGULAR_EXPRESSION "accepts 2 arg")
+
+
+add_test(NAME run_args_range COMMAND run_coverage_test args-range)
+set_tests_properties(run_args_range PROPERTIES PASS_REGULAR_EXPRESSION "accepts between")
+
+
+add_test(NAME run_valid_args COMMAND run_coverage_test valid-args)
+set_tests_properties(run_valid_args PROPERTIES PASS_REGULAR_EXPRESSION ".*")
+
+
+add_test(NAME run_completion COMMAND run_coverage_test completion)
+set_tests_properties(run_completion PROPERTIES PASS_REGULAR_EXPRESSION "--name")
+
+
+add_test(NAME run_count_flag COMMAND run_coverage_test count-flag)
+set_tests_properties(run_count_flag PROPERTIES PASS_REGULAR_EXPRESSION "verbose:3")
+
+
+add_test(NAME run_bytes_flag COMMAND run_coverage_test bytes-flag)
+set_tests_properties(run_bytes_flag PROPERTIES PASS_REGULAR_EXPRESSION "size:1024")
+
+
+add_test(NAME run_ip_flag COMMAND run_coverage_test ip-flag)
+set_tests_properties(run_ip_flag PROPERTIES PASS_REGULAR_EXPRESSION "host:192.168.1.1")
+
+
+add_test(NAME run_url_flag COMMAND run_coverage_test url-flag)
+set_tests_properties(run_url_flag PROPERTIES PASS_REGULAR_EXPRESSION "url:http://example.com")
+
+
+add_test(NAME run_duration_flag COMMAND run_coverage_test duration-flag)
+set_tests_properties(run_duration_flag PROPERTIES PASS_REGULAR_EXPRESSION "timeout:2000")
+
+
+add_test(NAME run_float_flag COMMAND run_coverage_test float-flag)
+set_tests_properties(run_float_flag PROPERTIES PASS_REGULAR_EXPRESSION "ratio:1.5")
+
+
+add_test(NAME run_string_slice COMMAND run_coverage_test string-slice)
+set_tests_properties(run_string_slice PROPERTIES PASS_REGULAR_EXPRESSION "tags:a,b,c,")
+
+
+add_test(NAME run_map_flag COMMAND run_coverage_test map-flag)
+set_tests_properties(run_map_flag PROPERTIES PASS_REGULAR_EXPRESSION "labels:.*(a=1|b=2).*(a=1|b=2),")
+
+
+add_test(NAME run_repeat_flag COMMAND run_coverage_test repeat-flag)
+set_tests_properties(run_repeat_flag PROPERTIES PASS_REGULAR_EXPRESSION "tag:b")
+
+
+add_test(NAME run_no_args COMMAND run_coverage_test no-args)
+set_tests_properties(run_no_args PROPERTIES PASS_REGULAR_EXPRESSION "action")
+
+
+add_test(NAME run_positionals COMMAND run_coverage_test positionals)
+set_tests_properties(run_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos:arg1,arg2,")
+
+
+add_test(NAME run_color_help COMMAND run_coverage_test color-help)
+set_tests_properties(run_color_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*app")
+
+
+add_test(NAME run_color_version COMMAND run_coverage_test color-version)
+set_tests_properties(run_color_version PROPERTIES PASS_REGULAR_EXPRESSION "1\\.0\\.0")
+
+
+add_test(NAME run_color_help_sub COMMAND run_coverage_test color-help-sub)
+set_tests_properties(run_color_help_sub PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*sub")
+
+
+add_test(NAME run_color_flag COMMAND run_coverage_test color-flag)
+set_tests_properties(run_color_flag PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*app")
+
+
+add_test(NAME hook_order COMMAND hook_test run)
+set_tests_properties(hook_order PROPERTIES PASS_REGULAR_EXPRESSION "ppre:.*pre:.*action:.*post:.*ppost")
+
+
+add_test(NAME hook_pre_run_e COMMAND hook_test err-pre)
+set_tests_properties(hook_pre_run_e PROPERTIES PASS_REGULAR_EXPRESSION "pre-run error")
+
+
+add_test(NAME hook_post_run_e COMMAND hook_test err-post)
+set_tests_properties(hook_post_run_e PROPERTIES PASS_REGULAR_EXPRESSION "post-run error")
+
+
+add_test(NAME hook_persistent_pre_e COMMAND hook_test err-ppre sub)
+set_tests_properties(hook_persistent_pre_e PROPERTIES PASS_REGULAR_EXPRESSION "persistent pre error")
+
+
+add_test(NAME hook_persistent_post_e COMMAND hook_test err-ppost sub)
+set_tests_properties(hook_persistent_post_e PROPERTIES PASS_REGULAR_EXPRESSION "persistent post error")
+
+
+add_test(NAME parser_external_multi_sources COMMAND parser_external_example)
+set_tests_properties(parser_external_multi_sources PROPERTIES PASS_REGULAR_EXPRESSION "name=b.*count=3")
+
+
+add_test(NAME persistent_completion_filename COMMAND persistent_completion_test filename)
+set_tests_properties(persistent_completion_filename PROPERTIES PASS_REGULAR_EXPRESSION "yaml|yml" FAIL_REGULAR_EXPRESSION "unknown command|unknown flag")
+
+
+add_test(NAME persistent_completion_dirname COMMAND persistent_completion_test dirname)
+set_tests_properties(persistent_completion_dirname PROPERTIES PASS_REGULAR_EXPRESSION ":16" FAIL_REGULAR_EXPRESSION "unknown command|unknown flag")
+
+
+add_test(NAME hook_error_actionE COMMAND hook_error_example do --action-err)
+set_tests_properties(hook_error_actionE PROPERTIES PASS_REGULAR_EXPRESSION "Error: action")
+
+
+add_test(NAME hook_error_preRunE COMMAND hook_error_example do --sub-pre-err)
+set_tests_properties(hook_error_preRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: sub-pre")
+
+
+add_test(NAME hook_error_postRunE COMMAND hook_error_example do --sub-post-err)
+set_tests_properties(hook_error_postRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: sub-post")
+
+
+add_test(NAME hook_error_persistentPreRunE COMMAND hook_error_example --root-pre-err do)
+set_tests_properties(hook_error_persistentPreRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: root-pre")
+
+
+add_test(NAME hook_error_persistentPostRunE COMMAND hook_error_example --root-post-err do)
+set_tests_properties(hook_error_persistentPostRunE PROPERTIES PASS_REGULAR_EXPRESSION "Error: root-post")
+
+
+add_test(NAME silence_errors_unknown_command COMMAND silence_errors_example nope)
+set_tests_properties(silence_errors_unknown_command PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION [==[[[:space:]]|[[:graph:]]]==])
+
+
+add_test(NAME map_single COMMAND map_example --label a=1,b=2)
+set_tests_properties(map_single PROPERTIES PASS_REGULAR_EXPRESSION "labels=.*(a=1|b=2).*(a=1|b=2)")
+
+
+add_test(NAME map_repeat_overrides COMMAND map_example --label a=1 --label a=9)
+set_tests_properties(map_repeat_overrides PROPERTIES PASS_REGULAR_EXPRESSION "labels=a=9")
+
+
+add_test(NAME parser_extra_run COMMAND parser_extra_coverage_test)
+set_tests_properties(parser_extra_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME parser_extra_string_slice COMMAND parser_extra_coverage_test string-slice)
+set_tests_properties(parser_extra_string_slice PROPERTIES PASS_REGULAR_EXPRESSION "slice:a,b,c,")
+
+
+add_test(NAME parser_extra_string_to_int COMMAND parser_extra_coverage_test string-to-int)
+set_tests_properties(parser_extra_string_to_int PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
+
+
+add_test(NAME parser_extra_explicit_values COMMAND parser_extra_coverage_test explicit-values)
+set_tests_properties(parser_extra_explicit_values PROPERTIES PASS_REGULAR_EXPRESSION "explicit:test,")
+
+
+add_test(NAME parser_extra_has_explicit COMMAND parser_extra_coverage_test has-explicit)
+set_tests_properties(parser_extra_has_explicit PROPERTIES PASS_REGULAR_EXPRESSION "name:yes.*count:no")
+
+
+add_test(NAME parser_extra_occurrences COMMAND parser_extra_coverage_test occurrences)
+set_tests_properties(parser_extra_occurrences PROPERTIES PASS_REGULAR_EXPRESSION "occ:3")
+
+
+add_test(NAME parser_extra_get_slice COMMAND parser_extra_coverage_test get-slice)
+set_tests_properties(parser_extra_get_slice PROPERTIES PASS_REGULAR_EXPRESSION "slice:3")
+
+
+add_test(NAME parser_extra_bool_slice COMMAND parser_extra_coverage_test bool-slice)
+set_tests_properties(parser_extra_bool_slice PROPERTIES PASS_REGULAR_EXPRESSION "bools:3")
+
+
+add_test(NAME parser_extra_int_slice COMMAND parser_extra_coverage_test int-slice)
+set_tests_properties(parser_extra_int_slice PROPERTIES PASS_REGULAR_EXPRESSION "ints:3")
+
+
+add_test(NAME parser_extra_uint32_slice COMMAND parser_extra_coverage_test uint32-slice)
+set_tests_properties(parser_extra_uint32_slice PROPERTIES PASS_REGULAR_EXPRESSION "u32s:3")
+
+
+add_test(NAME parser_extra_float_slice COMMAND parser_extra_coverage_test float-slice)
+set_tests_properties(parser_extra_float_slice PROPERTIES PASS_REGULAR_EXPRESSION "floats:2")
+
+
+add_test(NAME parser_extra_double_slice COMMAND parser_extra_coverage_test double-slice)
+set_tests_properties(parser_extra_double_slice PROPERTIES PASS_REGULAR_EXPRESSION "doubles:2")
+
+
+add_test(NAME parser_extra_duration_slice COMMAND parser_extra_coverage_test duration-slice)
+set_tests_properties(parser_extra_duration_slice PROPERTIES PASS_REGULAR_EXPRESSION "durations:2")
+
+
+add_test(NAME parser_extra_bool_array COMMAND parser_extra_coverage_test bool-array)
+set_tests_properties(parser_extra_bool_array PROPERTIES PASS_REGULAR_EXPRESSION "bools:2")
+
+
+add_test(NAME parser_extra_uint32_array COMMAND parser_extra_coverage_test uint32-array)
+set_tests_properties(parser_extra_uint32_array PROPERTIES PASS_REGULAR_EXPRESSION "u32s:2")
+
+
+add_test(NAME parser_extra_uint64_array COMMAND parser_extra_coverage_test uint64-array)
+set_tests_properties(parser_extra_uint64_array PROPERTIES PASS_REGULAR_EXPRESSION "u64s:2")
+
+
+add_test(NAME parser_extra_float_array COMMAND parser_extra_coverage_test float-array)
+set_tests_properties(parser_extra_float_array PROPERTIES PASS_REGULAR_EXPRESSION "floats:2")
+
+
+add_test(NAME parser_extra_double_array COMMAND parser_extra_coverage_test double-array)
+set_tests_properties(parser_extra_double_array PROPERTIES PASS_REGULAR_EXPRESSION "doubles:2")
+
+
+add_test(NAME parser_extra_duration_array COMMAND parser_extra_coverage_test duration-array)
+set_tests_properties(parser_extra_duration_array PROPERTIES PASS_REGULAR_EXPRESSION "durations:2")
+
+
+add_test(NAME parser_extra_string_to_string COMMAND parser_extra_coverage_test string-to-string)
+set_tests_properties(parser_extra_string_to_string PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
+
+
+add_test(NAME parser_extra_string_to_uint64 COMMAND parser_extra_coverage_test string-to-uint64)
+set_tests_properties(parser_extra_string_to_uint64 PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
+
+
+add_test(NAME parser_extra_string_to_double COMMAND parser_extra_coverage_test string-to-double)
+set_tests_properties(parser_extra_string_to_double PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1\\.5|b=2\\.5).*(a=1\\.5|b=2\\.5),")
+
+
+add_test(NAME parser_extra_string_to_duration COMMAND parser_extra_coverage_test string-to-duration)
+set_tests_properties(parser_extra_string_to_duration PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1000|b=2000).*(a=1000|b=2000),")
+
+
+add_test(NAME parser_extra_string_to COMMAND parser_extra_coverage_test string-to)
+set_tests_properties(parser_extra_string_to PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=x|b=y).*(a=x|b=y),")
+
+
+add_test(NAME parser_extra_flag_values_as COMMAND parser_extra_coverage_test flag-values-as)
+set_tests_properties(parser_extra_flag_values_as PROPERTIES PASS_REGULAR_EXPRESSION "vals:2")
+
+
+add_test(NAME parser_extra_flag_map COMMAND parser_extra_coverage_test flag-map)
+set_tests_properties(parser_extra_flag_map PROPERTIES PASS_REGULAR_EXPRESSION "map:.*(a=1|b=2).*(a=1|b=2),")
+
+
+add_test(NAME parser_extra_flag_values_split COMMAND parser_extra_coverage_test flag-values-split)
+set_tests_properties(parser_extra_flag_values_split PROPERTIES PASS_REGULAR_EXPRESSION "vals:a,b,c,")
+
+
+add_test(NAME parser_extra_flag_values COMMAND parser_extra_coverage_test flag-values)
+set_tests_properties(parser_extra_flag_values PROPERTIES PASS_REGULAR_EXPRESSION "vals:1")
+
+
+add_test(NAME parser_extra_positionals COMMAND parser_extra_coverage_test positionals)
+set_tests_properties(parser_extra_positionals PROPERTIES PASS_REGULAR_EXPRESSION "pos:arg1,arg2,")
+
+
+add_test(NAME parser_extra_has_value COMMAND parser_extra_coverage_test has-value)
+set_tests_properties(parser_extra_has_value PROPERTIES PASS_REGULAR_EXPRESSION "name:yes.*missing:no")
+
+
+add_test(NAME parser_extra_duration_flag COMMAND parser_extra_coverage_test duration-flag)
+set_tests_properties(parser_extra_duration_flag PROPERTIES PASS_REGULAR_EXPRESSION "timeout:1500")
+
+
+add_test(NAME parser_extra_uint64_flag COMMAND parser_extra_coverage_test uint64-flag)
+set_tests_properties(parser_extra_uint64_flag PROPERTIES PASS_REGULAR_EXPRESSION "size:100")
+
+
+add_test(NAME parser_extra_int64_flag COMMAND parser_extra_coverage_test int64-flag)
+set_tests_properties(parser_extra_int64_flag PROPERTIES PASS_REGULAR_EXPRESSION "value:-100")
+
+
+add_test(NAME parser_extra_uint32_flag COMMAND parser_extra_coverage_test uint32-flag)
+set_tests_properties(parser_extra_uint32_flag PROPERTIES PASS_REGULAR_EXPRESSION "port:8080")
+
+
+add_test(NAME parser_extra_double_flag COMMAND parser_extra_coverage_test double-flag)
+set_tests_properties(parser_extra_double_flag PROPERTIES PASS_REGULAR_EXPRESSION "ratio:3\\.14")
+
+
+add_test(NAME parser_extra_float_flag COMMAND parser_extra_coverage_test float-flag)
+set_tests_properties(parser_extra_float_flag PROPERTIES PASS_REGULAR_EXPRESSION "ratio:1\\.5")
+
+
+add_test(NAME parser_extra_cidr_flag COMMAND parser_extra_coverage_test cidr-flag)
+set_tests_properties(parser_extra_cidr_flag PROPERTIES PASS_REGULAR_EXPRESSION "cidr:10\\.0\\.0\\.0/8")
+
+
+add_test(NAME parser_extra_ipmask_flag COMMAND parser_extra_coverage_test ipmask-flag)
+set_tests_properties(parser_extra_ipmask_flag PROPERTIES PASS_REGULAR_EXPRESSION "mask:255\\.255\\.255\\.0")
+
+
+add_test(NAME parser_extra_ipnet_flag COMMAND parser_extra_coverage_test ipnet-flag)
+set_tests_properties(parser_extra_ipnet_flag PROPERTIES PASS_REGULAR_EXPRESSION "net:10\\.0\\.0\\.0/8")
+
+
+add_test(NAME parser_extra_bytes_flag COMMAND parser_extra_coverage_test bytes-flag)
+set_tests_properties(parser_extra_bytes_flag PROPERTIES PASS_REGULAR_EXPRESSION "size:1024")
+
+
+add_test(NAME parser_extra_count_flag COMMAND parser_extra_coverage_test count-flag)
+set_tests_properties(parser_extra_count_flag PROPERTIES PASS_REGULAR_EXPRESSION "count:1")
+
+
+add_test(NAME parser_extra_ipv6 COMMAND parser_extra_coverage_test ipv6)
+set_tests_properties(parser_extra_ipv6 PROPERTIES PASS_REGULAR_EXPRESSION "host:2001:db8::1")
+
+
+add_test(NAME parser_extra_ipv6_cidr COMMAND parser_extra_coverage_test ipv6-cidr)
+set_tests_properties(parser_extra_ipv6_cidr PROPERTIES PASS_REGULAR_EXPRESSION "cidr:2001:db8::/32")
+
+
+add_test(NAME parser_extra_url_flag COMMAND parser_extra_coverage_test url-flag)
+set_tests_properties(parser_extra_url_flag PROPERTIES PASS_REGULAR_EXPRESSION "url:http://example\\.com/path")
+
+
+add_test(NAME parser_extra_url_relative COMMAND parser_extra_coverage_test url-relative)
+set_tests_properties(parser_extra_url_relative PROPERTIES PASS_REGULAR_EXPRESSION "url:foo/bar")
+
+
+add_test(NAME parser_extra_url_ipv6 COMMAND parser_extra_coverage_test url-ipv6)
+set_tests_properties(parser_extra_url_ipv6 PROPERTIES PASS_REGULAR_EXPRESSION "url:http://\\[::1\\]:8080/path")
+
+
+add_test(NAME parser_extra_noopt COMMAND parser_extra_coverage_test noopt)
+set_tests_properties(parser_extra_noopt PROPERTIES PASS_REGULAR_EXPRESSION "mode:auto")
+
+
+add_test(NAME parser_extra_noopt_next_flag COMMAND parser_extra_coverage_test noopt-next-flag)
+set_tests_properties(parser_extra_noopt_next_flag PROPERTIES PASS_REGULAR_EXPRESSION "mode:auto")
+
+
+add_test(NAME parser_extra_noopt_next_arg COMMAND parser_extra_coverage_test noopt-next-arg)
+set_tests_properties(parser_extra_noopt_next_arg PROPERTIES PASS_REGULAR_EXPRESSION "mode:manual")
+
+
+add_test(NAME parser_extra_hex_uint64 COMMAND parser_extra_coverage_test hex-uint64)
+set_tests_properties(parser_extra_hex_uint64 PROPERTIES PASS_REGULAR_EXPRESSION "size:255")
+
+
+add_test(NAME parser_extra_hex_uint32 COMMAND parser_extra_coverage_test hex-uint32)
+set_tests_properties(parser_extra_hex_uint32 PROPERTIES PASS_REGULAR_EXPRESSION "port:255")
+
+
+add_test(NAME parser_extra_hex_int64 COMMAND parser_extra_coverage_test hex-int64)
+set_tests_properties(parser_extra_hex_int64 PROPERTIES PASS_REGULAR_EXPRESSION "value:255")
+
+
+add_test(NAME parser_extra_bool_true COMMAND parser_extra_coverage_test bool-true)
+set_tests_properties(parser_extra_bool_true PROPERTIES PASS_REGULAR_EXPRESSION "debug:true")
+
+
+add_test(NAME parser_extra_bytes_tib COMMAND parser_extra_coverage_test bytes-tib)
+set_tests_properties(parser_extra_bytes_tib PROPERTIES PASS_REGULAR_EXPRESSION "size:1099511627776")
+
+
+add_test(NAME parser_extra_bytes_eib COMMAND parser_extra_coverage_test bytes-eib)
+set_tests_properties(parser_extra_bytes_eib PROPERTIES PASS_REGULAR_EXPRESSION "size:1152921504606846976")
+
+
+add_test(NAME config_parse_run COMMAND config_parse_coverage_test)
+# Explicit bound: MSVC Debug should stay within seconds; a runaway test must
+# fail fast instead of eating the CTest default 1500s per test.
+set_tests_properties(config_parse_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail" TIMEOUT 600)
+
+
+add_test(NAME completion_coverage_run COMMAND completion_coverage_test)
+set_tests_properties(completion_coverage_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail" TIMEOUT 600)
+
+
+add_test(NAME command_render_run COMMAND command_render_coverage_test)
+set_tests_properties(command_render_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME branch_parser_run COMMAND branch_parser_test)
+set_tests_properties(branch_parser_run PROPERTIES PASS_REGULAR_EXPRESSION "ALL OK" FAIL_REGULAR_EXPRESSION "fail")
+
+
+add_test(NAME annotation_values_run COMMAND annotation_values_test)
+set_tests_properties(annotation_values_run PROPERTIES PASS_REGULAR_EXPRESSION "ok" FAIL_REGULAR_EXPRESSION "fail")
+
+
+# -----------------------------------------------------------------------------
+# Examples branch-coverage supplements: ctest argument combinations that
+# exercise the remaining reachable branches of each example program
+# (see examples/*.cpp for LCOV_EXCL markers on structurally unreachable
+# compiler-generated edges).
+# -----------------------------------------------------------------------------
+# args_example: branch 56% -> 100%
+add_test(NAME args_exact_join_ok COMMAND args_example exact hello world)
+set_tests_properties(args_exact_join_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^hello,world\r?
+$]==])
+
+
+add_test(NAME args_range_one_ok COMMAND args_example range single)
+set_tests_properties(args_range_one_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^single\r?
+$]==])
+
+
+add_test(NAME args_range_two_ok COMMAND args_example range a b)
+set_tests_properties(args_range_two_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^a,b\r?
+$]==])
+
+# count_example: branch 95% -> 100%
+add_test(NAME count_multi_arg_join COMMAND count_example alpha beta)
+set_tests_properties(count_multi_arg_join PROPERTIES PASS_REGULAR_EXPRESSION [==[^count=0 occ=0 args=alpha,beta\r?
+$]==])
+
+# flag_groups_example: branch 75% -> 78% (100% after excluding lines 18-20 via LCOV_EXCL_LINE; those branches live in fixed-argument startup registration and cannot be reached from any command line)
+add_test(NAME flag_groups_none_set_ok COMMAND flag_groups_example do --name alice)
+set_tests_properties(flag_groups_none_set_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok a=false b=false\r?
+$]==])
+
+
+add_test(NAME flag_groups_a_only_ok COMMAND flag_groups_example do --a --name alice)
+set_tests_properties(flag_groups_a_only_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok a=true b=false\r?
+$]==])
+
+
+add_test(NAME flag_groups_b_only_ok COMMAND flag_groups_example do --b --id 42)
+set_tests_properties(flag_groups_b_only_ok PROPERTIES PASS_REGULAR_EXPRESSION [==[^ok a=false b=true\r?
+$]==])
+
+# dynamic_completion_example: branch 62% -> 100%
+add_test(NAME dynamic_completion_fruit_action COMMAND dynamic_completion_example fruit apple banana)
+set_tests_properties(dynamic_completion_fruit_action PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple banana\r?
+$]==])
+
+
+add_test(NAME dynamic_completion_paint_action COMMAND dynamic_completion_example paint --color red)
+set_tests_properties(dynamic_completion_paint_action PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+$]==])
+
+
+add_test(NAME dynamic_completion_paint_action_short COMMAND dynamic_completion_example paint -c blue)
+set_tests_properties(dynamic_completion_paint_action_short PROPERTIES PASS_REGULAR_EXPRESSION [==[^blue\r?
+$]==])
+
+# hook_error_example: branch 98% -> 100%
+add_test(NAME hook_error_persistent_post_ok COMMAND hook_error_example do)
+set_tests_properties(hook_error_persistent_post_ok PROPERTIES PASS_REGULAR_EXPRESSION ".*" FAIL_REGULAR_EXPRESSION "Error:")
+
+# parser_external_example: branch 66% -> 100% (binary ignores argv; error branches are dead code, see LCOV annotations in examples/parser_external_example.cpp)
+add_test(NAME parser_external_multi_env_stable COMMAND parser_external_example)
+set_tests_properties(parser_external_multi_env_stable PROPERTIES PASS_REGULAR_EXPRESSION "name=b.*count=3" ENVIRONMENT "LC_ALL=C.UTF-8;TERM=dumb;COLUMNS=20")
+
+# completion_naming_example: branch 75% -> 84% gcov (100% of argv-reachable branches; 6 residual never-executed branches are compiler-generated exception cleanup, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME completion_naming_complete_root COMMAND completion_naming_example __c "")
+set_tests_properties(completion_naming_complete_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^comp.Generate shell completion scripts\r?
+paint.Paint cmd\r?
+help.Help about any command\r?
+:4\r?
+]==])
+
+
+add_test(NAME completion_naming_complete_validargs COMMAND completion_naming_example __c paint "")
+set_tests_properties(completion_naming_complete_validargs PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+green\r?
+blue\r?
+:4\r?
+]==])
+
+
+add_test(NAME completion_naming_complete_validargs_prefix COMMAND completion_naming_example __c paint r)
+set_tests_properties(completion_naming_complete_validargs_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+:4\r?
+]==])
+
+
+add_test(NAME completion_naming_complete_validargs_no_match COMMAND completion_naming_example __c paint x)
+set_tests_properties(completion_naming_complete_validargs_no_match PROPERTIES PASS_REGULAR_EXPRESSION [==[^:4\r?
+]==])
+
+
+add_test(NAME completion_naming_complete_nodesc_root COMMAND completion_naming_example __cnd "")
+set_tests_properties(completion_naming_complete_nodesc_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^comp\r?
+paint\r?
+help\r?
+:4\r?
+]==])
+
+
+add_test(NAME completion_naming_complete_nodesc_validargs COMMAND completion_naming_example __cnd paint "")
+set_tests_properties(completion_naming_complete_nodesc_validargs PROPERTIES PASS_REGULAR_EXPRESSION [==[^red\r?
+green\r?
+blue\r?
+:4\r?
+]==])
+
+
+add_test(NAME completion_naming_complete_flags COMMAND completion_naming_example __c paint --)
+set_tests_properties(completion_naming_complete_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^--help.Help for this command\r?
+:4\r?
+]==])
+
+
+add_test(NAME completion_naming_comp_zsh COMMAND completion_naming_example comp zsh)
+set_tests_properties(completion_naming_comp_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
+
+
+add_test(NAME completion_naming_comp_no_shell COMMAND completion_naming_example comp)
+set_tests_properties(completion_naming_comp_no_shell PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: accepts 1 arg\(s\)\r?
+
+Usage: app comp \[flags\]\r?
+]==])
+
+
+add_test(NAME completion_naming_comp_bad_shell COMMAND completion_naming_example comp tcsh)
+set_tests_properties(completion_naming_comp_bad_shell PROPERTIES PASS_REGULAR_EXPRESSION [==[^unknown shell: tcsh\r?
+supported shells: bash, zsh, fish, powershell\r?
+]==])
+
+
+add_test(NAME completion_naming_unknown_cmd_suggest COMMAND completion_naming_example pai)
+set_tests_properties(completion_naming_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"pai\" for \"app\"\r?
+
+Did you mean this\?
+  paint\r?
+
+Run 'app --help' for usage\.\r?
+]==])
+
+
+add_test(NAME completion_naming_paint_bare_shows_help COMMAND completion_naming_example paint)
+set_tests_properties(completion_naming_paint_bare_shows_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app paint \[flags\]\r?
+]==])
+
+
+add_test(NAME completion_naming_paint_help_flag COMMAND completion_naming_example paint --help)
+set_tests_properties(completion_naming_paint_help_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app paint \[flags\]\r?
+]==])
+
+
+add_test(NAME completion_naming_paint_unknown_flag COMMAND completion_naming_example paint --bad)
+set_tests_properties(completion_naming_paint_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --bad\r?
+
+Usage: app paint \[flags\]\r?
+]==])
+
+
+add_test(NAME completion_naming_paint_rejects_positional COMMAND completion_naming_example paint red)
+set_tests_properties(completion_naming_paint_rejects_positional PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"red\" for \"app paint\"\r?
+Run 'app paint --help' for usage\.\r?
+]==])
+
+
+add_test(NAME completion_naming_help_paint COMMAND completion_naming_example help paint)
+set_tests_properties(completion_naming_help_paint PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app paint \[flags\]\r?
+]==])
+
+
+add_test(NAME completion_naming_help_completion COMMAND completion_naming_example help comp)
+set_tests_properties(completion_naming_help_completion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app comp \[flags\]\r?
+]==])
+
+# context_example: branch 72% -> 87% gcov (100% of argv-reachable branches; 4 residual never-executed branches are the defensive "<none>" arm, unreachable because the root always sets the context, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME context_no_args_shows_usage COMMAND context_example)
+set_tests_properties(context_no_args_shows_usage PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+
+add_test(NAME context_help_command COMMAND context_example help)
+set_tests_properties(context_help_command PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+
+add_test(NAME context_help_show COMMAND context_example help show)
+set_tests_properties(context_help_show PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app show \[flags\]\r?
+]==])
+
+
+add_test(NAME context_show_help_flag COMMAND context_example show --help)
+set_tests_properties(context_show_help_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app show \[flags\]\r?
+]==])
+
+
+add_test(NAME context_show_end_of_flags COMMAND context_example show -- x)
+set_tests_properties(context_show_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^ctx=rootctx\r?
+]==])
+
+
+add_test(NAME context_show_with_positionals COMMAND context_example show extra args)
+set_tests_properties(context_show_with_positionals PROPERTIES PASS_REGULAR_EXPRESSION [==[^ctx=rootctx\r?
+]==])
+
+
+add_test(NAME context_unknown_cmd_no_suggestion COMMAND context_example nope)
+set_tests_properties(context_unknown_cmd_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+
+
+add_test(NAME context_unknown_flag_no_suggestion COMMAND context_example show --bad)
+set_tests_properties(context_unknown_flag_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --bad\r?
+
+Usage: app show \[flags\]\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+
+# directive_example: branch 68% -> 79% gcov (100% of argv-reachable branches; 6 residual never-executed branches are compiler-generated exception cleanup, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME directive_complete_root COMMAND directive_example __complete "")
+set_tests_properties(directive_complete_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^completion.Generate shell completion scripts\r?
+fruit.Fruit cmd\r?
+help.Help about any command\r?
+:4\r?
+]==])
+
+
+add_test(NAME directive_complete_fruit COMMAND directive_example __complete fruit "")
+set_tests_properties(directive_complete_fruit PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple\r?
+:8\r?
+]==])
+
+
+add_test(NAME directive_complete_fruit_prefix COMMAND directive_example __complete fruit a)
+set_tests_properties(directive_complete_fruit_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple\r?
+:8\r?
+]==])
+
+
+add_test(NAME directive_complete_fruit_no_match COMMAND directive_example __complete fruit x)
+set_tests_properties(directive_complete_fruit_no_match PROPERTIES PASS_REGULAR_EXPRESSION [==[^:8\r?
+]==])
+
+
+add_test(NAME directive_complete_nodesc_fruit COMMAND directive_example __completeNoDesc fruit "")
+set_tests_properties(directive_complete_nodesc_fruit PROPERTIES PASS_REGULAR_EXPRESSION [==[^apple\r?
+:8\r?
+]==])
+
+
+add_test(NAME directive_complete_fruit_flags COMMAND directive_example __complete fruit -)
+set_tests_properties(directive_complete_fruit_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^--help.Help for this command\r?
+-h.Help for this command\r?
+:4\r?
+]==])
+
+
+add_test(NAME directive_fruit_bare_shows_help COMMAND directive_example fruit)
+set_tests_properties(directive_fruit_bare_shows_help PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app fruit \[flags\]\r?
+]==])
+
+
+add_test(NAME directive_fruit_rejects_positional COMMAND directive_example fruit apple)
+set_tests_properties(directive_fruit_rejects_positional PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"apple\" for \"app fruit\"\r?
+Run 'app fruit --help' for usage\.\r?
+]==])
+
+
+add_test(NAME directive_fruit_unknown_flag COMMAND directive_example fruit --bad)
+set_tests_properties(directive_fruit_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --bad\r?
+
+Usage: app fruit \[flags\]\r?
+]==])
+
+
+add_test(NAME directive_unknown_cmd COMMAND directive_example nope)
+set_tests_properties(directive_unknown_cmd PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==])
+
+
+add_test(NAME directive_help_fruit COMMAND directive_example help fruit)
+set_tests_properties(directive_help_fruit PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app fruit \[flags\]\r?
+]==])
+
+
+add_test(NAME directive_completion_bash COMMAND directive_example completion bash)
+set_tests_properties(directive_completion_bash PROPERTIES PASS_REGULAR_EXPRESSION "# bash completion for app")
+
+
+add_test(NAME directive_completion_zsh COMMAND directive_example completion zsh)
+set_tests_properties(directive_completion_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
+
+
+add_test(NAME directive_completion_fish COMMAND directive_example completion fish)
+set_tests_properties(directive_completion_fish PROPERTIES PASS_REGULAR_EXPRESSION "complete -c \"app\"")
+
+
+add_test(NAME directive_completion_powershell COMMAND directive_example completion powershell)
+set_tests_properties(directive_completion_powershell PROPERTIES PASS_REGULAR_EXPRESSION "Register-ArgumentCompleter")
+
+# file_completion_example: branch 82% -> 90% gcov (100% of argv-reachable branches; 6 residual never-executed branches are compiler-generated exception cleanup, marked LCOV_EXCL_LINE in the source)
+
+add_test(NAME file_completion_complete_root COMMAND file_completion_example __complete "")
+set_tests_properties(file_completion_complete_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^completion.Generate shell completion scripts\r?
+open.Open a config\r?
+help.Help about any command\r?
+:4\r?
+]==])
+
+
+add_test(NAME file_completion_complete_ext_all COMMAND file_completion_example __complete open --config "")
+set_tests_properties(file_completion_complete_ext_all PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+
+add_test(NAME file_completion_complete_ext_prefix COMMAND file_completion_example __complete open --config y)
+set_tests_properties(file_completion_complete_ext_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+
+add_test(NAME file_completion_complete_ext_eq_form COMMAND file_completion_example __complete open --config=a.)
+set_tests_properties(file_completion_complete_ext_eq_form PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+
+add_test(NAME file_completion_complete_dirs COMMAND file_completion_example __complete open --out-dir "")
+set_tests_properties(file_completion_complete_dirs PROPERTIES PASS_REGULAR_EXPRESSION [==[^:16\r?
+]==])
+
+
+add_test(NAME file_completion_complete_dirs_prefix COMMAND file_completion_example __complete open --out-dir /tmp)
+set_tests_properties(file_completion_complete_dirs_prefix PROPERTIES PASS_REGULAR_EXPRESSION [==[^:16\r?
+]==])
+
+
+add_test(NAME file_completion_complete_flags_short COMMAND file_completion_example __complete open -)
+set_tests_properties(file_completion_complete_flags_short PROPERTIES PASS_REGULAR_EXPRESSION [==[^--config.Config file\r?
+-c.Config file\r?
+--out-dir.Output directory\r?
+--help.Help for this command\r?
+-h.Help for this command\r?
+:4\r?
+]==])
+
+
+add_test(NAME file_completion_complete_flags_long COMMAND file_completion_example __complete open --)
+set_tests_properties(file_completion_complete_flags_long PROPERTIES PASS_REGULAR_EXPRESSION [==[^--config.Config file\r?
+--out-dir.Output directory\r?
+--help.Help for this command\r?
+:4\r?
+]==])
+
+
+add_test(NAME file_completion_complete_nodesc_root COMMAND file_completion_example __completeNoDesc "")
+set_tests_properties(file_completion_complete_nodesc_root PROPERTIES PASS_REGULAR_EXPRESSION [==[^completion\r?
+open\r?
+help\r?
+:4\r?
+]==])
+
+
+add_test(NAME file_completion_complete_nodesc_ext COMMAND file_completion_example __completeNoDesc open --config "")
+set_tests_properties(file_completion_complete_nodesc_ext PROPERTIES PASS_REGULAR_EXPRESSION [==[^yaml\r?
+yml\r?
+:8\r?
+]==])
+
+
+add_test(NAME file_completion_open_action_yaml COMMAND file_completion_example open --config a.yaml)
+
+add_test(NAME file_completion_open_action_eq_form COMMAND file_completion_example open --config=d.yaml)
+
+add_test(NAME file_completion_open_action_dirname COMMAND file_completion_example open --out-dir /tmp)
+
+add_test(NAME file_completion_open_action_all_flags COMMAND file_completion_example open --config a.yaml --out-dir /tmp)
+
+add_test(NAME file_completion_open_action_no_flags COMMAND file_completion_example open)
+
+add_test(NAME file_completion_completion_bash COMMAND file_completion_example completion bash)
+set_tests_properties(file_completion_completion_bash PROPERTIES PASS_REGULAR_EXPRESSION "# bash completion for app")
+
+
+add_test(NAME file_completion_completion_zsh COMMAND file_completion_example completion zsh)
+set_tests_properties(file_completion_completion_zsh PROPERTIES PASS_REGULAR_EXPRESSION "bashcompinit")
+
+
+add_test(NAME file_completion_completion_powershell COMMAND file_completion_example completion powershell)
+set_tests_properties(file_completion_completion_powershell PROPERTIES PASS_REGULAR_EXPRESSION "Register-ArgumentCompleter")
+
+
+add_test(NAME file_completion_help_open COMMAND file_completion_example help open)
+set_tests_properties(file_completion_help_open PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app open \[flags\]\r?
+]==])
+
+
+add_test(NAME file_completion_missing_flag_value COMMAND file_completion_example open --config)
+set_tests_properties(file_completion_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --config\r?
+
+Usage: app open \[flags\]\r?
+]==])
+
+
+add_test(NAME file_completion_unknown_cmd_suggest COMMAND file_completion_example nope)
+set_tests_properties(file_completion_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+
+Did you mean this\?
+  open\r?
+
+Run 'app --help' for usage\.\r?
+]==])
+
+
+add_test(NAME file_completion_unknown_flag COMMAND file_completion_example open --nope)
+set_tests_properties(file_completion_unknown_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --nope\r?
+
+Usage: app open \[flags\]\r?
+]==])
+
+# no_suggest_example: branch 70% -> 100% gcov (0 never-executed branches remain; no LCOV_EXCL needed)
+
+add_test(NAME no_suggest_print_default_message COMMAND no_suggest_example print)
+set_tests_properties(no_suggest_print_default_message PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello\r?
+]==])
+
+
+add_test(NAME no_suggest_print_message_flag COMMAND no_suggest_example print --message hi)
+set_tests_properties(no_suggest_print_message_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+
+add_test(NAME no_suggest_print_message_eq COMMAND no_suggest_example print --message=hi)
+set_tests_properties(no_suggest_print_message_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+
+add_test(NAME no_suggest_print_short_flag COMMAND no_suggest_example print -m hi)
+set_tests_properties(no_suggest_print_short_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+
+add_test(NAME no_suggest_print_short_inline COMMAND no_suggest_example print -mhi)
+set_tests_properties(no_suggest_print_short_inline PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+
+add_test(NAME no_suggest_print_short_eq COMMAND no_suggest_example print -m=hi)
+set_tests_properties(no_suggest_print_short_eq PROPERTIES PASS_REGULAR_EXPRESSION [==[^hi\r?
+]==])
+
+
+add_test(NAME no_suggest_print_end_of_flags COMMAND no_suggest_example print -- --message hi)
+set_tests_properties(no_suggest_print_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello\r?
+]==])
+
+
+add_test(NAME no_suggest_print_extra_positionals COMMAND no_suggest_example print a b c)
+set_tests_properties(no_suggest_print_extra_positionals PROPERTIES PASS_REGULAR_EXPRESSION [==[^Hello\r?
+]==])
+
+
+add_test(NAME no_suggest_missing_flag_value COMMAND no_suggest_example print --message)
+set_tests_properties(no_suggest_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --message\r?
+
+Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME no_suggest_unknown_cmd_no_suggestion COMMAND no_suggest_example nope)
+set_tests_properties(no_suggest_unknown_cmd_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command \"nope\" for \"app\"\r?
+Run 'app --help' for usage\.\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+
+
+add_test(NAME no_suggest_unknown_flag_no_suggestion COMMAND no_suggest_example print --mesage hi)
+set_tests_properties(no_suggest_unknown_flag_no_suggestion PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --mesage\r?
+
+Usage: app print \[flags\]\r?
+]==] FAIL_REGULAR_EXPRESSION "Did you mean")
+
+
+add_test(NAME no_suggest_print_help_flag COMMAND no_suggest_example print --help)
+set_tests_properties(no_suggest_print_help_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME no_suggest_help_command COMMAND no_suggest_example help)
+set_tests_properties(no_suggest_help_command PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app \[command\] \[flags\]\r?
+]==])
+
+
+add_test(NAME no_suggest_help_print COMMAND no_suggest_example help print)
+set_tests_properties(no_suggest_help_print PROPERTIES PASS_REGULAR_EXPRESSION [==[^Usage: app print \[flags\]\r?
+]==])
+
+# --- W4: examples branch-coverage supplements ---
+# flag_convert: usage / fallback / boundary / long-value paths
+add_test(NAME flag_convert_no_args COMMAND flag_convert_example)
+set_tests_properties(flag_convert_no_args PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: flag_convert_example")
+
+
+add_test(NAME flag_convert_int_negative COMMAND flag_convert_example int -42)
+set_tests_properties(flag_convert_int_negative PROPERTIES PASS_REGULAR_EXPRESSION "^int=-42")
+
+
+add_test(NAME flag_convert_uint32_max COMMAND flag_convert_example uint32 4294967295)
+set_tests_properties(flag_convert_uint32_max PROPERTIES PASS_REGULAR_EXPRESSION "^uint32=4294967295")
+
+
+add_test(NAME flag_convert_uint64_max COMMAND flag_convert_example uint64 18446744073709551615)
+set_tests_properties(flag_convert_uint64_max PROPERTIES PASS_REGULAR_EXPRESSION "^uint64=18446744073709551615")
+
+
+add_test(NAME flag_convert_int64_deep_negative COMMAND flag_convert_example int64 -9000000000)
+set_tests_properties(flag_convert_int64_deep_negative PROPERTIES PASS_REGULAR_EXPRESSION "^int64=-9000000000")
+
+
+add_test(NAME flag_convert_string_long COMMAND flag_convert_example string averyverylongstringvalue123456)
+set_tests_properties(flag_convert_string_long PROPERTIES PASS_REGULAR_EXPRESSION "^string=averyverylongstringvalue123456")
+
+
+add_test(NAME flag_convert_duration_full COMMAND flag_convert_example duration 2h15m30s500ms)
+set_tests_properties(flag_convert_duration_full PROPERTIES PASS_REGULAR_EXPRESSION "^duration_ms=8130500")
+
+
+add_test(NAME flag_convert_unknown_type COMMAND flag_convert_example nosuchtype)
+set_tests_properties(flag_convert_unknown_type PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: flag_convert_example")
+
+
+# pflag_types: full and empty typed-flag matrices (example previously had no ctest at all)
+add_test(NAME pflag_types_show_all_types COMMAND pflag_types_example show --names a,b,c --tags x --tags y --labels k1=1,k2=2 --gates true,false --ports 1,2 --nums 3 --nums 4 --scores s1=5,s2=6 --big b1=100 --toggles t1=true,t2=false --u32s 7,8 --small sm1=9)
+set_tests_properties(pflag_types_show_all_types PROPERTIES PASS_REGULAR_EXPRESSION "^names=a\\|b\\|c")
+
+
+add_test(NAME pflag_types_show_all_empty COMMAND pflag_types_example show --names "" --tags "" --labels "" --gates "" --ports "" --nums "" --scores "" --big "" --toggles "" --u32s "" --small "")
+set_tests_properties(pflag_types_show_all_empty PROPERTIES PASS_REGULAR_EXPRESSION "nums=0")
+
+
+# traverse_completion: action path (print) incl. persistent flag
+add_test(NAME traverse_completion_print_message COMMAND traverse_completion_example print --message hello)
+set_tests_properties(traverse_completion_print_message PROPERTIES PASS_REGULAR_EXPRESSION "^hello")
+
+
+add_test(NAME traverse_completion_persistent_verbose COMMAND traverse_completion_example -v print)
+set_tests_properties(traverse_completion_persistent_verbose PROPERTIES PASS_REGULAR_EXPRESSION "^hi")
+
+
+# utils_suggest: usage paths and empty-result path
+add_test(NAME utils_suggest_no_args COMMAND utils_suggest_example)
+set_tests_properties(utils_suggest_no_args PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: utils_suggest_example")
+
+
+add_test(NAME utils_suggest_single_arg COMMAND utils_suggest_example ap)
+set_tests_properties(utils_suggest_single_arg PROPERTIES PASS_REGULAR_EXPRESSION "^Usage: utils_suggest_example")
+
+
+add_test(NAME utils_suggest_no_match COMMAND utils_suggest_example xyz apple banana)
+set_tests_properties(utils_suggest_no_match PROPERTIES PASS_REGULAR_EXPRESSION ".*")
+
+
+# custom_value: remaining level literal
+add_test(NAME custom_value_error COMMAND custom_value_example show --level error)
+set_tests_properties(custom_value_error PROPERTIES PASS_REGULAR_EXPRESSION "^error")
+
+
+# deprecated: action without the deprecated flag (hasFlag false arm)
+add_test(NAME deprecated_command_no_flag COMMAND deprecated_example old)
+set_tests_properties(deprecated_command_no_flag PROPERTIES PASS_REGULAR_EXPRESSION "old_flag=false")
+
+
+# parser_knobs: multi-positional args, no_group and no_neg subcommands
+add_test(NAME parser_knobs_multiple_positional COMMAND parser_knobs_example unknown_ok a b c)
+set_tests_properties(parser_knobs_multiple_positional PROPERTIES PASS_REGULAR_EXPRESSION "^verbose=false args=\\[a,b,c\\]")
+
+
+add_test(NAME parser_knobs_no_group COMMAND parser_knobs_example no_group)
+set_tests_properties(parser_knobs_no_group PROPERTIES PASS_REGULAR_EXPRESSION "^ran")
+
+
+add_test(NAME parser_knobs_no_negation COMMAND parser_knobs_example no_neg)
+set_tests_properties(parser_knobs_no_negation PROPERTIES PASS_REGULAR_EXPRESSION "^ran")
+
+
+add_test(NAME cobra_strings_unknown_cmd_suggest COMMAND cobra_strings_example prnit)
+set_tests_properties(cobra_strings_unknown_cmd_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown command "prnit" for "app"\r?
+\r?
+Did you mean this\?\r?
+  print\r?
+\r?
+Run 'app --help' for usage\.\r?
+]==])
+
+
+add_test(NAME cobra_strings_unknown_flag_suggest COMMAND cobra_strings_example print --mesage hi)
+set_tests_properties(cobra_strings_unknown_flag_suggest PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: unknown flag: --mesage\r?
+\r?
+Did you mean this\?\r?
+  --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME cobra_strings_missing_flag_value COMMAND cobra_strings_example print --message)
+set_tests_properties(cobra_strings_missing_flag_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: flag needs an argument: --message\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME cobra_strings_required_flag COMMAND cobra_strings_example locked)
+set_tests_properties(cobra_strings_required_flag PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: required flag not set: --name\r?
+\r?
+Usage: app locked \[flags\]\r?
+]==])
+
+
+add_test(NAME cobra_strings_invalid_argument COMMAND cobra_strings_example print --count=abc)
+set_tests_properties(cobra_strings_invalid_argument PROPERTIES PASS_REGULAR_EXPRESSION [==[^Error: invalid argument "abc" for "--count"\r?
+\r?
+Usage: app print \[flags\]\r?
+]==])
+
+
+add_test(NAME pflag_edge_repeat_bool_last_wins COMMAND pflag_edge_example edges --verbose --verbose)
+set_tests_properties(pflag_edge_repeat_bool_last_wins PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=true\r?
+]==])
+
+
+add_test(NAME pflag_edge_empty_eq_value COMMAND pflag_edge_example edges --name=)
+set_tests_properties(pflag_edge_empty_eq_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+]==])
+
+
+add_test(NAME pflag_edge_negative_number_value COMMAND pflag_edge_example edges --num -5)
+set_tests_properties(pflag_edge_negative_number_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=-5\r?
+]==])
+
+
+add_test(NAME pflag_edge_flag_after_positional COMMAND pflag_edge_example edges a --name x)
+set_tests_properties(pflag_edge_flag_after_positional PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=x\r?
+num=0\r?
+sep=none\r?
+mode=unset\r?
+pos=\[a\]\r?
+]==])
+
+
+add_test(NAME pflag_edge_noopt_eq_then_bare COMMAND pflag_edge_example edges --mode=v2 --mode)
+set_tests_properties(pflag_edge_noopt_eq_then_bare PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=0\r?
+sep=none\r?
+mode=auto\r?
+pos=\[\]\r?
+]==])
+
+
+add_test(NAME pflag_edge_end_of_flags COMMAND pflag_edge_example edges -- -v x)
+set_tests_properties(pflag_edge_end_of_flags PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=0\r?
+sep=none\r?
+mode=unset\r?
+pos=\[-v,x\]\r?
+]==])
+
+
+add_test(NAME pflag_edge_inline_short_value COMMAND pflag_edge_example edges -nhello)
+set_tests_properties(pflag_edge_inline_short_value PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=hello\r?
+]==])
+
+
+add_test(NAME pflag_edge_repeat_string_last_wins COMMAND pflag_edge_example edges --sep a --sep b)
+set_tests_properties(pflag_edge_repeat_string_last_wins PROPERTIES PASS_REGULAR_EXPRESSION [==[^verbose=false\r?
+name=\r?
+num=0\r?
+sep=b\r?
+]==])
+
