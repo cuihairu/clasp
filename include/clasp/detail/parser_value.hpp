@@ -29,7 +29,7 @@ namespace clasp::detail {
 // Forward declaration: parse<T> (a template, instantiated from parser.hpp) uses the bool
 // escaper before its definition below; class members in Parser were visible throughout the
 // class, so declaration order did not matter for the extracted free functions.
-bool parseBool(const std::string& s, bool defaultValue);
+inline bool parseBool(const std::string& s, bool defaultValue);
 
     template <typename T>
     T parse(const std::string& s, T defaultValue) {
@@ -61,7 +61,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         }
     }
 
-    bool parseBool(const std::string& s, bool defaultValue) {
+    inline bool parseBool(const std::string& s, bool defaultValue) {
         if (s.empty()) return defaultValue;
         if (s == "1" || s == "true" || s == "True" || s == "TRUE" || s == "on" || s == "yes") return true;
         if (s == "0" || s == "false" || s == "False" || s == "FALSE" || s == "off" || s == "no") return false;
@@ -70,7 +70,7 @@ bool parseBool(const std::string& s, bool defaultValue);
 
     enum class ValueKind { Bool, Int, Int64, Uint32, Uint64, Float, Double, Duration, String, Unknown };
 
-    ValueKind kindFromDefault(const FlagValue& v) {
+    inline ValueKind kindFromDefault(const FlagValue& v) {
         return std::visit(
             [](const auto& x) -> ValueKind {
                 using T = std::decay_t<decltype(x)>;
@@ -88,11 +88,11 @@ bool parseBool(const std::string& s, bool defaultValue);
             v);
     }
 
-    bool isTruthyAnnotation(std::string_view v) {
+    inline bool isTruthyAnnotation(std::string_view v) {
         return v == "1" || v == "true" || v == "True" || v == "TRUE" || v == "yes" || v == "on";
     }
 
-    bool tryParseBytes(std::string_view s, std::uint64_t& out) {
+    inline bool tryParseBytes(std::string_view s, std::uint64_t& out) {
         auto toUpperAscii = [](std::string_view v) {
             std::string out;
             out.reserve(v.size());
@@ -157,7 +157,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         std::array<std::uint8_t, 16> bytes{};
     };
 
-    bool tryParseIPv4(std::string_view s, ParsedIP& out) {
+    inline bool tryParseIPv4(std::string_view s, ParsedIP& out) {
         const auto sv = detail::trimWs(s);
         if (sv.empty()) return false;
         if (sv.find(':') != std::string_view::npos) return false; // LCOV_EXCL_LINE (every call site rejects ':'-containing input before calling and v4 tail parts come from splitting on ':', so no colon can reach here)
@@ -188,7 +188,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return true;
     }
 
-    bool tryParseHextet(std::string_view s, std::uint16_t& out) {
+    inline bool tryParseHextet(std::string_view s, std::uint16_t& out) {
         const auto sv = detail::trimWs(s);
         if (sv.empty() || sv.size() > 4) return false; // LCOV_EXCL_LINE (the sole caller parseParts only receives non-empty parts; empty head/tail parts are rejected before parsing)
         std::uint32_t v = 0;
@@ -205,7 +205,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return true;
     }
 
-    bool splitOnChar(std::string_view s, char sep, std::vector<std::string_view>& out) {
+    inline bool splitOnChar(std::string_view s, char sep, std::vector<std::string_view>& out) {
         out.clear();
         std::size_t start = 0;
         for (;;) {
@@ -220,7 +220,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return true;
     }
 
-    bool tryParseIPv6(std::string_view s, ParsedIP& out) {
+    inline bool tryParseIPv6(std::string_view s, ParsedIP& out) {
         const auto sv = detail::trimWs(s);
         if (sv.empty()) return false; // LCOV_EXCL_LINE (empty and non-empty inputs are both exercised at the other call sites; the remaining edge belongs to a cold inlined copy)
         if (sv.find('%') != std::string_view::npos) return false; // zone IDs not supported
@@ -311,12 +311,12 @@ bool parseBool(const std::string& s, bool defaultValue);
         return true;
     }
 
-    std::string formatIPv4(const ParsedIP& ip) {
+    inline std::string formatIPv4(const ParsedIP& ip) {
         return std::to_string(ip.bytes[0]) + "." + std::to_string(ip.bytes[1]) + "." + std::to_string(ip.bytes[2]) + "." +
                std::to_string(ip.bytes[3]);
     }
 
-    std::string hexNoLeading(std::uint16_t v) {
+    inline std::string hexNoLeading(std::uint16_t v) {
         if (v == 0) return "0";
         std::string tmp;
         while (v != 0) {
@@ -330,7 +330,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return out;
     }
 
-    std::string formatIPv6(const ParsedIP& ip) {
+    inline std::string formatIPv6(const ParsedIP& ip) {
         std::array<std::uint16_t, 8> groups{};
         for (std::size_t i = 0; i < 8; ++i) {
             groups[i] = (static_cast<std::uint16_t>(ip.bytes[i * 2]) << 8) | static_cast<std::uint16_t>(ip.bytes[i * 2 + 1]);
@@ -370,7 +370,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return out;
     }
 
-    bool tryParseIP(std::string_view s, std::string& canonical) {
+    inline bool tryParseIP(std::string_view s, std::string& canonical) {
         ParsedIP ip{};
         if (s.find(':') != std::string_view::npos) {
             if (!tryParseIPv6(s, ip)) return false;
@@ -382,7 +382,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return true;
     }
 
-    bool tryParseIPMask(std::string_view s, std::string& canonical) {
+    inline bool tryParseIPMask(std::string_view s, std::string& canonical) {
         const auto sv = detail::trimWs(s);
         if (sv.empty()) {
             canonical.clear();
@@ -402,7 +402,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return true;
     }
 
-    bool tryParseCIDR(std::string_view s, std::string& canonical) {
+    inline bool tryParseCIDR(std::string_view s, std::string& canonical) {
         const auto sv = detail::trimWs(s);
         const auto slash = sv.find('/');
         if (slash == std::string_view::npos) return false;
@@ -447,7 +447,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         return true;
     }
 
-    bool tryParseURL(std::string_view s, std::string& canonical) {
+    inline bool tryParseURL(std::string_view s, std::string& canonical) {
         auto toLowerAscii = [](std::string_view v) {
             std::string out;
             out.reserve(v.size());
@@ -536,7 +536,7 @@ bool parseBool(const std::string& s, bool defaultValue);
     }
 
     // Split on `sep`, dropping empty parts (same semantics as getFlagValuesSplit).
-    std::vector<std::string> splitCsvParts(const std::string& v, char sep) {
+    inline std::vector<std::string> splitCsvParts(const std::string& v, char sep) {
         std::vector<std::string> out;
         std::size_t start = 0;
         while (start <= v.size()) { // LCOV_EXCL_LINE (the loop always exits via the break when find returns npos; start = pos + 1 never exceeds size, so the false edge is unreachable)
@@ -548,7 +548,7 @@ bool parseBool(const std::string& s, bool defaultValue);
         }
         return out;
     } // LCOV_EXCL_LINE (function cleanup block)
-    std::string toString(const FlagValue& v) {
+    inline std::string toString(const FlagValue& v) {
         return std::visit(
             [](const auto& x) -> std::string {
                 using T = std::decay_t<decltype(x)>;
