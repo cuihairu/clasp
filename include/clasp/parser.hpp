@@ -22,6 +22,7 @@
 #include <cstdlib>
 
 #include "detail/value_parse.hpp"
+#include "detail/parser_value.hpp"
 #include "flag.hpp"
 #include "utils.hpp"
 
@@ -218,18 +219,18 @@ public:
     T getFlag(const std::string& flag, T defaultValue = T()) const {
         const auto key = resolveKey(flag);
         const auto it = flagValues_.find(key);
-        if (it != flagValues_.end() && !it->second.empty()) return parse<T>(it->second.back(), std::move(defaultValue)); // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
+        if (it != flagValues_.end() && !it->second.empty()) return detail::parse<T>(it->second.back(), std::move(defaultValue)); // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) {
-            return parse<T>(extMultiIt->second.back(), std::move(defaultValue));
+            return detail::parse<T>(extMultiIt->second.back(), std::move(defaultValue));
         }
 
         const auto extIt = externalValues_.find(key);
-        if (extIt != externalValues_.end()) return parse<T>(extIt->second, std::move(defaultValue));
+        if (extIt != externalValues_.end()) return detail::parse<T>(extIt->second, std::move(defaultValue));
 
         const auto defIt = defaults_.find(key);
-        if (defIt != defaults_.end()) return parse<T>(defIt->second, std::move(defaultValue));
+        if (defIt != defaults_.end()) return detail::parse<T>(defIt->second, std::move(defaultValue));
 
         return defaultValue;
     }
@@ -240,22 +241,22 @@ public:
         const auto it = flagValues_.find(key);
         if (it != flagValues_.end() && !it->second.empty()) { // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
             int total = 0;
-            for (const auto& v : it->second) total += parse<int>(v, 0);
+            for (const auto& v : it->second) total += detail::parse<int>(v, 0);
             return total;
         }
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) {
             int total = 0;
-            for (const auto& v : extMultiIt->second) total += parse<int>(v, 0);
+            for (const auto& v : extMultiIt->second) total += detail::parse<int>(v, 0);
             return total;
         }
 
         const auto extIt = externalValues_.find(key);
-        if (extIt != externalValues_.end()) return parse<int>(extIt->second, defaultValue);
+        if (extIt != externalValues_.end()) return detail::parse<int>(extIt->second, defaultValue);
 
         const auto defIt = defaults_.find(key);
-        if (defIt != defaults_.end()) return parse<int>(defIt->second, defaultValue);
+        if (defIt != defaults_.end()) return detail::parse<int>(defIt->second, defaultValue);
 
         return defaultValue;
     }
@@ -333,7 +334,7 @@ public:
     std::vector<T> getFlagValuesAs(const std::string& flag, T defaultValue = T()) const {
         std::vector<T> out;
         for (const auto& v : getFlagValues(flag)) {
-            out.push_back(parse<T>(v, defaultValue));
+            out.push_back(detail::parse<T>(v, defaultValue));
         }
         return out;
     }
@@ -420,7 +421,7 @@ public:
         static_assert(std::is_default_constructible_v<V>, "map value type must be default-constructible");
         std::unordered_map<std::string, V> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
-            out[k] = parse<V>(v, V{});
+            out[k] = detail::parse<V>(v, V{});
         }
         return out;
     }
@@ -434,7 +435,7 @@ public:
     std::unordered_map<std::string, int> getStringToInt(const std::string& flag, char entrySep = ',', char kvSep = '=') const {
         std::unordered_map<std::string, int> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
-            out[k] = parse<int>(v, 0);
+            out[k] = detail::parse<int>(v, 0);
         }
         return out;
     }
@@ -450,7 +451,7 @@ public:
                                                                    char kvSep = '=') const {
         std::unordered_map<std::string, std::int64_t> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
-            out[k] = parse<std::int64_t>(v, 0);
+            out[k] = detail::parse<std::int64_t>(v, 0);
         }
         return out;
     }
@@ -466,7 +467,7 @@ public:
                                                                      char kvSep = '=') const {
         std::unordered_map<std::string, std::uint64_t> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
-            out[k] = parse<std::uint64_t>(v, 0);
+            out[k] = detail::parse<std::uint64_t>(v, 0);
         }
         return out;
     }
@@ -480,7 +481,7 @@ public:
                                                                                    char kvSep = '=') const {
         std::unordered_map<std::string, std::chrono::milliseconds> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
-            out[k] = parse<std::chrono::milliseconds>(v, std::chrono::milliseconds{0});
+            out[k] = detail::parse<std::chrono::milliseconds>(v, std::chrono::milliseconds{0});
         }
         return out;
     }
@@ -488,7 +489,7 @@ public:
     std::unordered_map<std::string, bool> getStringToBool(const std::string& flag, char entrySep = ',', char kvSep = '=') const {
         std::unordered_map<std::string, bool> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
-            out[k] = parse<bool>(v, false);
+            out[k] = detail::parse<bool>(v, false);
         }
         return out;
     }
@@ -496,7 +497,7 @@ public:
     std::unordered_map<std::string, float> getStringToFloat(const std::string& flag, char entrySep = ',', char kvSep = '=') const {
         std::unordered_map<std::string, float> out;
         for (const auto& [k, v] : getFlagMap(flag, entrySep, kvSep)) {
-            out[k] = parse<float>(v, 0.0f);
+            out[k] = detail::parse<float>(v, 0.0f);
         }
         return out;
     } // LCOV_EXCL_LINE (function cleanup block)
@@ -560,7 +561,7 @@ private:
     template <typename T>
     std::vector<T> getArrayAs(const std::string& flag, T defaultElement) const {
         std::vector<T> out;
-        for (const auto& v : getArrayRaw(flag)) out.push_back(parse<T>(v, defaultElement));
+        for (const auto& v : getArrayRaw(flag)) out.push_back(detail::parse<T>(v, defaultElement));
         return out;
     } // LCOV_EXCL_LINE (function cleanup block)
 
@@ -568,7 +569,7 @@ private:
     std::vector<T> getFlagValuesAsFromSplit(const std::string& flag, char sep) const {
         std::vector<T> out;
         for (const auto& v : getFlagValuesSplit(flag, sep)) {
-            out.push_back(parse<T>(v, T{}));
+            out.push_back(detail::parse<T>(v, T{}));
         }
         return out;
     } // LCOV_EXCL_LINE (function cleanup block)
@@ -604,523 +605,10 @@ private:
         return key;
     }
 
-    template <typename T>
-    static T parse(const std::string& s, T defaultValue) {
-        if constexpr (std::is_same_v<T, bool>) {
-            return parseBool(s, defaultValue);
-        } else if constexpr (std::is_same_v<T, std::string>) {
-            return s;
-        } else if constexpr (std::is_same_v<T, std::chrono::milliseconds>) {
-            return detail::parseDuration(s, defaultValue);
-        } else if constexpr (std::is_integral_v<T>) {
-            if constexpr (std::is_signed_v<T>) {
-                T out{};
-                if (!detail::tryParseSignedInt<T>(s, out)) return defaultValue;
-                return out;
-            } else {
-                T out{};
-                if (!detail::tryParseUnsignedInt<T>(s, out)) return defaultValue;
-                return out;
-            }
-        } else if constexpr (std::is_floating_point_v<T>) {
-            T out{};
-            if (!detail::tryParseFloat<T>(s, out)) return defaultValue;
-            return out;
-        } else {
-            std::istringstream iss(s);
-            T out{};
-            if (!(iss >> out)) return defaultValue;
-            return out;
-        }
-    }
+    // Type/value vocabulary extracted to detail/parser_value.hpp. Keep a member-visible
+    // alias so the private state maps and normalizeValue switch below still name Kind.
+    using Kind = detail::ValueKind;
 
-    static bool parseBool(const std::string& s, bool defaultValue) {
-        if (s.empty()) return defaultValue;
-        if (s == "1" || s == "true" || s == "True" || s == "TRUE" || s == "on" || s == "yes") return true;
-        if (s == "0" || s == "false" || s == "False" || s == "FALSE" || s == "off" || s == "no") return false;
-        return defaultValue;
-    }
-
-    enum class Kind { Bool, Int, Int64, Uint32, Uint64, Float, Double, Duration, String, Unknown };
-
-    static Kind kindFromDefault(const FlagValue& v) {
-        return std::visit(
-            [](const auto& x) -> Kind {
-                using T = std::decay_t<decltype(x)>;
-                if constexpr (std::is_same_v<T, bool>) return Kind::Bool;
-                if constexpr (std::is_same_v<T, int>) return Kind::Int;
-                if constexpr (std::is_same_v<T, std::int64_t>) return Kind::Int64;
-                if constexpr (std::is_same_v<T, std::uint32_t>) return Kind::Uint32;
-                if constexpr (std::is_same_v<T, std::uint64_t>) return Kind::Uint64;
-                if constexpr (std::is_same_v<T, float>) return Kind::Float;
-                if constexpr (std::is_same_v<T, double>) return Kind::Double;
-                if constexpr (std::is_same_v<T, std::chrono::milliseconds>) return Kind::Duration;
-                if constexpr (std::is_same_v<T, std::string>) return Kind::String;
-                return Kind::Unknown;
-            },
-            v);
-    }
-
-    static bool isTruthyAnnotation(std::string_view v) {
-        return v == "1" || v == "true" || v == "True" || v == "TRUE" || v == "yes" || v == "on";
-    }
-
-    static bool tryParseBytes(std::string_view s, std::uint64_t& out) {
-        auto toUpperAscii = [](std::string_view v) {
-            std::string out;
-            out.reserve(v.size());
-            for (const auto ch : v) out.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(ch))));
-            return out;
-        }; // LCOV_EXCL_LINE (closure cleanup block only runs on allocation failure)
-
-        const auto sv = detail::trimWs(s);
-        if (sv.empty()) return false;
-        if (sv.front() == '-') return false;
-
-        // First, allow base-0 integer forms (e.g. 0x10, 077) with no unit.
-        std::uint64_t parsed{};
-        if (detail::tryParseUnsignedInt<std::uint64_t>(sv, parsed)) {
-            out = parsed;
-            return true;
-        }
-
-        const std::string tmp(sv);
-        const char* start = tmp.c_str();
-        char* end = nullptr;
-        errno = 0;
-        const double value = std::strtod(start, &end);
-        if (errno != 0) return false;
-        if (!end || end == start) return false; // LCOV_EXCL_LINE (strtod always writes through endptr, so end is never null; the end == start guard is exercised)
-
-        std::string_view rest(start + (end - start));
-        rest = detail::trimWs(rest);
-
-        std::uint64_t multiplier = 1;
-        if (!rest.empty()) {
-            const std::string unit = toUpperAscii(rest);
-            if (unit == "B") {
-                multiplier = 1ULL;
-            } else if (unit == "K" || unit == "KB" || unit == "KI" || unit == "KIB") {
-                multiplier = 1024ULL;
-            } else if (unit == "M" || unit == "MB" || unit == "MI" || unit == "MIB") {
-                multiplier = 1024ULL * 1024ULL;
-            } else if (unit == "G" || unit == "GB" || unit == "GI" || unit == "GIB") {
-                multiplier = 1024ULL * 1024ULL * 1024ULL;
-            } else if (unit == "T" || unit == "TB" || unit == "TI" || unit == "TIB") {
-                multiplier = 1024ULL * 1024ULL * 1024ULL * 1024ULL;
-            } else if (unit == "P" || unit == "PB" || unit == "PI" || unit == "PIB") {
-                multiplier = 1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
-            } else if (unit == "E" || unit == "EB" || unit == "EI" || unit == "EIB") {
-                multiplier = 1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
-            } else {
-                return false;
-            }
-        }
-
-        const long double bytes = static_cast<long double>(value) * static_cast<long double>(multiplier);
-        if (!(bytes >= 0.0L)) return false;
-        if (bytes > static_cast<long double>(std::numeric_limits<std::uint64_t>::max())) return false;
-        const auto asInt = static_cast<std::uint64_t>(bytes + 0.5L);
-        out = asInt;
-        return true;
-    }
-
-    struct ParsedIP {
-        bool v4{false};
-        std::array<std::uint8_t, 16> bytes{};
-    };
-
-    static bool tryParseIPv4(std::string_view s, ParsedIP& out) {
-        const auto sv = detail::trimWs(s);
-        if (sv.empty()) return false;
-        if (sv.find(':') != std::string_view::npos) return false; // LCOV_EXCL_LINE (every call site rejects ':'-containing input before calling and v4 tail parts come from splitting on ':', so no colon can reach here)
-
-        std::array<std::uint8_t, 4> octets{};
-        std::size_t octetIdx = 0;
-        std::size_t start = 0;
-        for (;;) {
-            const auto dot = sv.find('.', start);
-            const auto part = (dot == std::string_view::npos) ? sv.substr(start) : sv.substr(start, dot - start);
-            if (part.empty()) return false;
-            if (octetIdx >= octets.size()) return false;
-            std::uint32_t value = 0;
-            for (const char ch : part) {
-                if (ch < '0' || ch > '9') return false;
-                value = value * 10u + static_cast<std::uint32_t>(ch - '0');
-                if (value > 255u) return false;
-            }
-            octets[octetIdx++] = static_cast<std::uint8_t>(value);
-            if (dot == std::string_view::npos) break;
-            start = dot + 1;
-        }
-        if (octetIdx != 4) return false;
-
-        out.v4 = true;
-        out.bytes.fill(0);
-        for (std::size_t i = 0; i < 4; ++i) out.bytes[i] = octets[i];
-        return true;
-    }
-
-    static bool tryParseHextet(std::string_view s, std::uint16_t& out) {
-        const auto sv = detail::trimWs(s);
-        if (sv.empty() || sv.size() > 4) return false; // LCOV_EXCL_LINE (the sole caller parseParts only receives non-empty parts; empty head/tail parts are rejected before parsing)
-        std::uint32_t v = 0;
-        for (const char ch : sv) {
-            std::uint32_t digit = 0;
-            if (ch >= '0' && ch <= '9') digit = static_cast<std::uint32_t>(ch - '0');
-            else if (ch >= 'a' && ch <= 'f') digit = 10u + static_cast<std::uint32_t>(ch - 'a');
-            else if (ch >= 'A' && ch <= 'F') digit = 10u + static_cast<std::uint32_t>(ch - 'A');
-            else return false;
-            v = (v << 4) | digit;
-            if (v > 0xFFFFu) return false; // LCOV_EXCL_LINE (both outcomes of the 0xFFFF check are exercised via other inlining sites; this residual edge belongs to a cold inlined copy)
-        }
-        out = static_cast<std::uint16_t>(v);
-        return true;
-    }
-
-    static bool splitOnChar(std::string_view s, char sep, std::vector<std::string_view>& out) {
-        out.clear();
-        std::size_t start = 0;
-        for (;;) {
-            const auto pos = s.find(sep, start);
-            if (pos == std::string_view::npos) {
-                out.push_back(s.substr(start));
-                break;
-            }
-            out.push_back(s.substr(start, pos - start));
-            start = pos + 1;
-        }
-        return true;
-    }
-
-    static bool tryParseIPv6(std::string_view s, ParsedIP& out) {
-        const auto sv = detail::trimWs(s);
-        if (sv.empty()) return false; // LCOV_EXCL_LINE (empty and non-empty inputs are both exercised at the other call sites; the remaining edge belongs to a cold inlined copy)
-        if (sv.find('%') != std::string_view::npos) return false; // zone IDs not supported
-
-        const auto dbl = sv.find("::");
-        const bool hasDbl = (dbl != std::string_view::npos);
-        if (hasDbl && sv.find("::", dbl + 2) != std::string_view::npos) return false;
-
-        const auto head = hasDbl ? sv.substr(0, dbl) : sv;
-        const auto tail = hasDbl ? sv.substr(dbl + 2) : std::string_view{};
-
-        std::vector<std::string_view> headParts;
-        std::vector<std::string_view> tailParts;
-        if (!head.empty()) splitOnChar(head, ':', headParts);
-        if (!tail.empty()) splitOnChar(tail, ':', tailParts);
-
-        for (const auto& p : headParts) {
-            if (p.empty()) return false;
-        }
-        for (const auto& p : tailParts) {
-            if (p.empty()) return false;
-        }
-
-        auto parseParts = [](const std::vector<std::string_view>& parts, bool allowV4Tail, std::vector<std::uint16_t>& groups) {
-            groups.clear();
-            groups.reserve(parts.size());
-            for (std::size_t idx = 0; idx < parts.size(); ++idx) {
-                const auto part = parts[idx];
-                const bool isLast = (idx + 1 == parts.size());
-                if (allowV4Tail && isLast && part.find('.') != std::string_view::npos) { // LCOV_EXCL_LINE (allowV4Tail is only true when the last part itself contains '.', so at the final index the dot check is always true)
-                    ParsedIP ip4{};
-                    if (!tryParseIPv4(part, ip4)) return false;
-                    const std::uint16_t g1 = (static_cast<std::uint16_t>(ip4.bytes[0]) << 8) | ip4.bytes[1];
-                    const std::uint16_t g2 = (static_cast<std::uint16_t>(ip4.bytes[2]) << 8) | ip4.bytes[3];
-                    groups.push_back(g1);
-                    groups.push_back(g2);
-                    continue;
-                }
-                if (part.find('.') != std::string_view::npos) return false;
-                std::uint16_t g{};
-                if (!tryParseHextet(part, g)) return false;
-                groups.push_back(g);
-            }
-            return true;
-        };
-
-        std::vector<std::uint16_t> headGroups;
-        std::vector<std::uint16_t> tailGroups;
-        const bool headV4Tail = (!hasDbl && !headParts.empty() && tailParts.empty() && headParts.back().find('.') != std::string_view::npos); // LCOV_EXCL_LINE (without "::" the tail list is always empty and the head list never is, so both middle terms are constant on the reachable path)
-        const bool tailV4Tail = (!tailParts.empty() && tailParts.back().find('.') != std::string_view::npos);
-
-        if (!parseParts(headParts, headV4Tail, headGroups)) return false;
-        if (!parseParts(tailParts, tailV4Tail, tailGroups)) return false;
-
-        const std::size_t total = headGroups.size() + tailGroups.size();
-        if (hasDbl) {
-            if (total > 8) return false;
-            const std::size_t missing = 8 - total;
-            if (missing == 0) return false; // "::" must compress at least one 0 group
-            std::vector<std::uint16_t> all;
-            all.reserve(8);
-            all.insert(all.end(), headGroups.begin(), headGroups.end());
-            all.insert(all.end(), missing, 0);
-            all.insert(all.end(), tailGroups.begin(), tailGroups.end());
-            if (all.size() != 8) return false; // LCOV_EXCL_LINE (inside the "::" path the group list is padded to exactly 8 by construction; the total != 8 rejection is the separate no-compression path)
-            out.v4 = false;
-            out.bytes.fill(0);
-            for (std::size_t j = 0; j < 8; ++j) {
-                const std::uint16_t g = all[j];
-                out.bytes[j * 2] = static_cast<std::uint8_t>((g >> 8) & 0xFFu);
-                out.bytes[j * 2 + 1] = static_cast<std::uint8_t>(g & 0xFFu);
-            }
-            return true;
-        }
-
-        if (total != 8) return false;
-        std::vector<std::uint16_t> all;
-        all.reserve(8);
-        all.insert(all.end(), headGroups.begin(), headGroups.end());
-        all.insert(all.end(), tailGroups.begin(), tailGroups.end());
-        out.v4 = false;
-        out.bytes.fill(0);
-        for (std::size_t j = 0; j < 8; ++j) {
-            const std::uint16_t g = all[j];
-            out.bytes[j * 2] = static_cast<std::uint8_t>((g >> 8) & 0xFFu);
-            out.bytes[j * 2 + 1] = static_cast<std::uint8_t>(g & 0xFFu);
-        }
-        return true;
-    }
-
-    static std::string formatIPv4(const ParsedIP& ip) {
-        return std::to_string(ip.bytes[0]) + "." + std::to_string(ip.bytes[1]) + "." + std::to_string(ip.bytes[2]) + "." +
-               std::to_string(ip.bytes[3]);
-    }
-
-    static std::string hexNoLeading(std::uint16_t v) {
-        if (v == 0) return "0";
-        std::string tmp;
-        while (v != 0) {
-            const std::uint16_t d = static_cast<std::uint16_t>(v & 0xFu);
-            tmp.push_back("0123456789abcdef"[d]);
-            v = static_cast<std::uint16_t>(v >> 4);
-        }
-        std::string out;
-        out.reserve(tmp.size());
-        for (auto it = tmp.rbegin(); it != tmp.rend(); ++it) out.push_back(*it);
-        return out;
-    }
-
-    static std::string formatIPv6(const ParsedIP& ip) {
-        std::array<std::uint16_t, 8> groups{};
-        for (std::size_t i = 0; i < 8; ++i) {
-            groups[i] = (static_cast<std::uint16_t>(ip.bytes[i * 2]) << 8) | static_cast<std::uint16_t>(ip.bytes[i * 2 + 1]);
-        }
-
-        std::size_t bestStart = 0;
-        std::size_t bestLen = 0;
-        for (std::size_t i = 0; i < 8;) {
-            if (groups[i] != 0) {
-                ++i;
-                continue;
-            }
-            std::size_t j = i;
-            while (j < 8 && groups[j] == 0) ++j;
-            const std::size_t len = j - i;
-            if (len >= 2 && len > bestLen) {
-                bestStart = i;
-                bestLen = len;
-            }
-            i = j;
-        }
-
-        std::string out;
-        bool first = true;
-        for (std::size_t i = 0; i < 8; ++i) {
-            if (bestLen >= 2 && i == bestStart) {
-                out += first ? "::" : "::";
-                first = false;
-                i += bestLen - 1;
-                continue;
-            }
-            if (!first && out.back() != ':') out.push_back(':');
-            out += hexNoLeading(groups[i]);
-            first = false;
-        }
-        if (out.empty()) return "::"; // LCOV_EXCL_LINE (all-zero and non-zero addresses are both exercised at other call sites; the remaining edges belong to a cold inlined copy and its cleanup)
-        return out;
-    }
-
-    static bool tryParseIP(std::string_view s, std::string& canonical) {
-        ParsedIP ip{};
-        if (s.find(':') != std::string_view::npos) {
-            if (!tryParseIPv6(s, ip)) return false;
-            canonical = formatIPv6(ip);
-            return true;
-        }
-        if (!tryParseIPv4(s, ip)) return false;
-        canonical = formatIPv4(ip);
-        return true;
-    }
-
-    static bool tryParseIPMask(std::string_view s, std::string& canonical) {
-        const auto sv = detail::trimWs(s);
-        if (sv.empty()) {
-            canonical.clear();
-            return true;
-        }
-        if (sv.find(':') != std::string_view::npos) return false; // IPv4 masks only
-
-        ParsedIP ip{};
-        if (!tryParseIPv4(sv, ip)) return false; // LCOV_EXCL_LINE (both outcomes of tryParseIPv4 are exercised by the ipmask tests; the remaining edges are cleanup paths of the inlined call)
-
-        std::uint32_t mask = (static_cast<std::uint32_t>(ip.bytes[0]) << 24) | (static_cast<std::uint32_t>(ip.bytes[1]) << 16) |
-                             (static_cast<std::uint32_t>(ip.bytes[2]) << 8) | static_cast<std::uint32_t>(ip.bytes[3]);
-        const std::uint32_t inv = ~mask;
-        if ((static_cast<std::uint64_t>(inv) & (static_cast<std::uint64_t>(inv) + 1ULL)) != 0ULL) return false; // requires contiguous bits
-
-        canonical = formatIPv4(ip);
-        return true;
-    }
-
-    static bool tryParseCIDR(std::string_view s, std::string& canonical) {
-        const auto sv = detail::trimWs(s);
-        const auto slash = sv.find('/');
-        if (slash == std::string_view::npos) return false;
-
-        const auto ipPart = detail::trimWs(sv.substr(0, slash));
-        const auto prefixPart = detail::trimWs(sv.substr(slash + 1));
-        if (ipPart.empty() || prefixPart.empty()) return false;
-
-        ParsedIP ip{};
-        std::string ipCanon;
-        if (ipPart.find(':') != std::string_view::npos) {
-            if (!tryParseIPv6(ipPart, ip)) return false;
-        } else {
-            if (!tryParseIPv4(ipPart, ip)) return false;
-        }
-
-        int prefix = 0;
-        for (const char ch : prefixPart) {
-            if (ch < '0' || ch > '9') return false;
-            prefix = prefix * 10 + static_cast<int>(ch - '0');
-            if (prefix > 128) return false;
-        }
-
-        const int maxBits = ip.v4 ? 32 : 128;
-        if (prefix < 0 || prefix > maxBits) return false; // LCOV_EXCL_LINE (prefix accumulates only accepted digits and is capped at 128 above, so it can never be negative)
-
-        const std::size_t bytesLen = ip.v4 ? 4 : 16;
-        for (std::size_t idx = 0; idx < bytesLen; ++idx) {
-            const int bits = prefix - static_cast<int>(idx * 8);
-            if (bits >= 8) continue;
-            if (bits <= 0) {
-                ip.bytes[idx] = 0;
-                continue;
-            }
-            const std::uint8_t mask = static_cast<std::uint8_t>(0xFFu << (8 - bits));
-            ip.bytes[idx] = static_cast<std::uint8_t>(ip.bytes[idx] & mask);
-        }
-        for (std::size_t idx = bytesLen; idx < 16; ++idx) ip.bytes[idx] = 0;
-
-        ipCanon = ip.v4 ? formatIPv4(ip) : formatIPv6(ip);
-        canonical = ipCanon + "/" + std::to_string(prefix);
-        return true;
-    }
-
-    static bool tryParseURL(std::string_view s, std::string& canonical) {
-        auto toLowerAscii = [](std::string_view v) {
-            std::string out;
-            out.reserve(v.size());
-            for (const auto ch : v) out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
-            return out;
-        }; // LCOV_EXCL_LINE (closure cleanup block only runs on allocation failure)
-
-        const auto sv = detail::trimWs(s);
-        if (sv.empty()) {
-            canonical.clear();
-            return true;
-        }
-        for (const auto ch : sv) {
-            if (std::isspace(static_cast<unsigned char>(ch))) return false;
-        }
-
-        canonical = std::string(sv);
-
-        const auto schemeSep = canonical.find("://");
-        if (schemeSep == std::string::npos) return true; // accept non-hierarchical / relative forms
-
-        const std::string_view scheme(canonical.data(), schemeSep);
-        if (scheme.empty()) return false;
-        auto isAlpha = [](char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
-        auto isSchemeChar = [&](char c) {
-            return isAlpha(c) || (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.';
-        };
-        if (!isAlpha(scheme.front())) return false;
-        for (const auto ch : scheme) {
-            if (!isSchemeChar(ch)) return false;
-        }
-
-        const std::size_t authorityStart = schemeSep + 3;
-        std::size_t authorityEnd = canonical.find_first_of("/?#", authorityStart);
-        if (authorityEnd == std::string::npos) authorityEnd = canonical.size();
-
-        const std::string_view authority(canonical.data() + authorityStart, authorityEnd - authorityStart);
-        if (authority.empty()) return false;
-
-        const std::string_view rest(canonical.data() + authorityEnd, canonical.size() - authorityEnd);
-
-        std::string_view userinfo;
-        std::string_view hostport = authority;
-        const auto at = authority.rfind('@');
-        if (at != std::string_view::npos) {
-            userinfo = authority.substr(0, at + 1);
-            hostport = authority.substr(at + 1);
-        }
-        if (hostport.empty()) return false;
-
-        std::string hostLower;
-        std::string_view portSuffix;
-
-        if (!hostport.empty() && hostport.front() == '[') { // LCOV_EXCL_LINE (the hostport.empty() check above already returned, so hostport is never empty here)
-            const auto close = hostport.find(']');
-            if (close == std::string_view::npos) return false;
-            const auto inner = hostport.substr(1, close - 1);
-            hostLower = "[" + toLowerAscii(inner) + "]";
-            portSuffix = hostport.substr(close + 1);
-        } else {
-            const auto firstColon = hostport.find(':');
-            const auto lastColon = hostport.rfind(':');
-            if (firstColon != std::string_view::npos && firstColon == lastColon) {
-                const auto hostPart = hostport.substr(0, firstColon);
-                const auto portPart = hostport.substr(firstColon + 1);
-                bool numeric = !portPart.empty();
-                for (const auto ch : portPart) {
-                    if (ch < '0' || ch > '9') {
-                        numeric = false;
-                        break;
-                    }
-                }
-                if (numeric) {
-                    hostLower = toLowerAscii(hostPart);
-                    portSuffix = hostport.substr(firstColon);
-                } else {
-                    hostLower = toLowerAscii(hostport);
-                }
-            } else {
-                hostLower = toLowerAscii(hostport);
-            }
-        }
-
-        canonical = toLowerAscii(scheme) + "://" + std::string(userinfo) + hostLower + std::string(portSuffix) + std::string(rest);
-        return true;
-    }
-
-    // Split on `sep`, dropping empty parts (same semantics as getFlagValuesSplit).
-    static std::vector<std::string> splitCsvParts(const std::string& v, char sep) {
-        std::vector<std::string> out;
-        std::size_t start = 0;
-        while (start <= v.size()) { // LCOV_EXCL_LINE (the loop always exits via the break when find returns npos; start = pos + 1 never exceeds size, so the false edge is unreachable)
-            const auto pos = v.find(sep, start);
-            const auto part = (pos == std::string::npos) ? v.substr(start) : v.substr(start, pos - start);
-            if (!part.empty()) out.push_back(part);
-            if (pos == std::string::npos) break;
-            start = pos + 1;
-        }
-        return out;
-    } // LCOV_EXCL_LINE (function cleanup block)
 
     bool normalizeValue(const std::string& key, std::string& value, Kind kind) {
         if (!ok_) return false;
@@ -1130,31 +618,31 @@ private:
         case Kind::String:
             if (ipKeys_.find(key) != ipKeys_.end()) {
                 std::string canon;
-                valid = tryParseIP(value, canon);
+                valid = detail::tryParseIP(value, canon);
                 if (valid) value = std::move(canon);
             } else if (ipMaskKeys_.find(key) != ipMaskKeys_.end()) {
                 std::string canon;
-                valid = tryParseIPMask(value, canon);
+                valid = detail::tryParseIPMask(value, canon);
                 if (valid) value = std::move(canon);
             } else if (cidrKeys_.find(key) != cidrKeys_.end()) {
                 std::string canon;
-                valid = tryParseCIDR(value, canon);
+                valid = detail::tryParseCIDR(value, canon);
                 if (valid) value = std::move(canon);
             } else if (ipNetKeys_.find(key) != ipNetKeys_.end()) {
                 std::string canon;
-                valid = tryParseCIDR(value, canon);
+                valid = detail::tryParseCIDR(value, canon);
                 if (valid) value = std::move(canon);
             } else if (urlKeys_.find(key) != urlKeys_.end()) {
                 std::string canon;
-                valid = tryParseURL(value, canon);
+                valid = detail::tryParseURL(value, canon);
                 if (valid) value = std::move(canon);
             } else if (ipSliceKeys_.find(key) != ipSliceKeys_.end()) {
                 // pflag IPSlice reads CSV: validate/canonicalize each element.
-                const auto parts = splitCsvParts(value, ',');
+                const auto parts = detail::splitCsvParts(value, ',');
                 std::string rejoined;
                 for (const auto& partRaw : parts) {
                     std::string canon;
-                    if (!tryParseIP(partRaw, canon)) {
+                    if (!detail::tryParseIP(partRaw, canon)) {
                         valid = false;
                         break;
                     }
@@ -1213,7 +701,7 @@ private:
         case Kind::Uint64: {
             std::uint64_t parsed{};
             if (bytesKeys_.find(key) != bytesKeys_.end()) {
-                valid = tryParseBytes(value, parsed);
+                valid = detail::tryParseBytes(value, parsed);
                 if (valid) value = std::to_string(parsed);
             } else if (uintKeys_.find(key) != uintKeys_.end()) {
                 // Go `uint` is platform-word-sized; validate against size_t width.
@@ -1252,89 +740,70 @@ private:
         return true;
     }
 
-    static std::string toString(const FlagValue& v) {
-        return std::visit(
-            [](const auto& x) -> std::string {
-                using T = std::decay_t<decltype(x)>;
-                if constexpr (std::is_same_v<T, bool>) return x ? "true" : "false";
-                if constexpr (std::is_same_v<T, int>) return std::to_string(x);
-                if constexpr (std::is_same_v<T, std::int32_t>) return std::to_string(x);
-                if constexpr (std::is_same_v<T, std::int64_t>) return std::to_string(x);
-                if constexpr (std::is_same_v<T, std::uint32_t>) return std::to_string(x);
-                if constexpr (std::is_same_v<T, std::uint64_t>) return std::to_string(x);
-                if constexpr (std::is_same_v<T, float>) return std::to_string(x);
-                if constexpr (std::is_same_v<T, double>) return std::to_string(x);
-                if constexpr (std::is_same_v<T, std::chrono::milliseconds>) return std::to_string(x.count()) + "ms";
-                if constexpr (std::is_same_v<T, std::string>) return x;
-                return {};
-            },
-            v);
-    }
-
     void registerFlag(const Flag& f) {
         if (!f.longName().empty()) {
             aliases_[f.longName()] = f.longName();
-            kinds_[f.longName()] = kindFromDefault(f.defaultValue());
-            defaults_[f.longName()] = toString(f.defaultValue());
+            kinds_[f.longName()] = detail::kindFromDefault(f.defaultValue());
+            defaults_[f.longName()] = detail::toString(f.defaultValue());
             if (f.noOptDefaultValue().has_value()) noOptDefaults_[f.longName()] = *f.noOptDefaultValue();
             const auto it = f.annotations().find("count");
             if (it != f.annotations().end() && (it->second == "true" || it->second == "1" || it->second == "yes")) {
                 countKeys_.insert(f.longName());
             }
             const auto bytesIt = f.annotations().find("bytes");
-            if (bytesIt != f.annotations().end() && isTruthyAnnotation(bytesIt->second)) {
+            if (bytesIt != f.annotations().end() && detail::isTruthyAnnotation(bytesIt->second)) {
                 bytesKeys_.insert(f.longName());
             }
             const auto ipIt = f.annotations().find("ip");
-            if (ipIt != f.annotations().end() && isTruthyAnnotation(ipIt->second)) {
+            if (ipIt != f.annotations().end() && detail::isTruthyAnnotation(ipIt->second)) {
                 ipKeys_.insert(f.longName());
             }
             const auto ipMaskIt = f.annotations().find("ipmask");
-            if (ipMaskIt != f.annotations().end() && isTruthyAnnotation(ipMaskIt->second)) {
+            if (ipMaskIt != f.annotations().end() && detail::isTruthyAnnotation(ipMaskIt->second)) {
                 ipMaskKeys_.insert(f.longName());
             }
             const auto cidrIt = f.annotations().find("cidr");
-            if (cidrIt != f.annotations().end() && isTruthyAnnotation(cidrIt->second)) {
+            if (cidrIt != f.annotations().end() && detail::isTruthyAnnotation(cidrIt->second)) {
                 cidrKeys_.insert(f.longName());
             }
             const auto ipNetIt = f.annotations().find("ipnet");
-            if (ipNetIt != f.annotations().end() && isTruthyAnnotation(ipNetIt->second)) {
+            if (ipNetIt != f.annotations().end() && detail::isTruthyAnnotation(ipNetIt->second)) {
                 ipNetKeys_.insert(f.longName());
             }
             const auto urlIt = f.annotations().find("url");
-            if (urlIt != f.annotations().end() && isTruthyAnnotation(urlIt->second)) {
+            if (urlIt != f.annotations().end() && detail::isTruthyAnnotation(urlIt->second)) {
                 urlKeys_.insert(f.longName());
             }
             const auto int8It = f.annotations().find("int8");
-            if (int8It != f.annotations().end() && isTruthyAnnotation(int8It->second)) {
+            if (int8It != f.annotations().end() && detail::isTruthyAnnotation(int8It->second)) {
                 int8Keys_.insert(f.longName());
             }
             const auto int16It = f.annotations().find("int16");
-            if (int16It != f.annotations().end() && isTruthyAnnotation(int16It->second)) {
+            if (int16It != f.annotations().end() && detail::isTruthyAnnotation(int16It->second)) {
                 int16Keys_.insert(f.longName());
             }
             const auto int32It = f.annotations().find("int32");
-            if (int32It != f.annotations().end() && isTruthyAnnotation(int32It->second)) {
+            if (int32It != f.annotations().end() && detail::isTruthyAnnotation(int32It->second)) {
                 int32Keys_.insert(f.longName());
             }
             const auto uint8It = f.annotations().find("uint8");
-            if (uint8It != f.annotations().end() && isTruthyAnnotation(uint8It->second)) {
+            if (uint8It != f.annotations().end() && detail::isTruthyAnnotation(uint8It->second)) {
                 uint8Keys_.insert(f.longName());
             }
             const auto uint16It = f.annotations().find("uint16");
-            if (uint16It != f.annotations().end() && isTruthyAnnotation(uint16It->second)) {
+            if (uint16It != f.annotations().end() && detail::isTruthyAnnotation(uint16It->second)) {
                 uint16Keys_.insert(f.longName());
             }
             const auto uintIt = f.annotations().find("uint");
-            if (uintIt != f.annotations().end() && isTruthyAnnotation(uintIt->second)) {
+            if (uintIt != f.annotations().end() && detail::isTruthyAnnotation(uintIt->second)) {
                 uintKeys_.insert(f.longName());
             }
             const auto ipSliceIt = f.annotations().find("ipslice");
-            if (ipSliceIt != f.annotations().end() && isTruthyAnnotation(ipSliceIt->second)) {
+            if (ipSliceIt != f.annotations().end() && detail::isTruthyAnnotation(ipSliceIt->second)) {
                 ipSliceKeys_.insert(f.longName());
             }
             const auto bytesBase64It = f.annotations().find("bytesbase64");
-            if (bytesBase64It != f.annotations().end() && isTruthyAnnotation(bytesBase64It->second)) {
+            if (bytesBase64It != f.annotations().end() && detail::isTruthyAnnotation(bytesBase64It->second)) {
                 bytesBase64Keys_.insert(f.longName());
             }
             knownKeys_.push_back(f.longName());
