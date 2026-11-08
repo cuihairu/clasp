@@ -27,6 +27,8 @@
 #include "color.hpp"
 #include "flag.hpp"
 #include "parser.hpp"
+#include "detail/config_parse.hpp"
+#include "detail/shell_escape.hpp"
 #include "utils.hpp"
 #include "value.hpp"
 
@@ -2283,7 +2285,7 @@ private:
                     using T = std::decay_t<decltype(x)>;
                     if constexpr (std::is_same_v<T, std::string>) {
                         if (x.empty()) return std::nullopt;
-                        return std::string("\"") + escapeHelpString(x) + "\"";
+                        return std::string("\"") + detail::escapeHelpString(x) + "\"";
                     } else if constexpr (std::is_same_v<T, std::chrono::milliseconds>) {
                         if (x.count() == 0) return std::nullopt;
                         return std::to_string(x.count()) + "ms";
@@ -2650,21 +2652,6 @@ private:
     };
 
     std::vector<std::string> invocationNames() const;
-    static std::string escapeDoubleQuotes(const std::string& s);
-    static std::string escapeHelpString(const std::string& s);
-    static std::string escapeBashWord(const std::string& s);
-    static std::string escapeBashDoubleQuoted(const std::string& s);
-    static std::string escapeFishWord(const std::string& s);
-    static std::string escapeFishDoubleQuoted(const std::string& s);
-    static std::string escapeFishSingleQuotedContent(const std::string& s);
-    static std::string escapeFishSingleQuoted(const std::string& s);
-    static std::string joinBashWords(const std::vector<std::string>& words);
-    static std::string joinFishWords(const std::vector<std::string>& words);
-    static std::string joinFishConditionWords(const std::vector<std::string>& words);
-    static std::string joinQuotedPowerShell(const std::vector<std::string>& words);
-    static std::string escapePowerShellSingleQuoted(const std::string& s);
-    static std::string sanitizeIdentifier(const std::string& s);
-    static std::string bashCaseLabel(const std::vector<std::string>& paths);
     std::vector<CompletionEntry> completionEntries() const;
     void collectCompletionEntries(std::vector<CompletionEntry>& entries, const std::vector<std::string>& paths) const;
     void printCompletionBashInternal(std::ostream& os, bool forZsh) const;
@@ -3266,173 +3253,6 @@ inline std::vector<std::string> Command::invocationNames() const {
     return out;
 } // LCOV_EXCL_LINE (function cleanup block)
 
-inline std::string Command::escapeDoubleQuotes(const std::string& s) {
-    std::string out;
-    out.reserve(s.size());
-    for (const char ch : s) {
-        if (ch == '"' || ch == '\\' || ch == '$' || ch == '`') out.push_back('\\');
-        out.push_back(ch);
-    }
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::escapeHelpString(const std::string& s) {
-    std::string out;
-    out.reserve(s.size());
-    for (const char ch : s) {
-        if (ch == '"') out.push_back('\\');
-        out.push_back(ch);
-    }
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::escapeBashWord(const std::string& s) {
-    std::string out = "\"";
-    out.reserve(s.size() + 2);
-    for (const char ch : s) {
-        if (ch == '"' || ch == '\\' || ch == '$' || ch == '`') out.push_back('\\');
-        out.push_back(ch);
-    }
-    out.push_back('"');
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::escapeBashDoubleQuoted(const std::string& s) {
-    return escapeDoubleQuotes(s);
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::escapeFishWord(const std::string& s) {
-    std::string out = "\"";
-    out.reserve(s.size() + 2);
-    for (const char ch : s) {
-        if (ch == '"' || ch == '\\' || ch == '$') out.push_back('\\');
-        out.push_back(ch);
-    }
-    out.push_back('"');
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::escapeFishDoubleQuoted(const std::string& s) {
-    std::string out;
-    out.reserve(s.size());
-    for (const char ch : s) {
-        if (ch == '"' || ch == '\\' || ch == '$') out.push_back('\\');
-        out.push_back(ch);
-    }
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::joinBashWords(const std::vector<std::string>& words) {
-    std::ostringstream oss;
-    for (std::size_t i = 0; i < words.size(); ++i) {
-        if (i) oss << ' ';
-        oss << escapeBashDoubleQuoted(words[i]);
-    }
-    return oss.str();
-}
-
-inline std::string Command::joinFishWords(const std::vector<std::string>& words) {
-    std::ostringstream oss;
-    for (std::size_t i = 0; i < words.size(); ++i) {
-        if (i) oss << ' ';
-        // fish re-evaluates the `-a` argument list as code, so each word must
-        // be emitted as a fully-quoted fish literal. Single quotes never
-        // expand `$`, backticks or `()` in fish, so they are the only quoting
-        // form that stays literal in *every* evaluation context (unlike
-        // double quotes, whose escape semantics depend on whether fish treats
-        // the string as a `complete` argument or as ordinary code). A bare
-        // apostrophe is escaped with `\'` inside the single quotes.
-        oss << "'" << escapeFishSingleQuotedContent(words[i]) << "'";
-    }
-    return oss.str();
-}
-
-// Builds the fish `-n` condition string for `__fish_seen_subcommand_from`.
-// The condition is re-evaluated as fish code at completion time, so each word
-// must be emitted as a fully-quoted fish literal. Single quotes (with `'`
-// escaped as `\'`) keep dollars, backticks and command substitutions literal in every
-// evaluation context, so the condition does not depend on fish's `complete`
-// argument handling to avoid executing `$(...)`/`` `...` ``.
-inline std::string Command::joinFishConditionWords(const std::vector<std::string>& words) {
-    std::ostringstream oss;
-    for (std::size_t i = 0; i < words.size(); ++i) {
-        if (i) oss << ' ';
-        oss << "'" << escapeFishSingleQuotedContent(words[i]) << "'";
-    }
-    return oss.str();
-}
-
-inline std::string Command::escapeFishSingleQuotedContent(const std::string& s) {
-    std::string out;
-    out.reserve(s.size());
-    for (const char ch : s) {
-        // Inside a fish single-quoted string, `'` is escaped by a preceding
-        // `\`. Escape every backslash too: otherwise an odd trailing backslash
-        // escapes the closing quote when fish re-evaluates the generated list.
-        if (ch == '\'') out += "\\'";
-        else if (ch == '\\') out += "\\\\";
-        else out.push_back(ch);
-    }
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::escapeFishSingleQuoted(const std::string& s) {
-    // The outer wrapper must produce the same content escaping as the inner
-    // helper so the `-a`/`-n` double-encoding round-trip stays consistent.
-    // Delegating here keeps the two escaping rules in lock-step; editing only
-    // one of them would silently corrupt the fish completion script.
-    return "'" + escapeFishSingleQuotedContent(s) + "'";
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::joinQuotedPowerShell(const std::vector<std::string>& words) {
-    auto escapeSingleQuoted = [](const std::string& s) {
-        std::string out;
-        out.reserve(s.size());
-        for (const char ch : s) {
-            if (ch == '\'') out += "''";
-            else out.push_back(ch);
-        }
-        return out;
-    }; // LCOV_EXCL_LINE (closure cleanup block)
-
-    std::ostringstream oss;
-    for (std::size_t i = 0; i < words.size(); ++i) {
-        if (i) oss << ", ";
-        oss << "'" << escapeSingleQuoted(words[i]) << "'";
-    }
-    return oss.str();
-}
-
-inline std::string Command::escapePowerShellSingleQuoted(const std::string& s) {
-    std::string out = "'";
-    out.reserve(s.size() + 2);
-    for (const char ch : s) {
-        if (ch == '\'') out += "''";
-        else out.push_back(ch);
-    }
-    out.push_back('\'');
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::sanitizeIdentifier(const std::string& s) {
-    std::string out;
-    out.reserve(s.size());
-    for (const unsigned char ch : s) {
-        if (std::isalnum(ch) || ch == '_') out.push_back(static_cast<char>(ch));
-        else out.push_back('_');
-    }
-    if (out.empty() || (!std::isalpha(static_cast<unsigned char>(out[0])) && out[0] != '_')) out.insert(out.begin(), '_');
-    return out;
-} // LCOV_EXCL_LINE (function cleanup block)
-
-inline std::string Command::bashCaseLabel(const std::vector<std::string>& paths) {
-    std::ostringstream oss;
-    for (std::size_t i = 0; i < paths.size(); ++i) {
-        if (i) oss << "|";
-        oss << "\"" << escapeDoubleQuotes(paths[i]) << "\"";
-    }
-    return oss.str();
-}
 
 inline std::vector<Command::CompletionEntry> Command::completionEntries() const {
     std::vector<CompletionEntry> entries;
@@ -3502,8 +3322,8 @@ inline void Command::collectCompletionEntries(std::vector<CompletionEntry>& entr
 
 inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) const {
     const auto rootName = name_;
-    const auto fn = "_" + sanitizeIdentifier(rootName) + "_complete";
-    const auto bashRootName = escapeBashWord(rootName);
+    const auto fn = "_" + detail::sanitizeIdentifier(rootName) + "_complete";
+    const auto bashRootName = detail::escapeBashWord(rootName);
 
     const auto cfg = resolvedCompletionConfig();
     const bool dynamicOk = cfg.addCompleteCommands && !cfg.completeNoDescCommandName.empty();
@@ -3524,8 +3344,8 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
         os << "    subcommands=\"\"\n";
         os << "    case \"$cmd\" in\n";
         for (const auto& e : entries) {
-            os << "      " << bashCaseLabel(e.pathAlternatives) << ")\n";
-            os << "        subcommands=\"" << joinBashWords(e.subcommands) << "\"\n";
+            os << "      " << detail::bashCaseLabel(e.pathAlternatives) << ")\n";
+            os << "        subcommands=\"" << detail::joinBashWords(e.subcommands) << "\"\n";
             os << "        ;;\n";
         }
         os << "    esac\n";
@@ -3538,9 +3358,9 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
         os << "  subcommands=\"\"; flags=\"\"\n";
         os << "  case \"$cmd\" in\n";
         for (const auto& e : entries) {
-            os << "    " << bashCaseLabel(e.pathAlternatives) << ")\n";
-            os << "      subcommands=\"" << joinBashWords(e.subcommands) << "\"\n";
-            os << "      flags=\"" << joinBashWords(e.flags) << "\"\n";
+            os << "    " << detail::bashCaseLabel(e.pathAlternatives) << ")\n";
+            os << "      subcommands=\"" << detail::joinBashWords(e.subcommands) << "\"\n";
+            os << "      flags=\"" << detail::joinBashWords(e.flags) << "\"\n";
             os << "      ;;\n";
         }
         os << "  esac\n";
@@ -3573,7 +3393,7 @@ inline void Command::printCompletionBashInternal(std::ostream& os, bool forZsh) 
     os << "  out=()\n";
     os << "  while IFS= read -r line; do\n";
     os << "    out+=(\"$line\")\n";
-    os << "  done < <(" << bashRootName << " " << escapeBashWord(cfg.completeNoDescCommandName) << " \"${words[@]}\" \"$cur\" 2>/dev/null)\n";
+    os << "  done < <(" << bashRootName << " " << detail::escapeBashWord(cfg.completeNoDescCommandName) << " \"${words[@]}\" \"$cur\" 2>/dev/null)\n";
     os << "  if [[ ${#out[@]} -eq 0 ]]; then\n";
     os << "    return 0\n";
     os << "  fi\n";
@@ -3674,521 +3494,6 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
     std::unordered_map<std::string, std::string> external;
     std::unordered_map<std::string, std::vector<std::string>> externalMulti;
 
-    auto trim = [](std::string_view s) -> std::string_view {
-        std::size_t start = 0;
-        while (start < s.size() && std::isspace(static_cast<unsigned char>(s[start]))) ++start;
-        std::size_t end = s.size();
-        while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1]))) --end;
-        return s.substr(start, end - start);
-    };
-
-    auto endsWith = [](std::string_view s, std::string_view suffix) {
-        if (suffix.size() > s.size()) return false;
-        return s.substr(s.size() - suffix.size()) == suffix;
-    };
-
-    auto parseEnvLike = [&](std::istream& in) -> std::unordered_map<std::string, std::string> {
-        std::unordered_map<std::string, std::string> raw;
-        std::string line;
-        while (std::getline(in, line)) {
-            const auto t = trim(line);
-            if (t.empty()) continue;
-            if (t.front() == '#') continue;
-            const auto eq = t.find('=');
-            if (eq == std::string_view::npos) continue;
-            const auto key = trim(t.substr(0, eq));
-            auto value = std::string(trim(t.substr(eq + 1)));
-            if (value.size() >= 2 && ((value.front() == '"' && value.back() == '"') || (value.front() == '\'' && value.back() == '\''))) {
-                value = value.substr(1, value.size() - 2);
-            }
-            raw[std::string(key)] = std::move(value);
-        }
-        return raw;
-    };
-
-    struct FlatRaw {
-        std::unordered_map<std::string, std::string> scalar;
-        std::unordered_map<std::string, std::vector<std::string>> multi;
-    };
-
-    struct JsonParse {
-        const char* p{nullptr};
-        const char* end{nullptr};
-
-        // Config files are untrusted input; unbounded recursion on deeply nested
-        // JSON would overflow the stack. Reject nesting past this depth (config
-        // keys flatten to "a.b.c" paths, so real configs nest a handful of levels).
-        enum : int { kMaxNestingDepth = 128 };
-        int depth{0};
-
-        struct DepthGuard {
-            JsonParse* jp;
-            bool ok;
-            explicit DepthGuard(JsonParse& j) : jp(&j), ok(j.enter()) {}
-            ~DepthGuard() {
-                if (ok) jp->leave();
-            }
-        };
-
-        bool enter() {
-            if (depth >= kMaxNestingDepth) return false;
-            ++depth;
-            return true;
-        }
-
-        void leave() { --depth; }
-
-        static bool isWs(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
-
-        void skipWs() {
-            while (p < end && isWs(*p)) ++p;
-        }
-
-        bool consume(char c) {
-            skipWs();
-            if (p >= end || *p != c) return false;
-            ++p;
-            return true;
-        }
-
-        std::optional<std::string> parseString() {
-            skipWs();
-            if (p >= end || *p != '"') return std::nullopt;
-            ++p;
-            std::string out;
-            while (p < end) {
-                const char ch = *p++;
-                if (ch == '"') return out;
-                if (ch != '\\') {
-                    out.push_back(ch);
-                    continue;
-                }
-                if (p >= end) return std::nullopt;
-                const char esc = *p++;
-                switch (esc) {
-                case '"': out.push_back('"'); break;
-                case '\\': out.push_back('\\'); break;
-                case '/': out.push_back('/'); break;
-                case 'b': out.push_back('\b'); break;
-                case 'f': out.push_back('\f'); break;
-                case 'n': out.push_back('\n'); break;
-                case 'r': out.push_back('\r'); break;
-                case 't': out.push_back('\t'); break;
-                default:
-                    // Minimal parser: unsupported escapes fail.
-                    return std::nullopt;
-                }
-            }
-            return std::nullopt;
-        }
-
-        std::optional<std::string> parseNumberToken() {
-            skipWs();
-            if (p >= end) return std::nullopt; // LCOV_EXCL_LINE (sole caller checked *p is a digit, so p < end)
-            const char* start = p;
-            if (*p == '-' || *p == '+') ++p;
-            bool any = false;
-            while (p < end && std::isdigit(static_cast<unsigned char>(*p))) {
-                any = true;
-                ++p;
-            }
-            if (p < end && *p == '.') {
-                ++p;
-                while (p < end && std::isdigit(static_cast<unsigned char>(*p))) {
-                    any = true;
-                    ++p;
-                }
-            }
-            if (!any) return std::nullopt;
-            if (p < end && (*p == 'e' || *p == 'E')) {
-                ++p;
-                if (p < end && (*p == '+' || *p == '-')) ++p;
-                bool expAny = false;
-                while (p < end && std::isdigit(static_cast<unsigned char>(*p))) {
-                    expAny = true;
-                    ++p;
-                }
-                if (!expAny) return std::nullopt;
-            }
-            return std::string(start, p);
-        }
-
-        bool startsWith(std::string_view lit) const {
-            return static_cast<std::size_t>(end - p) >= lit.size() && std::string_view(p, lit.size()) == lit;
-        }
-
-        std::optional<std::string> parseScalarToken() {
-            skipWs();
-            if (p >= end) return std::nullopt;
-            if (*p == '"') return parseString();
-            if (*p == '-' || *p == '+' || std::isdigit(static_cast<unsigned char>(*p))) return parseNumberToken();
-            if (startsWith("true")) {
-                p += 4;
-                return std::string("true");
-            }
-            if (startsWith("false")) {
-                p += 5;
-                return std::string("false");
-            }
-            if (startsWith("null")) {
-                p += 4;
-                return std::string();
-            }
-            return std::nullopt;
-        }
-
-        std::optional<std::vector<std::string>> parseArrayScalarTokens() {
-            if (!consume('[')) return std::nullopt; // LCOV_EXCL_LINE (sole call site guarantees *p == '[')
-            skipWs();
-            std::vector<std::string> out;
-            if (consume(']')) return out;
-            while (true) {
-                skipWs();
-                if (p >= end) return std::nullopt;
-                if (*p == '{' || *p == '[') return std::nullopt;
-                auto v = parseScalarToken();
-                if (!v.has_value()) return std::nullopt;
-                out.push_back(*v);
-                skipWs();
-                if (consume(']')) return out;
-                if (!consume(',')) return std::nullopt;
-            }
-        }
-
-        bool skipValue() {
-            skipWs();
-            if (p >= end) return false;
-            if (*p == '{') return skipObject();
-            if (*p == '[') return skipArray();
-            return static_cast<bool>(parseScalarToken());
-        }
-
-        bool skipArray() {
-            if (!consume('[')) return false; // LCOV_EXCL_LINE (sole call site guarantees *p == '[')
-            const DepthGuard guard(*this);
-            if (!guard.ok) return false;
-            skipWs();
-            if (consume(']')) return true;
-            while (true) {
-                if (!skipValue()) return false;
-                skipWs();
-                if (consume(']')) return true;
-                if (!consume(',')) return false;
-            }
-        }
-
-        bool skipObject() {
-            if (!consume('{')) return false; // LCOV_EXCL_LINE (sole call site guarantees *p == '{')
-            const DepthGuard guard(*this);
-            if (!guard.ok) return false;
-            skipWs();
-            if (consume('}')) return true;
-            while (true) {
-                if (!parseString().has_value()) return false;
-                if (!consume(':')) return false;
-                if (!skipValue()) return false;
-                skipWs();
-                if (consume('}')) return true;
-                if (!consume(',')) return false;
-            }
-        }
-
-        bool parseObjectFlatten(FlatRaw& out, const std::string& prefix) {
-            if (!consume('{')) return false;
-            const DepthGuard guard(*this);
-            if (!guard.ok) return false;
-            skipWs();
-            if (consume('}')) return true;
-            while (true) {
-                auto key = parseString();
-                if (!key.has_value()) return false;
-                if (!consume(':')) return false;
-                skipWs();
-                const std::string fullKey = prefix.empty() ? *key : (prefix + "." + *key); // LCOV_EXCL_LINE (cold inlined clone of the fullKey ternary; main instantiation fully covered)
-
-                if (p < end && *p == '{') {
-                    if (!parseObjectFlatten(out, fullKey)) return false;
-                } else if (p < end && *p == '[') {
-                    const char* checkpoint = p;
-                    if (auto vec = parseArrayScalarTokens()) {
-                        if (!vec->empty()) out.multi[fullKey] = std::move(*vec);
-                    } else {
-                        p = checkpoint;
-                        // Not a scalar array, skip without failing.
-                        if (!skipArray()) return false;
-                    }
-                } else {
-                    auto val = parseScalarToken();
-                    if (!val.has_value()) return false;
-                    out.scalar[fullKey] = *val;
-                }
-
-                skipWs();
-                if (consume('}')) return true;
-                if (!consume(',')) return false;
-            }
-        }
-    };
-
-    auto parseJsonFlatten = [&](std::istream& in) -> std::optional<FlatRaw> {
-        std::string contents((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-        JsonParse jp;
-        jp.p = contents.data();
-        jp.end = contents.data() + contents.size();
-        jp.skipWs();
-        FlatRaw out;
-        if (!jp.parseObjectFlatten(out, /*prefix=*/"")) return std::nullopt;
-        jp.skipWs();
-        if (jp.p != jp.end) return std::nullopt;
-        return out;
-    };
-
-    auto parseTomlFlatten = [&](std::istream& in) -> std::optional<FlatRaw> {
-        FlatRaw out;
-        std::string tablePrefix;
-
-        auto stripComment = [](std::string_view s) -> std::string_view {
-            bool inDouble = false;
-            bool inSingle = false;
-            for (std::size_t i = 0; i < s.size(); ++i) {
-                const char ch = s[i];
-                if (!inSingle && ch == '"' && (i == 0 || s[i - 1] != '\\')) inDouble = !inDouble;
-                else if (!inDouble && ch == '\'') inSingle = !inSingle;
-                else if (!inDouble && !inSingle && ch == '#') return s.substr(0, i);
-            }
-            return s;
-        };
-
-        auto unquote = [](std::string_view v) -> std::string {
-            if (v.size() >= 2 && v.front() == '"' && v.back() == '"') {
-                std::string out; // LCOV_EXCL_LINE (default-constructed string always takes the SSO edge)
-                out.reserve(v.size() - 2);
-                for (std::size_t i = 1; i + 1 < v.size(); ++i) {
-                    char ch = v[i];
-                    if (ch == '\\' && i + 2 < v.size()) {
-                        const char n = v[++i];
-                        switch (n) {
-                        case 'n': out.push_back('\n'); break;
-                        case 't': out.push_back('\t'); break;
-                        case 'r': out.push_back('\r'); break;
-                        case '\\': out.push_back('\\'); break;
-                        case '"': out.push_back('"'); break;
-                        default: out.push_back(n); break;
-                        }
-                        continue;
-                    }
-                    out.push_back(ch);
-                }
-                return out; // LCOV_EXCL_LINE (NRVO fallback edge of 'return out', compiler-generated)
-            } // LCOV_EXCL_LINE (block only reachable via the returns above)
-            if (v.size() >= 2 && v.front() == '\'' && v.back() == '\'') { // LCOV_EXCL_LINE (cold inlined clone; main instantiation covers both quote kinds)
-                return std::string(v.substr(1, v.size() - 2));
-            }
-            return std::string(v);
-        }; // LCOV_EXCL_LINE (closure cleanup block)
-
-        auto parseTomlArray = [&](std::string_view v) -> std::optional<std::vector<std::string>> {
-            v = trim(v);
-            if (v.size() < 2 || v.front() != '[' || v.back() != ']') return std::nullopt; // LCOV_EXCL_LINE (cold inlined clone of the array-shape guard; main instantiation covered)
-            v = trim(v.substr(1, v.size() - 2));
-            std::vector<std::string> out;
-            std::size_t i = 0;
-            while (i < v.size()) {
-                while (i < v.size() && std::isspace(static_cast<unsigned char>(v[i]))) ++i; // LCOV_EXCL_LINE (cold inlined clone of the whitespace-skip loop)
-                if (i >= v.size()) break; // LCOV_EXCL_LINE (cold inlined clone of the post-item break check)
-                std::size_t start = i;
-                bool inDouble = false;
-                bool inSingle = false;
-                while (i < v.size()) {
-                    const char ch = v[i];
-                    if (!inSingle && ch == '"' && (i == start || v[i - 1] != '\\')) inDouble = !inDouble;
-                    else if (!inDouble && ch == '\'') inSingle = !inSingle;
-                    else if (!inDouble && !inSingle && ch == ',') break;
-                    ++i;
-                }
-                auto item = trim(v.substr(start, i - start));
-                if (!item.empty()) out.push_back(unquote(item));
-                if (i < v.size() && v[i] == ',') ++i; // LCOV_EXCL_LINE (cold inlined clone of the comma-advance check)
-            }
-            return out;
-        };
-
-        std::string line;
-        while (std::getline(in, line)) {
-            const auto t = trim(line);
-            if (t.empty()) continue;
-            if (t.front() == '#') continue;
-
-            if (t.front() == '[') {
-                // Table header: [a.b]
-                const auto close = t.find(']');
-                if (close == std::string_view::npos) return std::nullopt;
-                const auto inner = trim(t.substr(1, close - 1));
-                if (inner.empty()) {
-                    tablePrefix.clear();
-                } else {
-                    tablePrefix = std::string(inner);
-                }
-                continue;
-            }
-
-            const auto eq = t.find('=');
-            if (eq == std::string_view::npos) continue;
-            const auto key = trim(t.substr(0, eq));
-            auto valueView = trim(t.substr(eq + 1));
-            valueView = trim(stripComment(valueView));
-
-            if (key.empty()) continue;
-            if (valueView.empty()) {
-                // Preserve empty value as explicit override.
-            }
-
-            const std::string fullKey = tablePrefix.empty() ? std::string(key) : (tablePrefix + "." + std::string(key)); // LCOV_EXCL_LINE (cold inlined clone of the tablePrefix ternary and its string temporaries)
-            if (!valueView.empty() && valueView.front() == '[') {
-                if (auto vec = parseTomlArray(valueView)) {
-                    if (!vec->empty()) out.multi[fullKey] = std::move(*vec);
-                    continue;
-                }
-                // Unknown array type; skip.
-                continue;
-            }
-            if (!valueView.empty() && valueView.front() == '{') {
-                // Inline table not supported.
-                continue;
-            }
-            out.scalar[fullKey] = unquote(valueView);
-        }
-
-        return out;
-    };
-
-    auto parseIniFlatten = [&](std::istream& in) -> std::optional<FlatRaw> {
-        FlatRaw out;
-        std::string sectionPrefix;
-
-        std::string line;
-        while (std::getline(in, line)) {
-            const auto t = trim(line);
-            if (t.empty()) continue;
-            if (t.front() == '#' || t.front() == ';') continue;
-
-            if (t.front() == '[') {
-                const auto close = t.find(']');
-                if (close == std::string_view::npos) continue;
-                const auto inner = trim(t.substr(1, close - 1));
-                sectionPrefix = std::string(inner);
-                continue;
-            }
-
-            auto eq = t.find('=');
-            if (eq == std::string_view::npos) eq = t.find(':');
-            if (eq == std::string_view::npos) continue;
-
-            const auto key = trim(t.substr(0, eq));
-            if (key.empty()) continue;
-
-            auto value = std::string(trim(t.substr(eq + 1)));
-            if (value.size() >= 2 &&
-                ((value.front() == '"' && value.back() == '"') ||
-                 (value.front() == '\'' && value.back() == '\''))) {
-                value = value.substr(1, value.size() - 2);
-            }
-
-            const std::string fullKey =
-                sectionPrefix.empty() ? std::string(key) : (sectionPrefix + "." + std::string(key)); // LCOV_EXCL_LINE (cold inlined clone of the sectionPrefix ternary and its string temporaries)
-            out.scalar[fullKey] = std::move(value);
-        }
-
-        return out;
-    };
-
-    auto parseYamlFlatten = [&](std::istream& in) -> std::optional<FlatRaw> {
-        FlatRaw out;
-
-        struct Frame {
-            std::size_t indent;
-            std::string key;
-        };
-        std::vector<Frame> stack;
-
-        auto stripComment = [](std::string_view s) -> std::string_view {
-            bool inDouble = false;
-            bool inSingle = false;
-            for (std::size_t i = 0; i < s.size(); ++i) {
-                const char ch = s[i];
-                if (!inSingle && ch == '"' && (i == 0 || s[i - 1] != '\\')) inDouble = !inDouble;
-                else if (!inDouble && ch == '\'') inSingle = !inSingle;
-                else if (!inDouble && !inSingle && ch == '#') return s.substr(0, i);
-            }
-            return s;
-        };
-
-        auto unquote = [&](std::string_view v) -> std::string {
-            v = trim(v);
-            if (v.size() >= 2 && ((v.front() == '"' && v.back() == '"') || (v.front() == '\'' && v.back() == '\''))) {
-                return std::string(v.substr(1, v.size() - 2));
-            }
-            return std::string(v);
-        };
-
-        auto fullKeyFromStack = [&](const std::vector<Frame>& frames) -> std::string {
-            std::string fullKey;
-            for (const auto& f : frames) {
-                if (!fullKey.empty()) fullKey.push_back('.');
-                fullKey += f.key;
-            }
-            return fullKey;
-        }; // LCOV_EXCL_LINE (closure cleanup block)
-
-        std::string line;
-        while (std::getline(in, line)) {
-            // Count indentation (spaces only).
-            std::size_t indent = 0;
-            while (indent < line.size() && line[indent] == ' ') ++indent;
-            std::string_view content(line);
-            content = content.substr(indent);
-            content = trim(stripComment(content));
-            if (content.empty()) continue;
-
-            // Adjust nesting stack based on indent.
-            while (!stack.empty() && indent <= stack.back().indent) stack.pop_back();
-
-            // Sequence item: treat as multi-value for current stack path.
-            if (content.rfind("-", 0) == 0) {
-                if (stack.empty()) continue;
-                auto item = trim(content.substr(1));
-                const auto keyPath = fullKeyFromStack(stack);
-                if (!keyPath.empty()) out.multi[keyPath].push_back(unquote(item)); // LCOV_EXCL_LINE (stack frames always carry non-empty keys)
-                continue;
-            }
-
-            const auto colon = content.find(':');
-            if (colon == std::string_view::npos) continue;
-
-            const auto key = trim(content.substr(0, colon));
-            if (key.empty()) continue;
-
-            auto value = trim(content.substr(colon + 1));
-            const bool hasValue = !value.empty();
-
-            std::string fullKey;
-            for (const auto& f : stack) {
-                if (!fullKey.empty()) fullKey.push_back('.'); // LCOV_EXCL_LINE (push_back('.') on an empty string always takes the SSO edge)
-                fullKey += f.key;
-            }
-            if (!fullKey.empty()) fullKey.push_back('.');
-            fullKey += std::string(key);
-
-            if (hasValue) {
-                out.scalar[fullKey] = unquote(value);
-            } else {
-                // New mapping section.
-                stack.push_back(Frame{indent, std::string(key)});
-            }
-        }
-
-        return out;
-    };
 
     // Determine config file path (flag takes precedence over fixed path).
     std::string configFlag;
@@ -4206,33 +3511,33 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
         std::ifstream in(configPath);
         if (!in.is_open()) return std::string("failed to open config file: ") + configPath;
 
-        FlatRaw raw;
-        if (endsWith(configPath, ".json")) {
-            if (auto parsed = parseJsonFlatten(in)) {
+        detail::ConfigRaw raw;
+        if (detail::endsWith(configPath, ".json")) {
+            if (auto parsed = detail::parseJsonFlatten(in)) {
                 raw = std::move(*parsed);
             } else {
                 return std::string("failed to parse json config file: ") + configPath;
             }
-        } else if (endsWith(configPath, ".yaml") || endsWith(configPath, ".yml")) {
-            if (auto parsed = parseYamlFlatten(in)) { // LCOV_EXCL_LINE (parseYamlFlatten never returns nullopt; false edge is dead)
+        } else if (detail::endsWith(configPath, ".yaml") || detail::endsWith(configPath, ".yml")) {
+            if (auto parsed = detail::parseYamlFlatten(in)) { // LCOV_EXCL_LINE (parseYamlFlatten never returns nullopt; false edge is dead)
                 raw = std::move(*parsed);
             } else {
                 return std::string("failed to parse yaml config file: ") + configPath; // LCOV_EXCL_LINE (parseYamlFlatten never returns nullopt)
             } // LCOV_EXCL_LINE (dead else-block closing brace)
-        } else if (endsWith(configPath, ".toml")) {
-            if (auto parsed = parseTomlFlatten(in)) {
+        } else if (detail::endsWith(configPath, ".toml")) {
+            if (auto parsed = detail::parseTomlFlatten(in)) {
                 raw = std::move(*parsed);
             } else {
                 return std::string("failed to parse toml config file: ") + configPath;
             }
-        } else if (endsWith(configPath, ".ini") || endsWith(configPath, ".cfg")) {
-            if (auto parsed = parseIniFlatten(in)) { // LCOV_EXCL_LINE (parseIniFlatten never returns nullopt; false edge is dead)
+        } else if (detail::endsWith(configPath, ".ini") || detail::endsWith(configPath, ".cfg")) {
+            if (auto parsed = detail::parseIniFlatten(in)) { // LCOV_EXCL_LINE (parseIniFlatten never returns nullopt; false edge is dead)
                 raw = std::move(*parsed);
             } else {
                 return std::string("failed to parse ini config file: ") + configPath; // LCOV_EXCL_LINE (parseIniFlatten never returns nullopt)
             } // LCOV_EXCL_LINE (dead else-block closing brace)
-        } else if (endsWith(configPath, ".env") || configPath.find('.') == std::string::npos) {
-            raw.scalar = parseEnvLike(in);
+        } else if (detail::endsWith(configPath, ".env") || configPath.find('.') == std::string::npos) {
+            raw.scalar = detail::parseEnvLike(in);
         } else {
             return std::string("unsupported config file format: ") + configPath;
         }
@@ -4290,7 +3595,7 @@ inline std::optional<std::string> Command::applyExternalSources(Parser& parser) 
 
 inline void Command::printCompletionFish(std::ostream& os) const {
     const auto rootName = name_;
-    const auto fishRootName = escapeFishWord(rootName);
+    const auto fishRootName = detail::escapeFishWord(rootName);
     os << "# fish completion for " << rootName << "\n";
 
     const auto cfg = resolvedCompletionConfig();
@@ -4300,7 +3605,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
 
     if (wantCompleteDesc || wantCompleteNoDesc) {
         const auto completeCmd = wantCompleteDesc ? cfg.completeCommandName : cfg.completeNoDescCommandName;
-        const auto fnName = "__clasp_" + sanitizeIdentifier(rootName) + "_fish_complete";
+        const auto fnName = "__clasp_" + detail::sanitizeIdentifier(rootName) + "_fish_complete";
 
         os << "function " << fnName << "\n";
         os << "  set -l words (commandline -opc)\n";
@@ -4316,7 +3621,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         os << "    set -a words $eqflag\n";
         os << "    set prefix \"$eqflag=\"\n";
         os << "  end\n";
-        os << "  set -l out (" << fishRootName << " " << escapeFishWord(completeCmd) << " $words $cur 2>/dev/null)\n";
+        os << "  set -l out (" << fishRootName << " " << detail::escapeFishWord(completeCmd) << " $words $cur 2>/dev/null)\n";
         os << "  set -l directive 0\n";
         os << "  set -l lines\n";
         os << "  for line in $out\n";
@@ -4414,7 +3719,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
     // The `-a` argument list is re-evaluated as fish code at completion time,
     // so it is emitted as a single-quoted literal containing fully-quoted
     // words; a bare apostrophe would otherwise break the parse.
-    os << "complete -c " << fishRootName << " -f -a " << escapeFishSingleQuoted(joinFishWords(rootSubs)) << "\n";
+    os << "complete -c " << fishRootName << " -f -a " << detail::escapeFishSingleQuoted(detail::joinFishWords(rootSubs)) << "\n";
 
     // Global flags: include effective flags on root + built-ins.
     const auto rootFlags = effectiveFlags();
@@ -4422,7 +3727,7 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         os << "complete -c " << fishRootName;
         if (!f.longName().empty()) os << " -l " << f.longName().substr(2);
         if (!f.shortName().empty()) os << " -s " << f.shortName().substr(1);
-        if (!f.description().empty()) os << " -d \"" << escapeFishDoubleQuoted(f.description()) << "\"";
+        if (!f.description().empty()) os << " -d \"" << detail::escapeFishDoubleQuoted(f.description()) << "\"";
         os << "\n";
     }
     os << "complete -c " << fishRootName << " -l help -s h -d \"Help for this command\"\n";
@@ -4434,10 +3739,10 @@ inline void Command::printCompletionFish(std::ostream& os) const {
         const auto subFlags = sub->effectiveFlags();
         for (const auto& f : subFlags) {
             if (f.longName().empty() && f.shortName().empty()) continue;
-            os << "complete -c " << fishRootName << " -n " << escapeFishSingleQuoted("__fish_seen_subcommand_from " + joinFishConditionWords(inv));
+            os << "complete -c " << fishRootName << " -n " << detail::escapeFishSingleQuoted("__fish_seen_subcommand_from " + detail::joinFishConditionWords(inv));
             if (!f.longName().empty()) os << " -l " << f.longName().substr(2);
             if (!f.shortName().empty()) os << " -s " << f.shortName().substr(1);
-            if (!f.description().empty()) os << " -d \"" << escapeFishDoubleQuoted(f.description()) << "\"";
+            if (!f.description().empty()) os << " -d \"" << detail::escapeFishDoubleQuoted(f.description()) << "\"";
             os << "\n";
         }
     }
@@ -4445,13 +3750,13 @@ inline void Command::printCompletionFish(std::ostream& os) const {
 
 inline void Command::printCompletionPowerShell(std::ostream& os) const {
     const auto rootName = name_;
-    const auto psRootName = escapePowerShellSingleQuoted(rootName);
+    const auto psRootName = detail::escapePowerShellSingleQuoted(rootName);
     const auto cfg = resolvedCompletionConfig();
     const bool dynamicOk = cfg.addCompleteCommands && !cfg.completeNoDescCommandName.empty();
 
     if (dynamicOk) {
         os << "# PowerShell completion for " << rootName << "\n";
-        os << "$__claspCompleteCmd = " << joinQuotedPowerShell({cfg.completeNoDescCommandName}) << "\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
+        os << "$__claspCompleteCmd = " << detail::joinQuotedPowerShell({cfg.completeNoDescCommandName}) << "\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
 
         os << "Register-ArgumentCompleter -CommandName " << psRootName << " -ScriptBlock {\n";
         os << "  param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)\n";
@@ -4531,8 +3836,8 @@ inline void Command::printCompletionPowerShell(std::ostream& os) const {
     os << "$__claspSubs = @{}\n";
     os << "$__claspFlags = @{}\n";
     for (const auto& e : flat) {
-        os << "$__claspSubs[" << joinQuotedPowerShell({e.path}) << "] = @(" << joinQuotedPowerShell(e.subcommands) << ")\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
-        os << "$__claspFlags[" << joinQuotedPowerShell({e.path}) << "] = @(" << joinQuotedPowerShell(e.flags) << ")\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
+        os << "$__claspSubs[" << detail::joinQuotedPowerShell({e.path}) << "] = @(" << detail::joinQuotedPowerShell(e.subcommands) << ")\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
+        os << "$__claspFlags[" << detail::joinQuotedPowerShell({e.path}) << "] = @(" << detail::joinQuotedPowerShell(e.flags) << ")\n"; // LCOV_EXCL_LINE (cleanup edges of the inlined joinQuotedPowerShell call)
     }
 
     os << "Register-ArgumentCompleter -CommandName " << psRootName << " -ScriptBlock {\n";
