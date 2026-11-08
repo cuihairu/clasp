@@ -26,7 +26,7 @@ export default defineConfig({
             {
               text: 'Guide',
               items: [
-                { text: 'Getting Started', link: '/guide/' },
+                { text: 'Getting Started', link: '/guide/getting-started' },
                 { text: 'Commands', link: '/guide/commands' },
                 { text: 'Flags', link: '/guide/flags' },
                 { text: 'Completion', link: '/guide/completion' },
@@ -78,7 +78,7 @@ export default defineConfig({
             {
               text: '指南',
               items: [
-                { text: '快速开始', link: '/zh/guide/' },
+                { text: '快速开始', link: '/zh/guide/getting-started' },
                 { text: '命令', link: '/zh/guide/commands' },
                 { text: '标志位', link: '/zh/guide/flags' },
                 { text: '补全', link: '/zh/guide/completion' },
