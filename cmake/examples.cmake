@@ -384,7 +384,11 @@ target_link_libraries(command_render_coverage_test PRIVATE clasp)
 
 # --- Branch coverage: remaining parser.hpp / value_parse.hpp branches ---
 
-add_executable(branch_parser_test tests/branch_parser.cpp)
+add_executable(branch_parser_test
+    tests/branch_parser.cpp
+    tests/branch_parse_paths.cpp
+    tests/branch_value_types.cpp
+    tests/branch_access_lookup.cpp)
 target_link_libraries(branch_parser_test PRIVATE clasp)
 
 
