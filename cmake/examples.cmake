@@ -368,7 +368,11 @@ target_link_libraries(config_parse_coverage_test PRIVATE clasp)
 
 # --- Branch coverage: completion internals ---
 
-add_executable(completion_coverage_test tests/completion_coverage.cpp)
+add_executable(completion_coverage_test
+    tests/completion_coverage.cpp
+    tests/completion_protocol.cpp
+    tests/completion_scripts.cpp
+    tests/completion_e2e.cpp)
 target_link_libraries(completion_coverage_test PRIVATE clasp)
 
 
