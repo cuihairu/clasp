@@ -100,6 +100,10 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 - [x] 审核发现：死代码 —— `joinWords`（command.hpp:3330）在本次改动后无调用点，`escapeFishSingleQuoted`（command.hpp:3319）定义后从未被调用，建议删除或接入 Fixed in commit 4339438 (joinWords removed; escapeFishSingleQuoted now used by fish -n condition) · include/clasp/command.hpp:2659,3362,4421 · 569/569 CTest green
 - [x] 审核发现：测试缺口 —— 新增补全转义测试仅做子串存在断言（tests/completion_coverage.cpp:907-975），未实际执行 bash/zsh/fish/powershell，故 zsh `#compdef "..."` 的引号解析、fish `-n` 运行时行为均未被端到端验证 Fixed in commit 38187d0 · tests/completion_coverage.cpp:1005-1093 (testShellEscapingEndToEnd) · 569/569 CTest green
 
+## 审核修复批 2026-11-12（巡检单 2026-10-20 · /home/cui/audit-batch5-6repos-2026-11-11.md clasp 节）
+
+- [x] 审核修复 P0-1：内置 version 拦截不可关闭 —— `resolveForExecution` 对 `version` token 无条件拦截（用户注册的 version 子命令被吞），且 root 未设 version 时静默退出码 0 无任何报错。修复：拦截仅当 `!findSubcommand("version") && !resolvedVersion().empty()`（用户子命令/别名优先）；`run()` 位置参数拦截同样加两重守卫，未设 version 时 `version` 落回普通命令解析（非 runnable root 报 unknown command 退出 1） Fixed in commit 9f63a1c · include/clasp/command.hpp:1433-1437,3141-3147 · tests/command_gaps.cpp:406-453（red-first 验证：移除修复后 user/aliased version action output、builtin version not printed、version without version set rejected/errors 五断言 fail）· 569/569 CTest green
+
 ## 审核发现（c48e9cff..HEAD 复核 · 已构建并运行 569/569 CTest 全绿 · 使用真实 bash/zsh/fish 实测）
 
 - [x] 审核发现：fish 静态补全 `-n "__fish_seen_subcommand_from <sub>"` 条件在子命令名含单引号 `'` 时解析失败 —— `escapeFishDoubleQuoted` 不转义 `'`（command.hpp:4415），但 fish 会把 `-n` 字符串再作为 fish 代码求值（实测报 `Unexpected end of string, quotes are not balanced`），导致含撇号子命令（如 `don't`）的局部 flag 补全整体失效；这是本次新增 fish 转义路径未覆盖的缺口，比既有 `$` 运行时展开发现影响面更广 Fixed in commit 4339438 · include/clasp/command.hpp:3362,4421 (escapeFishSingleQuoted wraps -n condition) · tests/completion_coverage.cpp:1014-1015 · 569/569 CTest green
