@@ -403,6 +403,67 @@ void testHelpAndVersionAfterDoubleDash() {
     }
 }
 
+void testVersionCommandPrecedence() {
+    {
+        // A user-registered `version` subcommand wins over the built-in one
+        // even when the root has a version set.
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.version("9.9.9");
+        clasp::Command sub("version", "Custom version");
+        sub.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
+            g_capture << "custom version action";
+            return 0;
+        });
+        root.addCommand(std::move(sub));
+
+        g_capture.str("");
+        expect(runArgs(root, {"version"}) == 0, "user version subcommand runs");
+        expect(g_capture.str() == "custom version action", "user version action output");
+        expect(out.str().find("9.9.9") == std::string::npos, "builtin version not printed");
+    }
+    {
+        // A subcommand aliased as `version` also wins over the built-in.
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.version("9.9.9");
+        clasp::Command sub("print-version", "Custom version");
+        sub.addAlias("version");
+        sub.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
+            g_capture << "alias version action";
+            return 0;
+        });
+        root.addCommand(std::move(sub));
+
+        g_capture.str("");
+        expect(runArgs(root, {"version"}) == 0, "aliased version subcommand runs");
+        expect(g_capture.str() == "alias version action", "aliased version action output");
+    }
+    {
+        // Without a version set, `version` is not a built-in command: a
+        // non-runnable root must reject it instead of silently exiting 0.
+        std::ostringstream out, err;
+        clasp::Command root("app", "No version");
+        root.setOut(out);
+        root.setErr(err);
+        clasp::Command sub("sub", "Sub");
+        sub.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        root.addCommand(std::move(sub));
+
+        expect(runArgs(root, {"version"}) == 1, "version without version set rejected");
+        expect(err.str().find("unknown command") != std::string::npos,
+               "version without version set errors");
+    }
+    {
+        // With a version set and no user override, the built-in remains.
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.version("9.9.9");
+        expect(runArgs(root, {"version"}) == 0, "builtin version still works");
+        expect(out.str().find("9.9.9") != std::string::npos, "builtin version prints version");
+    }
+}
+
 void testExecHelpAliasesAndUnknown() {
     std::ostringstream out, err;
     auto root = makeBasicColorRoot(out, err);
@@ -747,6 +808,9 @@ int main() {
 
     std::cout << "\n=== Testing help/version after -- ===" << std::endl;
     testHelpAndVersionAfterDoubleDash();
+
+    std::cout << "\n=== Testing version command precedence ===" << std::endl;
+    testVersionCommandPrecedence();
 
     std::cout << "\n=== Testing execHelp aliases and unknown ===" << std::endl;
     testExecHelpAliasesAndUnknown();

@@ -1430,7 +1430,8 @@ public:
             std::vector<std::string> path(positionals.begin() + 1, positionals.end());
             return execHelp(*this, path);
         }
-        if (resolution.cmd == this && !positionals.empty() && positionals.front() == "version") {
+        if (resolution.cmd == this && !positionals.empty() && positionals.front() == "version" &&
+            !findSubcommand("version") && !resolvedVersion().empty()) {
             const auto v = buildVersionText();
             if (!v.empty()) out() << v << "\n";
             return 0;
@@ -3137,7 +3138,12 @@ private:
                 }
                 return r;
             }
-            if (token == "version" && r.cmd == this) {
+            // Cobra-like: a user-registered `version` subcommand wins over the
+            // built-in request, and the built-in only exists when a version is
+            // actually set - without one the token must fall through to normal
+            // command resolution instead of silently exiting 0.
+            if (token == "version" && r.cmd == this && !r.cmd->findSubcommand("version") &&
+                !resolvedVersion().empty()) {
                 r.versionRequested = true;
                 return r;
             }
