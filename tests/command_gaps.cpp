@@ -668,6 +668,46 @@ void testFlagMutationOnUnknownFlag() {
     }
 }
 
+void testEnableColorIdempotent() {
+    std::ostringstream out, err;
+    clasp::Command root("app", "Color");
+    root.setOut(out);
+    root.setErr(err);
+    root.enableColor();
+    root.enableColor(); // second call must not append a second copy of the flags
+    root.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+
+    expect(runArgs(root, {"--help"}) == 0, "double enableColor: help runs");
+    const auto help = out.str();
+    const auto countOf = [&help](const std::string& needle) {
+        std::size_t n = 0;
+        for (auto pos = help.find(needle); pos != std::string::npos; pos = help.find(needle, pos + needle.size())) ++n;
+        return n;
+    };
+    expect(countOf("--color string") == 1, "double enableColor: --color listed once");
+    expect(countOf("--color-theme string") == 1, "double enableColor: --color-theme listed once");
+
+    // The flags stay functional after the repeated call.
+    out.str("");
+    err.str("");
+    expect(runArgs(root, {"--color", "bogus"}) == 1, "double enableColor: color flag still parsed");
+    expect(err.str().find("invalid value for --color: bogus") != std::string::npos,
+           "double enableColor: color flag validation intact");
+
+    // Re-enabling with a different default keeps the flags single.
+    out.str("");
+    err.str("");
+    root.enableColor(clasp::ColorMode::Always);
+    expect(runArgs(root, {"--color=never", "--help"}) == 0, "re-enableColor: help runs");
+    const auto help2 = out.str();
+    const auto countOf2 = [&help2](const std::string& needle) {
+        std::size_t n = 0;
+        for (auto pos = help2.find(needle); pos != std::string::npos; pos = help2.find(needle, pos + needle.size())) ++n;
+        return n;
+    };
+    expect(countOf2("--color string") == 1, "re-enableColor: --color still listed once");
+}
+
 void testContextAccessorsWithoutContext() {
     clasp::Command root("app", "No context");
     expect(!root.hasContext(), "hasContext false without context");
@@ -1150,6 +1190,9 @@ int main() {
 
     std::cout << "\n=== Testing flag mutation on unknown flag ===" << std::endl;
     testFlagMutationOnUnknownFlag();
+
+    std::cout << "\n=== Testing enableColor idempotence ===" << std::endl;
+    testEnableColorIdempotent();
 
     std::cout << "\n=== Testing context accessors without context ===" << std::endl;
     testContextAccessorsWithoutContext();

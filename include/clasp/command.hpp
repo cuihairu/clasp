@@ -251,13 +251,19 @@ public:
                          ColorThemeName defaultTheme = ColorThemeName::Vscode,
                          bool addFlags = true) {
         colorEnabled_ = true;
-        colorFlagsInstalled_ = addFlags;
         colorDefaultMode_ = defaultMode;
         colorDefaultTheme_ = defaultTheme;
         colorRuntimeMode_ = defaultMode;
         colorRuntimeTheme_ = defaultTheme;
 
-        if (addFlags) {
+        // Idempotent: a repeated call (or a user-registered --color flag)
+        // must not append a second copy of the color flags.
+        const bool alreadyInstalled =
+            colorFlagsInstalled_ ||
+            findFlagMutable(persistentFlags_, "--color") != nullptr ||
+            findFlagMutable(persistentFlags_, "--color-theme") != nullptr;
+        colorFlagsInstalled_ = addFlags;
+        if (addFlags && !alreadyInstalled) {
             withPersistentFlag("--color",
                                "",
                                "color",
