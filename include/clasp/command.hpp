@@ -1895,6 +1895,18 @@ private:
         return key;
     }
 
+    // A declared flag matches a CLI token if the token matches the stored name
+    // directly or after the normalize function is applied to either side
+    // (pflag semantics: flags are normalized on definition, so both the raw
+    // and normalized spellings are accepted).
+    bool flagMatchesNormalized(const Flag& f, const std::string& rawKey) const {
+        const auto normalized = normalizeFlagKeyForLookup(rawKey);
+        if (f.longName() == rawKey || f.shortName() == rawKey) return true;
+        if (f.longName() == normalized || f.shortName() == normalized) return true;
+        return normalizeFlagKeyForLookup(f.longName()) == normalized ||
+               normalizeFlagKeyForLookup(f.shortName()) == normalized;
+    }
+
     std::size_t resolvedSuggestionsMinimumDistance() const {
         for (auto* c = this; c; c = c->parent_) {
             if (c->suggestionsMinimumDistanceOverride_.has_value()) return *c->suggestionsMinimumDistanceOverride_;
@@ -2670,10 +2682,9 @@ private:
         };
 
         auto flagInfoLocal = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
-            const auto normalized = at->normalizeFlagKeyForLookup(key);
             const auto flags = at->effectiveFlags();
             for (const auto& f : flags) {
-                if (f.longName() == normalized || f.shortName() == normalized) {
+                if (flagMatchesNormalized(f, key)) {
                     bool isBool = std::holds_alternative<bool>(f.defaultValue());
                     const auto it = f.annotations().find("count");
                     const bool isCount =
@@ -2687,7 +2698,6 @@ private:
 
         auto flagInfoSubtree = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
             if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true, false};
-            const auto normalized = at->normalizeFlagKeyForLookup(key);
 
             bool found = false;
             bool anyNonBool = false;
@@ -2695,7 +2705,7 @@ private:
             std::function<void(const Command*)> visit = [&](const Command* c) { // LCOV_EXCL_LINE (closure cleanup block)
                 const auto flags = c->effectiveFlags();
                 for (const auto& f : flags) {
-                    if (f.longName() == normalized || f.shortName() == normalized) {
+                    if (flagMatchesNormalized(f, key)) {
                         found = true;
                         bool isBool = std::holds_alternative<bool>(f.defaultValue());
                         const auto it = f.annotations().find("count");
@@ -3038,10 +3048,9 @@ private:
         };
 
         auto flagInfoLocal = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
-            const auto normalized = at->normalizeFlagKeyForLookup(key);
             const auto flags = at->effectiveFlags();
             for (const auto& f : flags) {
-                if (f.longName() == normalized || f.shortName() == normalized) {
+                if (flagMatchesNormalized(f, key)) {
                     bool isBool = std::holds_alternative<bool>(f.defaultValue());
                     const auto it = f.annotations().find("count");
                     const bool isCount =
@@ -3055,7 +3064,6 @@ private:
 
         auto flagInfoSubtree = [&](Command* at, const std::string& key) -> std::optional<FlagInfo> {
             if (key == "--help" || key == "-h" || key == "--version") return FlagInfo{true};
-            const auto normalized = at->normalizeFlagKeyForLookup(key);
 
             bool found = false;
             bool anyNonBool = false;
@@ -3063,7 +3071,7 @@ private:
             std::function<void(const Command*)> visit = [&](const Command* c) { // LCOV_EXCL_LINE (closure cleanup block)
                 const auto flags = c->effectiveFlags();
                 for (const auto& f : flags) {
-                    if (f.longName() == normalized || f.shortName() == normalized) {
+                    if (flagMatchesNormalized(f, key)) {
                         found = true;
                         bool isBool = std::holds_alternative<bool>(f.defaultValue());
                         const auto it = f.annotations().find("count");

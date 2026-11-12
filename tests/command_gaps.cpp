@@ -296,6 +296,88 @@ void testApplyColorFromParserError() {
     expect(err.str().find("CFERR[") != std::string::npos, "flag error func wraps color error");
 }
 
+// A custom normalize function must apply to declared flag names too (pflag
+// normalizes flags on definition), so underscore-declared flags keep their
+// defaults, type validation and annotations reachable when the underscore ->
+// dash normalizer is active - and the resolver skips their values correctly.
+void testNormalizedFlagRegistration() {
+    auto us2dash = [](std::string k) {
+        if (k.rfind("--", 0) != 0) return k;
+        std::replace(k.begin(), k.end(), '_', '-');
+        return k;
+    };
+
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.normalizeFlagKeys(us2dash);
+        root.withPersistentFlag("--message_text", "-m", "message", "Message", std::string("default"));
+        root.withPersistentFlag("--count_num", "", "count", "Count", 3);
+        root.withFlag("--ip_host", "", "ip", "Host", std::string(""));
+        root.markFlagAnnotation("--ip_host", "ip", "true");
+        root.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
+            g_capture << "msg=" << p.getFlag<std::string>("--message_text", "NONE")
+                      << " num=" << p.getFlag<int>("--count_num", -1)
+                      << " ip=" << p.getFlag<std::string>("--ip_host", "NONE") << "\n";
+            return 0;
+        });
+
+        g_capture.str("");
+        expect(runArgs(root, {"--message_text", "hello", "--count_num", "7", "--ip_host", "1.2.3.4"}) == 0,
+               "underscore flags parse with custom normalize");
+        expect(g_capture.str() == "msg=hello num=7 ip=1.2.3.4\n", "normalized flag values reach action");
+
+        g_capture.str("");
+        expect(runArgs(root, {"--message-text", "hi"}) == 0, "dash spelling parses too");
+        expect(g_capture.str().find("msg=hi") == 0, "dash spelling sets value");
+        expect(g_capture.str().find("num=3") != std::string::npos, "declared default preserved under normalize");
+
+        err.str("");
+        expect(runArgs(root, {"--ip_host", "bogus"}) == 1, "normalized annotation flag still type-checks");
+        expect(err.str().find("invalid argument") != std::string::npos, "annotation validation still fires");
+    }
+
+    // The resolver must skip the value of a normalized underscore flag, so a
+    // token that happens to name a subcommand stays a flag value.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.normalizeFlagKeys(us2dash);
+        root.withPersistentFlag("--message_text", "", "message", "Message", std::string(""));
+        root.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
+            g_capture << "root msg=" << p.getFlag<std::string>("--message_text", "NONE") << "\n";
+            return 0;
+        });
+        clasp::Command xsub("x", "X sub");
+        xsub.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
+            g_capture << "x-ran\n";
+            return 0;
+        });
+        root.addCommand(std::move(xsub));
+
+        g_capture.str("");
+        expect(runArgs(root, {"--message_text", "x"}) == 0, "normalized flag consumes subcommand-named value");
+        expect(g_capture.str().find("root msg=x") == 0, "subcommand-named value stays a flag value");
+    }
+
+    // Completion resolution recognizes the underscore-declared flag too.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.enableCompletion();
+        root.normalizeFlagKeys(us2dash);
+        root.withFlag("--message_text", "", "message", "Message", std::string(""));
+        clasp::Command xsub("x", "X sub");
+        xsub.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        root.addCommand(std::move(xsub));
+
+        out.str("");
+        expect(runArgs(root, {"__completeNoDesc", "--message_text", "x", ""}) == 0,
+               "completion skips normalized underscore flag value");
+        expect(out.str().find("help") != std::string::npos, "completion stays at root for underscore flag");
+    }
+}
+
 void testColorFlagCompletion() {
     std::ostringstream out, err;
     auto root = makeBasicColorRoot(out, err);
@@ -848,6 +930,9 @@ int main() {
 
     std::cout << "\n=== Testing color flag completion ===" << std::endl;
     testColorFlagCompletion();
+
+    std::cout << "\n=== Testing normalized flag registration ===" << std::endl;
+    testNormalizedFlagRegistration();
 
     std::cout << "\n=== Testing template unknown keys ===" << std::endl;
     testTemplateUnknownKeys();

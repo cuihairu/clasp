@@ -741,76 +741,90 @@ private:
     }
 
     void registerFlag(const Flag& f) {
+        // pflag semantics: flag names are normalized on definition (via the
+        // same normalize function used at lookup), so a custom normalize keeps
+        // defaults, type kinds and annotation key sets reachable. A throwing
+        // hook falls back to the raw name so the ctor still completes.
+        auto normalized = [&](const std::string& raw) -> std::string {
+            try {
+                return normalizeKey(raw);
+            } catch (...) {
+                return raw;
+            }
+        };
+        std::string name;
         if (!f.longName().empty()) {
-            aliases_[f.longName()] = f.longName();
-            kinds_[f.longName()] = detail::kindFromDefault(f.defaultValue());
-            defaults_[f.longName()] = detail::toString(f.defaultValue());
-            if (f.noOptDefaultValue().has_value()) noOptDefaults_[f.longName()] = *f.noOptDefaultValue();
+            name = normalized(f.longName());
+            aliases_[name] = name;
+            kinds_[name] = detail::kindFromDefault(f.defaultValue());
+            defaults_[name] = detail::toString(f.defaultValue());
+            if (f.noOptDefaultValue().has_value()) noOptDefaults_[name] = *f.noOptDefaultValue();
             const auto it = f.annotations().find("count");
             if (it != f.annotations().end() && (it->second == "true" || it->second == "1" || it->second == "yes")) {
-                countKeys_.insert(f.longName());
+                countKeys_.insert(name);
             }
             const auto bytesIt = f.annotations().find("bytes");
             if (bytesIt != f.annotations().end() && detail::isTruthyAnnotation(bytesIt->second)) {
-                bytesKeys_.insert(f.longName());
+                bytesKeys_.insert(name);
             }
             const auto ipIt = f.annotations().find("ip");
             if (ipIt != f.annotations().end() && detail::isTruthyAnnotation(ipIt->second)) {
-                ipKeys_.insert(f.longName());
+                ipKeys_.insert(name);
             }
             const auto ipMaskIt = f.annotations().find("ipmask");
             if (ipMaskIt != f.annotations().end() && detail::isTruthyAnnotation(ipMaskIt->second)) {
-                ipMaskKeys_.insert(f.longName());
+                ipMaskKeys_.insert(name);
             }
             const auto cidrIt = f.annotations().find("cidr");
             if (cidrIt != f.annotations().end() && detail::isTruthyAnnotation(cidrIt->second)) {
-                cidrKeys_.insert(f.longName());
+                cidrKeys_.insert(name);
             }
             const auto ipNetIt = f.annotations().find("ipnet");
             if (ipNetIt != f.annotations().end() && detail::isTruthyAnnotation(ipNetIt->second)) {
-                ipNetKeys_.insert(f.longName());
+                ipNetKeys_.insert(name);
             }
             const auto urlIt = f.annotations().find("url");
             if (urlIt != f.annotations().end() && detail::isTruthyAnnotation(urlIt->second)) {
-                urlKeys_.insert(f.longName());
+                urlKeys_.insert(name);
             }
             const auto int8It = f.annotations().find("int8");
             if (int8It != f.annotations().end() && detail::isTruthyAnnotation(int8It->second)) {
-                int8Keys_.insert(f.longName());
+                int8Keys_.insert(name);
             }
             const auto int16It = f.annotations().find("int16");
             if (int16It != f.annotations().end() && detail::isTruthyAnnotation(int16It->second)) {
-                int16Keys_.insert(f.longName());
+                int16Keys_.insert(name);
             }
             const auto int32It = f.annotations().find("int32");
             if (int32It != f.annotations().end() && detail::isTruthyAnnotation(int32It->second)) {
-                int32Keys_.insert(f.longName());
+                int32Keys_.insert(name);
             }
             const auto uint8It = f.annotations().find("uint8");
             if (uint8It != f.annotations().end() && detail::isTruthyAnnotation(uint8It->second)) {
-                uint8Keys_.insert(f.longName());
+                uint8Keys_.insert(name);
             }
             const auto uint16It = f.annotations().find("uint16");
             if (uint16It != f.annotations().end() && detail::isTruthyAnnotation(uint16It->second)) {
-                uint16Keys_.insert(f.longName());
+                uint16Keys_.insert(name);
             }
             const auto uintIt = f.annotations().find("uint");
             if (uintIt != f.annotations().end() && detail::isTruthyAnnotation(uintIt->second)) {
-                uintKeys_.insert(f.longName());
+                uintKeys_.insert(name);
             }
             const auto ipSliceIt = f.annotations().find("ipslice");
             if (ipSliceIt != f.annotations().end() && detail::isTruthyAnnotation(ipSliceIt->second)) {
-                ipSliceKeys_.insert(f.longName());
+                ipSliceKeys_.insert(name);
             }
             const auto bytesBase64It = f.annotations().find("bytesbase64");
             if (bytesBase64It != f.annotations().end() && detail::isTruthyAnnotation(bytesBase64It->second)) {
-                bytesBase64Keys_.insert(f.longName());
+                bytesBase64Keys_.insert(name);
             }
-            knownKeys_.push_back(f.longName());
+            knownKeys_.push_back(name);
         }
         if (!f.shortName().empty() && !f.longName().empty()) {
-            aliases_[f.shortName()] = f.longName();
-            knownKeys_.push_back(f.shortName());
+            const std::string shortName = normalized(f.shortName());
+            aliases_[shortName] = name;
+            knownKeys_.push_back(shortName);
         }
     }
 
