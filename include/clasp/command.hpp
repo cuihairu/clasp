@@ -133,6 +133,7 @@ public:
           mutuallyExclusiveFlagGroups_(std::move(other.mutuallyExclusiveFlagGroups_)),
           oneRequiredFlagGroups_(std::move(other.oneRequiredFlagGroups_)),
           requiredTogetherFlagGroups_(std::move(other.requiredTogetherFlagGroups_)),
+          unmatchedMarkErrors_(std::move(other.unmatchedMarkErrors_)),
           validArgs_(std::move(other.validArgs_)),
           validArgsFunction_(std::move(other.validArgsFunction_)),
           flagCompletionFuncs_(std::move(other.flagCompletionFuncs_)),
@@ -209,6 +210,7 @@ public:
         mutuallyExclusiveFlagGroups_ = std::move(other.mutuallyExclusiveFlagGroups_);
         oneRequiredFlagGroups_ = std::move(other.oneRequiredFlagGroups_);
         requiredTogetherFlagGroups_ = std::move(other.requiredTogetherFlagGroups_);
+        unmatchedMarkErrors_ = std::move(other.unmatchedMarkErrors_);
         validArgs_ = std::move(other.validArgs_);
         validArgsFunction_ = std::move(other.validArgsFunction_);
         flagCompletionFuncs_ = std::move(other.flagCompletionFuncs_);
@@ -966,39 +968,62 @@ public:
         return *this;
     }
 
+    // Registration-time check: a mark* call whose flag is missing is recorded
+    // and reported by run(), instead of silently doing nothing.
+    void recordUnmatchedMark(const char* label, const std::string& name) {
+        unmatchedMarkErrors_.push_back(std::string(label) + ": unknown flag \"" + name + "\"");
+    }
+
+    bool flagExistsLocallyOrPersistent(const std::string& normalized) const {
+        const auto found = [&normalized](const std::vector<Flag>& flags) {
+            for (const auto& f : flags) {
+                if (f.longName() == normalized) return true;
+            }
+            return false;
+        };
+        return found(flags_) || found(persistentFlags_);
+    }
+
     Command& markFlagRequired(const std::string& name) {
         if (auto* f = findFlagMutable(flags_, normalizeFlagName(name))) f->setRequired(true);
+        else recordUnmatchedMark("markFlagRequired", name);
         return *this;
     }
 
     Command& markPersistentFlagRequired(const std::string& name) {
         if (auto* f = findFlagMutable(persistentFlags_, normalizeFlagName(name))) f->setRequired(true);
+        else recordUnmatchedMark("markPersistentFlagRequired", name);
         return *this;
     }
 
     Command& markFlagHidden(const std::string& name) {
         if (auto* f = findFlagMutable(flags_, normalizeFlagName(name))) f->setHidden(true);
+        else recordUnmatchedMark("markFlagHidden", name);
         return *this;
     }
 
     Command& markPersistentFlagHidden(const std::string& name) {
         if (auto* f = findFlagMutable(persistentFlags_, normalizeFlagName(name))) f->setHidden(true);
+        else recordUnmatchedMark("markPersistentFlagHidden", name);
         return *this;
     }
 
     Command& markFlagDeprecated(const std::string& name, std::string msg) {
         if (auto* f = findFlagMutable(flags_, normalizeFlagName(name))) f->setDeprecated(std::move(msg));
+        else recordUnmatchedMark("markFlagDeprecated", name);
         return *this;
     }
 
     Command& markFlagAnnotation(const std::string& name, std::string key, std::string value) {
         if (auto* f = findFlagMutable(flags_, normalizeFlagName(name))) f->setAnnotation(std::move(key), std::move(value));
+        else recordUnmatchedMark("markFlagAnnotation", name);
         return *this;
     }
 
     // Cobra-like: MarkFlagFilename. Uses completion directives so shells can complete matching files.
     // `extensions` should be a list like {"yaml","yml"} (leading dots are accepted too).
     Command& markFlagFilename(const std::string& name, std::vector<std::string> extensions) {
+        if (!flagExistsLocallyOrPersistent(normalizeFlagName(name))) recordUnmatchedMark("markFlagFilename", name);
         const auto directive = static_cast<std::uint32_t>(ShellCompDirective::FilterFileExt);
         return registerFlagCompletion(name,
                                       [extensions = std::move(extensions), directive](Command&, // LCOV_EXCL_LINE (inlined vector copy/push_back cleanup edges; the moved capture always has capacity == size)
@@ -1016,6 +1041,7 @@ public:
 
     // Cobra-like: MarkFlagDirname. Uses completion directives so shells can complete directories.
     Command& markFlagDirname(const std::string& name) {
+        if (!flagExistsLocallyOrPersistent(normalizeFlagName(name))) recordUnmatchedMark("markFlagDirname", name);
         const auto directive = static_cast<std::uint32_t>(ShellCompDirective::FilterDirs);
         return registerFlagCompletion(name,
                                       [directive](Command&,
@@ -1027,20 +1053,24 @@ public:
     // Cobra/pflag: NoOptDefVal (allow omitting value for non-bool flags).
     Command& markFlagNoOptDefaultValue(const std::string& name, std::string value) {
         if (auto* f = findFlagMutable(flags_, normalizeFlagName(name))) f->setNoOptDefaultValue(std::move(value));
+        else recordUnmatchedMark("markFlagNoOptDefaultValue", name);
         return *this;
     }
 
     Command& markPersistentFlagDeprecated(const std::string& name, std::string msg) {
         if (auto* f = findFlagMutable(persistentFlags_, normalizeFlagName(name))) f->setDeprecated(std::move(msg));
+        else recordUnmatchedMark("markPersistentFlagDeprecated", name);
         return *this;
     }
 
     Command& markPersistentFlagAnnotation(const std::string& name, std::string key, std::string value) {
         if (auto* f = findFlagMutable(persistentFlags_, normalizeFlagName(name))) f->setAnnotation(std::move(key), std::move(value));
+        else recordUnmatchedMark("markPersistentFlagAnnotation", name);
         return *this;
     }
 
     Command& markPersistentFlagFilename(const std::string& name, std::vector<std::string> extensions) {
+        if (!flagExistsLocallyOrPersistent(normalizeFlagName(name))) recordUnmatchedMark("markPersistentFlagFilename", name);
         const auto directive = static_cast<std::uint32_t>(ShellCompDirective::FilterFileExt);
         return registerFlagCompletion(name,
                                       [extensions = std::move(extensions), directive](Command&, // LCOV_EXCL_LINE (inlined vector copy/push_back cleanup edges; the moved capture always has capacity == size)
@@ -1056,6 +1086,7 @@ public:
         return markPersistentFlagFilename(name, std::vector<std::string>(extensions.begin(), extensions.end()));
     }
     Command& markPersistentFlagDirname(const std::string& name) {
+        if (!flagExistsLocallyOrPersistent(normalizeFlagName(name))) recordUnmatchedMark("markPersistentFlagDirname", name);
         const auto directive = static_cast<std::uint32_t>(ShellCompDirective::FilterDirs);
         return registerFlagCompletion(name,
                                       [directive](Command&,
@@ -1066,6 +1097,7 @@ public:
 
     Command& markPersistentFlagNoOptDefaultValue(const std::string& name, std::string value) {
         if (auto* f = findFlagMutable(persistentFlags_, normalizeFlagName(name))) f->setNoOptDefaultValue(std::move(value));
+        else recordUnmatchedMark("markPersistentFlagNoOptDefaultValue", name);
         return *this;
     }
 
@@ -1375,7 +1407,25 @@ public:
 
     int execute(int argc, char** argv) { return run(argc, argv); }
 
+    // Registration-time mark* errors from this command tree (joined with "; ").
+    std::optional<std::string> collectUnmatchedMarkErrors() const {
+        std::string joined;
+        const std::function<void(const Command*)> visit = [&](const Command* c) {
+            for (const auto& e : c->unmatchedMarkErrors_) {
+                if (!joined.empty()) joined += "; ";
+                joined += e;
+            }
+            for (const auto& sub : c->subcommands_) visit(sub.get());
+        };
+        visit(this);
+        if (joined.empty()) return std::nullopt;
+        return joined;
+    }
+
     int run(int argc, char** argv) {
+        if (auto msg = collectUnmatchedMarkErrors()) {
+            return fail(std::move(*msg), /*showUsage=*/false);
+        }
         auto resolution = resolveForExecution(argc, argv);
         if (auto err = applyColorFromRawArgs(argc, argv)) {
             return resolution.cmd->fail(std::move(*err), /*showUsage=*/true);
@@ -3254,6 +3304,9 @@ private:
     std::vector<std::vector<std::string>> mutuallyExclusiveFlagGroups_;
     std::vector<std::vector<std::string>> oneRequiredFlagGroups_;
     std::vector<std::vector<std::string>> requiredTogetherFlagGroups_;
+    // Registration-time errors: markFlag*/markPersistentFlag* calls whose
+    // flag was not found in the target collection. Reported by run().
+    std::vector<std::string> unmatchedMarkErrors_;
     std::vector<std::string> validArgs_;
     CompletionFunc validArgsFunction_;
     std::unordered_map<std::string, CompletionFunc> flagCompletionFuncs_;

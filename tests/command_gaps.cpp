@@ -616,9 +616,56 @@ void testExecHelpAliasesAndUnknown() {
 
 void testFlagMutationOnUnknownFlag() {
     std::ostringstream out, err;
-    auto root = makeBasicColorRoot(out, err);
-    root.markFlagRequired("--ghost");
-    expect(runArgs(root, {}) == 0, "marking unknown flag required is a no-op");
+    {
+        auto root = makeBasicColorRoot(out, err);
+        root.markFlagRequired("--ghost");
+        root.markFlagFilename("--ghost2", {"txt"});
+        expect(runArgs(root, {}) == 1, "marking unknown flag is reported");
+        expect(err.str().find("markFlagRequired: unknown flag \"--ghost\"") != std::string::npos,
+               "unknown required mark names the flag");
+        expect(err.str().find("markFlagFilename: unknown flag \"--ghost2\"") != std::string::npos,
+               "unknown filename mark names the flag");
+    }
+    {
+        // A mark applied to the wrong collection (local vs persistent) is loud too.
+        std::ostringstream out2, err2;
+        clasp::Command root2("app", "Mismatch");
+        root2.setOut(out2);
+        root2.setErr(err2);
+        root2.withPersistentFlag("--shared", "", "shared", "Shared", std::string("v"));
+        root2.markFlagNoOptDefaultValue("--shared", "auto");
+        root2.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        expect(runArgs(root2, {}) == 1, "mark on mismatched collection is reported");
+        expect(err2.str().find("markFlagNoOptDefaultValue: unknown flag \"--shared\"") != std::string::npos,
+               "mismatched mark names the flag");
+    }
+    {
+        // Marks that match their collection run clean.
+        std::ostringstream out3, err3;
+        clasp::Command root3("app", "Clean");
+        root3.setOut(out3);
+        root3.setErr(err3);
+        root3.withPersistentFlag("--shared", "", "shared", "Shared", std::string("v"));
+        root3.markPersistentFlagNoOptDefaultValue("--shared", "auto");
+        root3.markFlagFilename("--shared", {"txt"});
+        root3.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        expect(runArgs(root3, {}) == 0, "matching marks run clean");
+    }
+    {
+        // Unknown marks on a subcommand are reported by the root run.
+        std::ostringstream out4, err4;
+        clasp::Command root4("app", "Sub");
+        root4.setOut(out4);
+        root4.setErr(err4);
+        clasp::Command sub("sub", "Sub");
+        sub.markFlagHidden("--nope");
+        sub.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        root4.addCommand(std::move(sub));
+        root4.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        expect(runArgs(root4, {}) == 1, "subcommand unknown mark is reported by root");
+        expect(err4.str().find("markFlagHidden: unknown flag \"--nope\"") != std::string::npos,
+               "subcommand mark error message");
+    }
 }
 
 void testContextAccessorsWithoutContext() {
