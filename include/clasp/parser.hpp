@@ -62,6 +62,9 @@ public:
         for (const auto& f : flags) {
             registerFlag(f);
         }
+        // An invalid flag declaration (e.g. a non-base64 bytesBase64 default)
+        // was detected during registration: keep that error, skip parsing.
+        if (!ok_) return;
 
         bool positionalOnly = false;
         for (int i = 1; i < argc; ++i) {
@@ -525,10 +528,14 @@ public:
     std::vector<std::string> getIPSlice(const std::string& flag, char sep = ',') const { return getFlagValuesSplit(flag, sep); }
 
     // pflag bytesBase64 parity: decoded bytes of the stored (canonical) base64 value.
+    // The stored value is validated at parse/registration time, so a decode
+    // failure here means an unchecked injection (setExternalValues without the
+    // Checked variant); clear any partially-decoded bytes rather than returning
+    // them as if they were the full value.
     std::vector<unsigned char> getBytesBase64(const std::string& flag) const {
         const auto raw = getFlag<std::string>(flag, std::string());
         std::vector<unsigned char> out;
-        detail::tryDecodeBase64(raw, out);
+        if (!detail::tryDecodeBase64(raw, out)) out.clear();
         return out;
     }
 
@@ -818,6 +825,15 @@ private:
             const auto bytesBase64It = f.annotations().find("bytesbase64");
             if (bytesBase64It != f.annotations().end() && detail::isTruthyAnnotation(bytesBase64It->second)) {
                 bytesBase64Keys_.insert(name);
+                // A bytesBase64 default must be valid base64: pflag's default is
+                // already-decoded bytes, so an invalid string is a declaration
+                // error. Reject it loudly instead of letting getBytesBase64
+                // silently yield empty/partial bytes at getter time.
+                std::vector<unsigned char> probe;
+                if (!detail::tryDecodeBase64(defaults_[name], probe)) {
+                    ok_ = false;
+                    error_ = "invalid argument \"" + defaults_[name] + "\" for \"" + name + "\"";
+                }
             }
             knownKeys_.push_back(name);
         }

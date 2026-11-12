@@ -378,6 +378,56 @@ void testNormalizedFlagRegistration() {
     }
 }
 
+// An invalid bytesBase64 default is a declaration error surfaced at parse time
+// (not silently treated as empty bytes), and getBytesBase64 never returns
+// partially-decoded garbage when the stored value is not valid base64.
+void testBytesBase64DefaultValidation() {
+    // Valid default decodes to its bytes when the flag is untouched.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.withBytesBase64Flag("--blob", "", "blob", "Blob", std::string("aGVsbG8=")); // "hello"
+        root.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
+            const auto b = p.getBytesBase64("--blob");
+            g_capture << "blob=" << std::string(b.begin(), b.end()) << "\n";
+            return 0;
+        });
+        g_capture.str("");
+        expect(runArgs(root, {}) == 0, "valid bytesBase64 default runs");
+        expect(g_capture.str() == "blob=hello\n", "valid default decodes to bytes");
+    }
+    // Invalid default: the run must fail loudly, not silently yield empty bytes.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.withBytesBase64Flag("--blob", "", "blob", "Blob", std::string("!!!!"));
+        root.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        expect(runArgs(root, {}) != 0, "invalid bytesBase64 default is rejected");
+        expect(err.str().find("invalid argument") != std::string::npos, "rejection names the invalid default");
+    }
+    // Invalid CLI value is still rejected (parse-time validation unchanged).
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.withBytesBase64Flag("--blob", "", "blob", "Blob", std::string(""));
+        root.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        expect(runArgs(root, {"--blob", "!!!!"}) != 0, "invalid bytesBase64 CLI value is rejected");
+    }
+    // Unchecked injection of an invalid base64: getBytesBase64 must not return
+    // the partially-decoded prefix ("AAAA!!!!" decodes the first quad before
+    // failing the second) as if it were the full value.
+    {
+        clasp::Flag blob("--blob", "", "blob", "Blob", std::string(""));
+        blob.setAnnotation("bytesbase64", "true");
+        const std::vector<clasp::Flag> flags{blob};
+        char arg0[] = "app";
+        char* argv[] = {arg0};
+        clasp::Parser parser(1, argv, flags);
+        parser.setExternalValues({{"--blob", "AAAA!!!!"}});
+        expect(parser.getBytesBase64("--blob").empty(), "unchecked invalid base64 yields no partial bytes");
+    }
+}
+
 void testColorFlagCompletion() {
     std::ostringstream out, err;
     auto root = makeBasicColorRoot(out, err);
@@ -933,6 +983,9 @@ int main() {
 
     std::cout << "\n=== Testing normalized flag registration ===" << std::endl;
     testNormalizedFlagRegistration();
+
+    std::cout << "\n=== Testing bytesBase64 default validation ===" << std::endl;
+    testBytesBase64DefaultValidation();
 
     std::cout << "\n=== Testing template unknown keys ===" << std::endl;
     testTemplateUnknownKeys();
