@@ -111,6 +111,17 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 - [x] 审核修复 P1-7：短组中间带值 flag completion 错位（command.hpp 分离值补全探测）——补全的分离值探测只认 `words.back()` 为完整 flag token（`resolveFlagNameForValueCompletion(prev)`），短组 token（如 `-fc`）解析失败直接落入子命令补全；而解析器语义是组尾成员吃下一个词（中段成员吃余下字符作值）。live cobra 探针（spf13/cobra，`__complete` 驱动）证实 cobra 取组最后一字符作 flag 名（`-fc`→color 值候选 red/green；`-cc`→同，naive 末字符规则；`-cf`→:0 Default 中段不触发；`-fl`/`-fn`→:0 Default noOpt/count 组尾不触发；`--level`/`-l`/`--tally`→:0 Default 长形式 noOpt/count 也不触发）。修复：探测键改为长形式取原词、短形式取末字符（`std::string("-") + prev.back()`，与 cobra 同规则）；expectsValue 除 bool 外再排除 count 注解与 noOpt 默认 flag（两者从不消费下一词，与 P1-6 语义及 cobra NoOptDefVal 守卫一致）；`--flag=` 形式不受 noOpt 守卫影响（cobra flagWithEqual 同） Fixed in commit 69f1957 · include/clasp/command.hpp:2895-2916 · tests/completion_protocol.cpp testValueCompletionShortGroupTail（12 断言：组尾值成员给候选/前缀过滤/重复成员仍触发/中段不触发/noOpt组尾·长短形式/count长形式不触发/eq形式保持/单短名不变/bool尾不触发；red-first：移除修复后 6 断言 fail）· 569/569 CTest green（build-lay -j8 与 build-cov -j1 双绿）· line 覆盖率 100%（4645/4645，branch 99% 为既有漂移，未扩大）
 - 不属实：P1-8 IPMask 拒 0.0.0.0（pflag 允许）——clasp 全链路实测均**接受** 0.0.0.0：tryParseIPMask("0.0.0.0")→OK（parser_value.hpp:396-399 连续位检查 `inv & (inv+1)`，inv=0xFFFFFFFF 时 inv+1=0x100000000、低 32 位为 0，AND=0 通过）、CLI `--mask 0.0.0.0`/`--mask=0.0.0.0` rc=0、默认值 0.0.0.0 正常、setExternalValues/setExternalValuesChecked 无错；且既有测试早已固定该行为（tests/branch_value_types.cpp:287「mask zero ok」，569 全绿中）。pflag 侧 live 探针（spf13/pflag v1.0.10）同样 OK 00000000，两侧一致，审核该条不属实。附注（反向差异）：pflag 的 ParseIPv4Mask（ipmask.go:33-57）无连续位检查，`255.0.255.0`/`1.2.3.4`/hex 形式 `ffffff00` 全部接受；clasp 要求连续位（command.hpp:432 注释明示「contiguous bits」为既定校验，tests/branch_value_types.cpp:289,291 固定拒绝）——clasp 更严，属既定设计取舍，非本条审计所指缺陷，如需放宽对齐另立条目。
 
+### P2 登记待办（巡检单 2026-10-20：仅登记不修，按批次另行安排）
+- [ ] P2：count 语义混用（count 注解 flag 的 getFlag<int>/getCount 两条读取路径语义需统一梳理）
+- [ ] P2：markFlag* 系列对未知/不匹配 flag 静默 no-op，注册期错误不暴露（可参照 P1-4 bytesBase64 默认校验的 fail-fast 先例）
+- [ ] P2：enableColor 重复调用重复追加转义序列
+- [ ] P2：.env 行内注释不剥离（`KEY=value # comment` 的尾部注释进入值）
+- [ ] P2：YAML 首个冒号分割截断（值内冒号丢失）
+- [ ] P2：JSON 解析非严格（宽松接受非法 JSON）
+- [ ] P2：Command move 构造约 60 个成员手工罗列，新增成员易漏（维护风险，建议成员初始化器或复制再改）
+- [ ] P2：gcov 产物文件入库（应加 .gitignore）
+- [ ] P2：LCOV_EXCL 注释滥用（多处用于非排除目的的行尾注释，弱化排除标记可信度）
+
 ## 审核发现（c48e9cff..HEAD 复核 · 已构建并运行 569/569 CTest 全绿 · 使用真实 bash/zsh/fish 实测）
 
 - [x] 审核发现：fish 静态补全 `-n "__fish_seen_subcommand_from <sub>"` 条件在子命令名含单引号 `'` 时解析失败 —— `escapeFishDoubleQuoted` 不转义 `'`（command.hpp:4415），但 fish 会把 `-n` 字符串再作为 fish 代码求值（实测报 `Unexpected end of string, quotes are not balanced`），导致含撇号子命令（如 `don't`）的局部 flag 补全整体失效；这是本次新增 fish 转义路径未覆盖的缺口，比既有 `$` 运行时展开发现影响面更广 Fixed in commit 4339438 · include/clasp/command.hpp:3362,4421 (escapeFishSingleQuoted wraps -n condition) · tests/completion_coverage.cpp:1014-1015 · 569/569 CTest green
