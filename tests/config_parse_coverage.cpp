@@ -151,6 +151,43 @@ void testEnvLikeParsing() {
     expect(g_capture.find("sv=[nodot]") != std::string::npos, "env: extension-less value applied");
 }
 
+// Inline comments on unquoted values are stripped (godotenv v1.5.1: the last '#'
+// preceded by whitespace ends the value); '#' inside quotes or glued to the
+// value stays literal. A hash-only line keeps its text as the value.
+void testEnvInlineComment() {
+    const char* cases[] = {
+        "sv=value # comment\n",
+        "sv=\"value # not comment\"\n",
+        "sv='value # not comment'\n",
+        "sv=\"quoted\" # comment\n",
+        "sv=abc#def\n",
+        "sv=#hashonly\n",
+        "sv=abc\t# tabbed\n",
+    };
+    const char* wanted[] = {
+        "sv=[value]",
+        "sv=[value # not comment]",
+        "sv=[value # not comment]",
+        "sv=[quoted]",
+        "sv=[abc#def]",
+        "sv=[#hashonly]",
+        "sv=[abc]",
+    };
+    const std::size_t count = sizeof(cases) / sizeof(cases[0]);
+    for (std::size_t i = 0; i < count; ++i) {
+        const std::string label = "env inline comment case " + std::to_string(i + 1);
+        const int rc = loadConfigContent(tmpPath("cpc_envc.env"), cases[i]);
+        expect(rc == 0, (label + " accepted").c_str());
+        expect(g_capture.find(wanted[i]) != std::string::npos, (label + " value as expected").c_str());
+    }
+
+    // Whitespace-only value followed by a comment keeps the text verbatim
+    // (godotenv only strips when the '#' follows a non-whitespace character).
+    const int rc2 = loadConfigContent(tmpPath("cpc_envd.env"), "sv= # trailing\n");
+    expect(rc2 == 0, "env: whitespace value with comment accepted");
+    expect(g_capture.find("sv=[# trailing]") != std::string::npos, "env: whitespace value keeps comment text");
+}
+
 // --- JSON parser -------------------------------------------------------------
 
 void testJsonBranchMatrix() {
@@ -587,6 +624,7 @@ int main() {
     std::filesystem::current_path(tmpDir());
 
     testEnvLikeParsing();
+    testEnvInlineComment();
     testJsonBranchMatrix();
     testJsonNestingDepthLimit();
     testTomlBranchMatrix();

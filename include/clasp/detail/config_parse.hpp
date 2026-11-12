@@ -26,6 +26,25 @@ inline bool endsWith(std::string_view s, std::string_view suffix) {
     return s.substr(s.size() - suffix.size()) == suffix;
 }
 
+// Space the comment scanner treats as "comment starts here". Newlines are
+// excluded because each config line is scanned on its own.
+inline bool isCommentSpace(char c) {
+    return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r';
+}
+
+// Drop a trailing "# comment" from an unquoted .env value: scan backwards for
+// the last '#' whose previous character is whitespace (godotenv v1.5.1 rule).
+// '#' glued to the value stays part of it, as does a value that is only
+// whitespace before the '#'.
+inline std::string stripEnvComment(std::string value) {
+    for (std::size_t i = value.size(); i > 0; --i) {
+        if (value[i - 1] != '#') continue;
+        if (i < 2) continue;
+        if (isCommentSpace(value[i - 2])) return value.substr(0, i - 1);
+    }
+    return value;
+}
+
 inline std::unordered_map<std::string, std::string> parseEnvLike(std::istream& in) {
     std::unordered_map<std::string, std::string> raw;
     std::string line;
@@ -37,8 +56,30 @@ inline std::unordered_map<std::string, std::string> parseEnvLike(std::istream& i
         if (eq == std::string_view::npos) continue;
         const auto key = trimWs(t.substr(0, eq));
         auto value = std::string(trimWs(t.substr(eq + 1)));
-        if (value.size() >= 2 && ((value.front() == '"' && value.back() == '"') || (value.front() == '\'' && value.back() == '\''))) {
-            value = value.substr(1, value.size() - 2);
+        if (value.size() >= 1 && (value.front() == '"' || value.front() == '\'')) {
+            // Quoted value: quotes shield '#' from comment stripping, so the
+            // comment (if any) starts after the closing quote. An unclosed
+            // quote leaves the value untouched, matching the previous no-op.
+            const char quote = value.front();
+            // First unescaped occurrence of the closing quote ("a\"b" closes at
+            // the end, not at the escaped quote).
+            std::size_t close = std::string::npos;
+            for (std::size_t i = 1; i < value.size(); ++i) {
+                if (value[i] != quote) continue;
+                const bool escaped = i > 1 && value[i - 1] == '\\';
+                if (escaped) continue;
+                close = i;
+                break;
+            }
+            if (close == std::string::npos) {
+                raw[std::string(key)] = std::move(value);
+                continue;
+            }
+            value = value.substr(1, close - 1);
+        } else {
+            auto stripped = stripEnvComment(value);
+            while (!stripped.empty() && isCommentSpace(stripped.back())) stripped.pop_back();
+            value = stripped;
         }
         raw[std::string(key)] = std::move(value);
     }
