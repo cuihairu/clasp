@@ -233,6 +233,50 @@ void testBytesBareUnit() {
     expect(p.getFlag<std::uint64_t>("--limit", 0) == 5, "bare B unit multiplier is 1");
 }
 
+// Count flags accumulate over their declared base (pflag Count: -v on a flag
+// defaulting to 3 yields 4, never resetting the default). A caller-supplied
+// default is only a fallback for flags without a count annotation.
+void testCountAccumulatesOverDefault() {
+    const auto makeCountFlags = [](int def) {
+        clasp::Flag cnt("--count", "-v", "C", "count", def);
+        cnt.setAnnotation("count", "true");
+        std::vector<clasp::Flag> flags;
+        flags.push_back(cnt);
+        return flags;
+    };
+
+    {
+        auto p = makeParser({}, makeCountFlags(0));
+        expect(p.getCount("--count") == 0, "count zero default with no occurrence");
+    }
+    {
+        auto p = makeParser({}, makeCountFlags(3));
+        expect(p.getCount("--count") == 3, "count default kept without occurrence");
+        expect(p.isCountFlag("--count"), "isCountFlag true for annotated flag");
+    }
+    {
+        auto p = makeParser({"-v"}, makeCountFlags(3));
+        expect(p.getCount("--count") == 4, "count occurrence adds to default");
+    }
+    {
+        auto p = makeParser({"-vvv"}, makeCountFlags(3));
+        expect(p.getCount("--count") == 6, "count repeated occurrences add to default");
+    }
+    {
+        auto p = makeParser({"-v3"}, makeCountFlags(2));
+        expect(p.getCount("--count") == 5, "count explicit increment adds to default");
+    }
+    {
+        clasp::Flag plain("--plain", "", "P", "plain", 7);
+        std::vector<clasp::Flag> flags;
+        flags.push_back(plain);
+        auto p = makeParser({}, flags);
+        expect(!p.isCountFlag("--plain"), "isCountFlag false for plain flag");
+        expect(p.getCount("--plain") == 7, "non-count flag keeps declared default as count fallback");
+        expect(p.getFlag<int>("--plain", 9) == 7, "non-count flag keeps declared default over caller default");
+    }
+}
+
 // Uppercase hex digits must be accepted in IPv6 literals.
 void testIPv6UppercaseHex() {
     std::vector<clasp::Flag> flags;
@@ -339,6 +383,9 @@ int main() {
 
     std::cout << "\n=== Testing short group count explicit ===" << std::endl;
     testShortGroupCountExplicit();
+
+    std::cout << "\n=== Testing count accumulation over default ===" << std::endl;
+    testCountAccumulatesOverDefault();
 
     std::cout << "\n=== Testing short group tail values ===" << std::endl;
     testShortGroupTailValues();

@@ -214,6 +214,12 @@ public:
         return std::nullopt;
     }
 
+    // True when this flag was registered with an active count annotation.
+    bool isCountFlag(const std::string& flag) const {
+        const auto key = resolveKey(flag);
+        return countKeys_.find(key) != countKeys_.end();
+    }
+
     template <typename T>
     T getFlag(const std::string& flag, T defaultValue = T()) const {
         const auto key = resolveKey(flag);
@@ -234,19 +240,26 @@ public:
         return defaultValue;
     }
 
-    // Count helper: sums all parsed integer values for this flag. Intended for Count-style flags that emit "1" per occurrence.
+    // Count helper: the declared base plus every occurrence (pflag Count
+    // accumulates over its default: -v on a flag defaulting to 3 yields 4).
+    // The caller default is only a fallback for flags without a count annotation.
     int getCount(const std::string& flag, int defaultValue = 0) const {
         const auto key = resolveKey(flag);
+        int base = 0;
+        if (isCountFlag(key)) {
+            const auto dIt = defaults_.find(key);
+            base = (dIt == defaults_.end()) ? 0 : detail::parse<int>(dIt->second, 0);
+        }
         const auto it = flagValues_.find(key);
         if (it != flagValues_.end() && !it->second.empty()) { // LCOV_EXCL_LINE (flagValues_ entries are only created together with an immediate push_back in recordFlagValue, so the value vector is never empty)
-            int total = 0;
+            int total = base;
             for (const auto& v : it->second) total += detail::parse<int>(v, 0);
             return total;
         }
 
         const auto extMultiIt = externalMultiValues_.find(key);
         if (extMultiIt != externalMultiValues_.end() && !extMultiIt->second.empty()) {
-            int total = 0;
+            int total = base;
             for (const auto& v : extMultiIt->second) total += detail::parse<int>(v, 0);
             return total;
         }
