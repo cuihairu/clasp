@@ -574,6 +574,16 @@ void testCompletionEdgeTokens() {
     expect(runArgs(root, {"__completeNoDesc", "--", "x"}) == 0, "completion after --");
 
     out.str("");
+    expect(runArgs(root, {"__completeNoDesc", "--message", "--", "p", ""}) == 0,
+           "completion after noOpt flag then --");
+    expect(out.str().find("help") != std::string::npos, "noOpt flag -- keeps root completion target");
+
+    out.str("");
+    expect(runArgs(root, {"__completeNoDesc", "-vm", "--", "p", ""}) == 0,
+           "completion after noOpt short group then --");
+    expect(out.str().find("help") != std::string::npos, "noOpt short group -- keeps root completion target");
+
+    out.str("");
     expect(runArgs(root, {"__completeNoDesc", "xyz", "ab"}) == 0, "completion after unknown token");
 
     out.str("");
@@ -604,6 +614,48 @@ void testExecutionShortGroupNoOpt() {
     g_capture.str("");
     expect(runArgs(root, {"-xm", "p"}) == 0, "short group noOpt before subcommand runs");
     expect(g_capture.str().find("msg=auto") != std::string::npos, "noOpt default preserved for subcommand");
+}
+
+// `--` after a NoOptDefVal flag terminates command resolution (Cobra's
+// stripFlags breaks on `--`); a plain value flag instead swallows the `--` as
+// its value exactly like pflag, so tokens after it keep resolving commands.
+void testDoubleDashAfterNoOptFlag() {
+    std::ostringstream out, err;
+    auto root = makeBasicColorRoot(out, err);
+    root.withPersistentFlag("--plain", "", "plain", "Plain value flag", std::string("d"));
+    root.withPersistentFlag("--verbose", "-v", "Verbose", "v", true);
+    root.withPersistentFlag("--message", "-m", "message", "Message flag", std::string(""));
+    root.markPersistentFlagNoOptDefaultValue("--message", "auto");
+    root.action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>& pos) {
+        g_capture << "root msg=" << parser.getFlag<std::string>("--message", "none") << " args=";
+        for (const auto& a : pos) g_capture << "[" << a << "]";
+        g_capture << "\n";
+        return 0;
+    });
+
+    clasp::Command pcmd("p", "P command");
+    pcmd.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
+        g_capture << "p-ran\n";
+        return 0;
+    });
+    root.addCommand(std::move(pcmd));
+
+    g_capture.str("");
+    expect(runArgs(root, {"--plain", "--", "p"}) == 0, "value flag swallows -- then resolves subcommand");
+    expect(g_capture.str() == "p-ran\n", "value flag -- keeps subcommand resolution");
+
+    g_capture.str("");
+    expect(runArgs(root, {"--message", "--", "p"}) == 0, "noOpt flag keeps -- as terminator");
+    expect(g_capture.str().find("root msg=auto") == 0, "long noOpt flag: root runs");
+    expect(g_capture.str().find("[p]") != std::string::npos, "long noOpt flag: token stays positional");
+
+    g_capture.str("");
+    expect(runArgs(root, {"-m", "--", "p"}) == 0, "noOpt short name keeps -- as terminator");
+    expect(g_capture.str().find("root msg=auto") == 0, "noOpt short name: root runs");
+
+    g_capture.str("");
+    expect(runArgs(root, {"-vm", "--", "p"}) == 0, "noOpt short group keeps -- as terminator");
+    expect(g_capture.str().find("root msg=auto") == 0, "noOpt short group: root runs");
 }
 
 // --- Config parsing edge cases ----------------------------------------------
@@ -835,6 +887,9 @@ int main() {
 
     std::cout << "\n=== Testing execution short group noOpt ===" << std::endl;
     testExecutionShortGroupNoOpt();
+
+    std::cout << "\n=== Testing -- after noOpt flag ===" << std::endl;
+    testDoubleDashAfterNoOptFlag();
 
     std::cout << "\n=== Testing config json edges ===" << std::endl;
     testConfigJsonEdges();
