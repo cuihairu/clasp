@@ -696,12 +696,15 @@ void testNoOptFlagWithNextArg() {
     clasp::Command root("app", "Test app");
     root.withFlag("--mode", "-m", "mode", "Mode", std::string(""))
         .markFlagNoOptDefaultValue("--mode", "auto")
-        .action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>&) {
+        .action([](clasp::Command&, const clasp::Parser& parser, const std::vector<std::string>& args) {
             auto v = parser.getFlag<std::string>("--mode");
             std::cout << "mode:" << v << "\n";
+            std::cout << "args:" << args.size() << "\n";
             return 0;
         });
 
+    // A noOpt flag never consumes the next token: mode falls back to its
+    // noOpt default and "manual" stays a positional.
     const char* argv[] = {"app", "--mode", "manual"};
     int argc = 3;
     root.run(argc, const_cast<char**>(argv));

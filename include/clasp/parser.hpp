@@ -135,22 +135,18 @@ public:
                     // pflag Count: treat as bool-like (no separate arg); each occurrence increments by 1.
                     value = "1";
                 } else {
+                    // pflag: a NoOptDefVal flag never consumes the next token
+                    // as its value, whatever it is (`--opt x` keeps x a plain
+                    // token; `--opt sub` keeps sub a command candidate).
                     const auto noOptIt = noOptDefaults_.find(canonical);
-                    if (i + 1 >= argc) {
-                        if (noOptIt != noOptDefaults_.end()) {
-                            value = noOptIt->second;
-                        } else {
-                            ok_ = false;
-                            error_ = "flag needs an argument: " + key;
-                            continue;
-                        }
+                    if (noOptIt != noOptDefaults_.end()) {
+                        value = noOptIt->second;
+                    } else if (i + 1 >= argc) {
+                        ok_ = false;
+                        error_ = "flag needs an argument: " + key;
+                        continue;
                     } else {
-                        const std::string_view next = argv[i + 1];
-                        if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) { // LCOV_EXCL_LINE (both sides of the comparison are exercised; the remaining edges are cleanup paths of the inlined std::string temporary)
-                            value = noOptIt->second;
-                        } else {
-                            value = argv[++i];
-                        }
+                        value = argv[++i];
                     }
                 }
 
@@ -908,22 +904,17 @@ private:
             if (pos + 1 < group.size()) {
                 value = group.substr(pos + 1);
             } else {
+                // pflag: a NoOptDefVal flag never consumes the next token as
+                // its value (mirrors the long-form rule above).
                 const auto noOptIt = noOptDefaults_.find(canonical);
-                if (i + 1 >= argc) {
-                    if (noOptIt != noOptDefaults_.end()) {
-                        value = noOptIt->second;
-                    } else {
-                        ok_ = false;
-                        error_ = "flag needs an argument: " + key;
-                        return false;
-                    }
+                if (noOptIt != noOptDefaults_.end()) {
+                    value = noOptIt->second;
+                } else if (i + 1 >= argc) {
+                    ok_ = false;
+                    error_ = "flag needs an argument: " + key;
+                    return false;
                 } else {
-                    const std::string_view next = argv[i + 1];
-                    if (noOptIt != noOptDefaults_.end() && isFlagToken(std::string(next))) { // LCOV_EXCL_LINE (both sides of the comparison are exercised; the remaining edges are cleanup paths of the inlined std::string temporary)
-                        value = noOptIt->second;
-                    } else {
-                        value = argv[++i];
-                    }
+                    value = argv[++i];
                 }
             }
             if (kindIt != kinds_.end() && !normalizeValue(canonical, value, kindIt->second)) return false; // LCOV_EXCL_LINE (unknown shorts already returned above, so the kind lookup always succeeds here)

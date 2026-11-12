@@ -625,7 +625,7 @@ add_test(NAME noopt_value_omitted COMMAND noopt_example --mode --other)
 set_tests_properties(noopt_value_omitted PROPERTIES PASS_REGULAR_EXPRESSION "mode=auto.*other=true")
 
 
-add_test(NAME noopt_value_provided COMMAND noopt_example --mode manual)
+add_test(NAME noopt_value_provided COMMAND noopt_example --mode=manual)
 set_tests_properties(noopt_value_provided PROPERTIES PASS_REGULAR_EXPRESSION "mode=manual")
 
 
@@ -1853,7 +1853,7 @@ set_tests_properties(parser_extra_noopt_next_flag PROPERTIES PASS_REGULAR_EXPRES
 
 
 add_test(NAME parser_extra_noopt_next_arg COMMAND parser_extra_coverage_test noopt-next-arg)
-set_tests_properties(parser_extra_noopt_next_arg PROPERTIES PASS_REGULAR_EXPRESSION "mode:manual")
+set_tests_properties(parser_extra_noopt_next_arg PROPERTIES PASS_REGULAR_EXPRESSION "mode:auto\nargs:1")
 
 
 add_test(NAME parser_extra_hex_uint64 COMMAND parser_extra_coverage_test hex-uint64)

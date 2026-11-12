@@ -440,7 +440,7 @@ void testShortFlagGroupingResolution() {
     expect(runArgs(root, {"-ab"}) == 0, "group execution: bool-only group");
     expect(runArgs(root, {"-ao", "sub"}) == 0, "group execution: noOptDefault followed by subcommand");
     expect(runArgs(root, {"-ao"}) == 0, "group execution: noOptDefault at end of argv");
-    expect(runArgs(root, {"-ao", "zzz"}) == 0, "group execution: noOptDefault before non-subcommand");
+    expect(runArgs(root, {"-ao", "zzz"}) == 1, "group execution: noOptDefault leaves non-subcommand word unresolved");
     expect(runArgs(root, {"-av", "hello"}) == 0, "group execution: value consumed from next arg");
     expect(runArgs(root, {"-avb", "x"}) == 1, "group execution: mid-group value leaves 'x' as positional");
     expect(runArgs(root, {"-aob", "x"}) == 1, "group execution: mid-group noOptDefault leaves 'x' as positional");
@@ -449,12 +449,12 @@ void testShortFlagGroupingResolution() {
     expect(runArgs(root, {"-ab"}) == 0, "group execution: bool-only group");
     expect(runArgs(root, {"-ao", "sub"}) == 0, "group execution: noOptDefault followed by subcommand");
     expect(runArgs(root, {"-ao"}) == 0, "group execution: noOptDefault at end of argv");
-    expect(runArgs(root, {"-ao", "zzz"}) == 0, "group execution: noOptDefault before non-subcommand");
-    expect(runArgs(root, {"-ao", "sux"}) == 0, "group execution: same-length non-subcommand word");
+    expect(runArgs(root, {"-ao", "zzz"}) == 1, "group execution: noOptDefault leaves non-subcommand word unresolved");
+    expect(runArgs(root, {"-ao", "sux"}) == 1, "group execution: same-length non-subcommand word unresolved");
     expect(runArgs(root, {"--oo", "sub"}) == 0, "group execution: long noOptDefault before subcommand");
     expect(runArgs(root, {"--oo"}) == 0, "group execution: long noOptDefault at end of argv");
-    expect(runArgs(root, {"--oo", "zzz"}) == 0, "group execution: long noOptDefault before non-subcommand");
-    expect(runArgs(root, {"--oo", "sux"}) == 0, "group execution: long flag with same-length non-subcommand");
+    expect(runArgs(root, {"--oo", "zzz"}) == 1, "group execution: long noOptDefault leaves non-subcommand word unresolved");
+    expect(runArgs(root, {"--oo", "sux"}) == 1, "group execution: long flag with same-length non-subcommand unresolved");
 
     // Grouping disabled: tokens stay untouched.
     std::ostringstream sink2;

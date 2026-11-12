@@ -790,6 +790,99 @@ void testDoubleDashAfterNoOptFlag() {
     expect(g_capture.str().find("root msg=auto") == 0, "noOpt short group: root runs");
 }
 
+// pflag/Cobra: a NoOptDefVal flag never consumes the next token - whatever it
+// is (plain value, subcommand name, another flag, or `--`). The parser and the
+// command/completion resolvers must agree on this rule.
+void testNoOptFlagNeverConsumesNext() {
+    // --msg x with a NoOptDefVal flag: x stays a positional, msg=auto.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.withPersistentFlag("--message", "-m", "message", "Message flag", std::string(""));
+        root.markPersistentFlagNoOptDefaultValue("--message", "auto");
+        root.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>& pos) {
+            g_capture << "root msg=" << p.getFlag<std::string>("--message", "none") << " args=";
+            for (const auto& a : pos) g_capture << "[" << a << "]";
+            g_capture << "\n";
+            return 0;
+        });
+        g_capture.str("");
+        expect(runArgs(root, {"--message", "x"}) == 0, "noOpt flag leaves plain token unconsumed");
+        expect(g_capture.str() == "root msg=auto args=[x]\n", "plain token stays a positional, msg=auto");
+
+        g_capture.str("");
+        expect(runArgs(root, {"-m", "x"}) == 0, "noOpt short flag leaves plain token unconsumed");
+        expect(g_capture.str() == "root msg=auto args=[x]\n", "short noOpt: token stays positional");
+    }
+    // --msg sub with a NoOptDefVal flag: sub runs (command candidate), msg=auto.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.withPersistentFlag("--message", "", "message", "Message flag", std::string(""));
+        root.markPersistentFlagNoOptDefaultValue("--message", "auto");
+        root.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
+            g_capture << "root-ran msg=" << p.getFlag<std::string>("--message", "none") << "\n";
+            return 0;
+        });
+        clasp::Command pcmd("p", "P command");
+        pcmd.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
+            g_capture << "p-ran msg=" << p.getFlag<std::string>("--message", "none") << "\n";
+            return 0;
+        });
+        root.addCommand(std::move(pcmd));
+
+        g_capture.str("");
+        expect(runArgs(root, {"--message", "p"}) == 0, "noOpt flag leaves subcommand name a candidate");
+        expect(g_capture.str() == "p-ran msg=auto\n", "subcommand runs with msg=auto");
+
+        // A plain token between the noOpt flag and a subcommand must not be
+        // consumed, so the subcommand is NOT resolved (the plain token is the
+        // command candidate and stops scanning) - p runs only if the token is
+        // its name, and a preceding positional keeps it out of command lookup.
+        g_capture.str("");
+        expect(runArgs(root, {"--message", "x", "p"}) == 0, "noOpt flag plain token blocks subcommand resolution");
+        expect(g_capture.str().find("root-ran") == 0, "root runs when a plain token precedes the subcommand");
+        expect(g_capture.str().find("msg=auto") != std::string::npos, "plain token not consumed as value");
+    }
+    // --msg --verbose: the next flag is not consumed; both flags parse.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.withPersistentFlag("--message", "", "message", "Message flag", std::string(""));
+        root.markPersistentFlagNoOptDefaultValue("--message", "auto");
+        root.withPersistentFlag("--verbose", "", "verbose", "Verbose", true);
+        root.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
+            g_capture << "root msg=" << p.getFlag<std::string>("--message", "none")
+                      << " verbose=" << p.getFlag<bool>("--verbose", false) << "\n";
+            return 0;
+        });
+        g_capture.str("");
+        expect(runArgs(root, {"--message", "--verbose"}) == 0, "noOpt flag leaves next flag unconsumed");
+        expect(g_capture.str() == "root msg=auto verbose=1\n", "both flags parse");
+    }
+    // Completion after `--message x` must align with the parser: x is NOT
+    // consumed as --message's value, so completion descends into subcommand x
+    // (offering x's own subcommand y) instead of offering x at root.
+    {
+        std::ostringstream out, err;
+        auto root = makeBasicColorRoot(out, err);
+        root.enableCompletion();
+        root.withFlag("--message", "", "message", "Message flag", std::string(""));
+        root.markFlagNoOptDefaultValue("--message", "auto");
+        clasp::Command xcmd("x", "X command");
+        xcmd.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        clasp::Command ycmd("y", "Y command");
+        ycmd.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+        xcmd.addCommand(std::move(ycmd));
+        root.addCommand(std::move(xcmd));
+
+        out.str("");
+        expect(runArgs(root, {"__completeNoDesc", "--message", "x", ""}) == 0,
+               "noOpt flag completion keeps x unconsumed");
+        expect(out.str().find("y") != std::string::npos, "completion descends into x (x not consumed)");
+    }
+}
+
 // --- Config parsing edge cases ----------------------------------------------
 
 clasp::Command makeConfigRoot(std::ostringstream& out, std::ostringstream& err) {
@@ -986,6 +1079,9 @@ int main() {
 
     std::cout << "\n=== Testing bytesBase64 default validation ===" << std::endl;
     testBytesBase64DefaultValidation();
+
+    std::cout << "\n=== Testing noOpt flag never consumes next ===" << std::endl;
+    testNoOptFlagNeverConsumesNext();
 
     std::cout << "\n=== Testing template unknown keys ===" << std::endl;
     testTemplateUnknownKeys();

@@ -69,7 +69,8 @@ void testNoOptPaths() {
     }
     {
         auto p = makeParser({"--mode", "manual"}, flags);
-        expect(p.ok() && p.getFlag<std::string>("--mode") == "manual", "noOpt skipped for real value");
+        expect(p.ok() && p.getFlag<std::string>("--mode") == "auto", "noOpt used for real value, token not consumed");
+        expect(p.positionals().size() == 1 && p.positionals()[0] == "manual", "real value stays a positional");
     }
     {
         auto p = makeParser({"-om", "--mode"}, flags, allowUnknown());
@@ -78,7 +79,8 @@ void testNoOptPaths() {
     }
     {
         auto p = makeParser({"-om", "5"}, flags);
-        expect(p.ok() && p.getFlag<std::string>("--mode") == "5", "short group noOpt skipped for real value");
+        expect(p.ok() && p.getFlag<std::string>("--mode") == "auto", "short group noOpt used, token not consumed");
+        expect(p.positionals().size() == 1 && p.positionals()[0] == "5", "short group real value stays positional");
     }
     {
         std::vector<clasp::Flag> flags2;

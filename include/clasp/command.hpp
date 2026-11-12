@@ -2745,10 +2745,7 @@ private:
                     const auto info = flagInfo(at, key);
                     if (!info.has_value()) return;
                     if (info->isBool) continue;
-                    if (info->hasNoOptDefault && pos + 1 == token.size() && i + 1 < words.size() &&
-                        (at->findSubcommand(words[i + 1]) || words[i + 1] == "--")) {
-                        return;
-                    }
+                    if (info->hasNoOptDefault && pos + 1 == token.size()) return;
                     if (pos + 1 == token.size() && i + 1 < words.size()) ++i;
                     return;
                 }
@@ -2759,9 +2756,9 @@ private:
             if (!info.has_value()) return;
             if (info->isBool) return;
             // Mirrors the execution resolver: a NoOptDefVal flag never
-            // consumes the next token, so `--` terminates command resolution.
-            if (info->hasNoOptDefault && i + 1 < words.size() &&
-                (at->findSubcommand(words[i + 1]) || words[i + 1] == "--")) return;
+            // consumes the next token, whether it is a plain token, a
+            // subcommand name, another flag, or a bare `--`.
+            if (info->hasNoOptDefault) return;
             if (i + 1 < words.size()) ++i;
         };
 
@@ -3109,10 +3106,7 @@ private:
                     if (!info.has_value()) return;
                     if (info->isBool) continue;
                     // Value is either the remainder of this token (-ovalue) or the next arg (-o value).
-                    if (info->hasNoOptDefault && pos + 1 == token.size() && i + 1 < argc &&
-                        (at->findSubcommand(argv[i + 1]) || std::string_view(argv[i + 1]) == "--")) { // LCOV_EXCL_LINE (cleanup edges of the inlined findSubcommand call)
-                        return;
-                    }
+                    if (info->hasNoOptDefault && pos + 1 == token.size()) return;
                     if (pos + 1 == token.size() && i + 1 < argc) ++i;
                     return;
                 }
@@ -3123,13 +3117,11 @@ private:
             if (!info.has_value()) return;
             if (info->isBool) return;
             // pflag/Cobra parity: a NoOptDefVal flag never consumes the next
-            // token as its value, and a bare `--` terminates command
-            // resolution - `--opt -- sub` must keep `sub` a positional of the
-            // current command instead of resolving it as a subcommand.
-            if (info->hasNoOptDefault && i + 1 < argc &&
-                (at->findSubcommand(argv[i + 1]) || std::string_view(argv[i + 1]) == "--")) { // LCOV_EXCL_LINE (cleanup edges of the inlined findSubcommand call)
-                return;
-            }
+            // token, so it is never a value for this flag - whether it is a
+            // plain token, a subcommand name, another flag, or a bare `--`
+            // (`--opt -- sub` keeps `sub` a positional, `--opt sub` keeps it a
+            // command candidate).
+            if (info->hasNoOptDefault) return;
             if (i + 1 < argc) ++i;
         };
 

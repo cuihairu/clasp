@@ -292,8 +292,9 @@ void testShortGroupTailValues() {
     }
     {
         auto p = makeParser({"-xm", "hi"}, withNoOpt);
-        expect(p.ok(), "group tail consumes next token as value");
-        expect(p.getFlag<std::string>("--mflag", "") == "hi", "next token used as value at group tail");
+        expect(p.ok(), "group tail leaves next token unconsumed");
+        expect(p.getFlag<std::string>("--mflag", "") == "auto", "noOpt default used at group tail");
+        expect(p.positionals().size() == 1 && p.positionals()[0] == "hi", "next token stays a positional");
     }
 
     std::vector<clasp::Flag> withoutNoOpt;
