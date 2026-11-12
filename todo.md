@@ -112,7 +112,7 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 - 不属实：P1-8 IPMask 拒 0.0.0.0（pflag 允许）——clasp 全链路实测均**接受** 0.0.0.0：tryParseIPMask("0.0.0.0")→OK（parser_value.hpp:396-399 连续位检查 `inv & (inv+1)`，inv=0xFFFFFFFF 时 inv+1=0x100000000、低 32 位为 0，AND=0 通过）、CLI `--mask 0.0.0.0`/`--mask=0.0.0.0` rc=0、默认值 0.0.0.0 正常、setExternalValues/setExternalValuesChecked 无错；且既有测试早已固定该行为（tests/branch_value_types.cpp:287「mask zero ok」，569 全绿中）。pflag 侧 live 探针（spf13/pflag v1.0.10）同样 OK 00000000，两侧一致，审核该条不属实。附注（反向差异）：pflag 的 ParseIPv4Mask（ipmask.go:33-57）无连续位检查，`255.0.255.0`/`1.2.3.4`/hex 形式 `ffffff00` 全部接受；clasp 要求连续位（command.hpp:432 注释明示「contiguous bits」为既定校验，tests/branch_value_types.cpp:289,291 固定拒绝）——clasp 更严，属既定设计取舍，非本条审计所指缺陷，如需放宽对齐另立条目。
 
 ### P2 登记待办（巡检单 2026-10-20：仅登记不修，按批次另行安排）
-- [ ] P2：count 语义混用（count 注解 flag 的 getFlag<int>/getCount 两条读取路径语义需统一梳理）
+- [x] P2：count 语义混用（count 注解 flag 的 getFlag<int>/getCount 两条读取路径语义需统一梳理）——pflag 实测（spf13/pflag CountP 经 Set 预置默认值 3）：`-v`→4、`-vvv`→6，即 Count 在**声明默认值之上累加**，从不重置默认。clasp 旧 getCount 忽略声明默认（base 恒 0）：默认 3 的 count flag `-v` 后 getCount→1、occurrences 语义与值语义混淆。修复：getCount 对 count 注解 flag 以声明默认值为 base，在其上累加各次出现（无注解 flag 保持旧 fallback 语义）；新增 isCountFlag(key) 公开 count 注解判定；getFlag<T>「末值/声明默认」语义保持不变（count 注解 flag 的各次出现记录 "1"/显式增量，末值即最近一次增量，读取路径统一经 getCount）。 Fixed in commit 9bb5385 · include/clasp/parser.hpp:217-221（isCountFlag）251-263（getCount base 累加）· tests/parser_gaps.cpp testCountAccumulatesOverDefault（9 断言：零默认/默认保留/单次-vvv 增量/显式增量/非注解 flag 回退；red-first：临时将 base 恒 0 后 3 断言 fail）· 569/569 CTest green（build-lay）
 - [ ] P2：markFlag* 系列对未知/不匹配 flag 静默 no-op，注册期错误不暴露（可参照 P1-4 bytesBase64 默认校验的 fail-fast 先例）
 - [ ] P2：enableColor 重复调用重复追加转义序列
 - [ ] P2：.env 行内注释不剥离（`KEY=value # comment` 的尾部注释进入值）
