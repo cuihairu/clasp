@@ -2893,15 +2893,25 @@ private:
         }
 
         // Value completion for "--flag <prefix>" (toComplete may be empty when completing after a space).
+        // For a short group ("-fc") the tail member is the flag that would take
+        // the next word; cobra resolves the last shorthand char the same way.
+        // Count and NoOptDefVal flags never consume the next word, so they do
+        // not open value completion either.
         if (!words.empty() && (toCompleteStr.empty() || toCompleteStr[0] != '-')) {
             const auto& prev = words.back();
             if (prev.rfind("-", 0) == 0) {
-                if (auto longName = resolveFlagNameForValueCompletion(*cmd, prev)) {
+                const std::string key =
+                    (prev.rfind("--", 0) == 0 || prev.size() < 2) ? prev : std::string("-") + prev.back();
+                if (auto longName = resolveFlagNameForValueCompletion(*cmd, key)) {
                     const auto eff = cmd->effectiveFlags();
                     bool expectsValue = false;
                     for (const auto& f : eff) { // LCOV_EXCL_LINE (compiler-generated cleanup edges of the range-for over effectiveFlags(); both empty and non-empty flag sets are exercised)
                         if (f.longName() == *longName) {
-                            expectsValue = !std::holds_alternative<bool>(f.defaultValue());
+                            const auto ann = f.annotations().find("count");
+                            const bool isCount =
+                                (ann != f.annotations().end() && (ann->second == "true" || ann->second == "1" || ann->second == "yes"));
+                            expectsValue = !std::holds_alternative<bool>(f.defaultValue()) && !isCount &&
+                                           !f.noOptDefaultValue().has_value();
                             break;
                         }
                     }

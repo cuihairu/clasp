@@ -199,6 +199,89 @@ void testValueCompletionSeparateArg() {
 }
 
 // ------------------------------------------------------------------
+// Value completion when the last word is a short flag group: the tail
+// member is the flag that would take the next word (cobra checks the
+// last shorthand char); mid-group, noOpt, and count members do not.
+// ------------------------------------------------------------------
+void testValueCompletionShortGroupTail() {
+    std::ostringstream sink;
+    clasp::Command root("gapp", "Group value completion");
+    root.setOut(sink);
+    root.enableCompletion();
+    root.version("1.0.0");
+    clasp::Command paint("paint", "Paint");
+    paint.withFlag("--fast", "-f", "fast", "Fast", true);
+    paint.withFlag("--color", "-c", "color", "Color", std::string(""));
+    paint.registerFlagCompletion("--color",
+        [](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&, std::string_view) {
+            return std::vector<std::string>{"red", "green"};
+        });
+    paint.withFlag("--level", "-l", "level", "Level", std::string(""));
+    paint.markFlagNoOptDefaultValue("--level", "auto");
+    paint.registerFlagCompletion("--level",
+        [](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&, std::string_view) {
+            return std::vector<std::string>{"low", "high"};
+        });
+    paint.withFlag("--tally", "-n", "tally", "Tally", 0);
+    paint.markFlagAnnotation("--tally", "count", "true");
+    paint.registerFlagCompletion("--tally",
+        [](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&, std::string_view) {
+            return std::vector<std::string>{"one", "two"};
+        });
+    paint.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) { return 0; });
+    root.addCommand(std::move(paint));
+
+    // Tail member is a value flag: its values are offered.
+    auto r = complete(root, sink, {"paint", "-fc", ""}, false);
+    expect(contains(r, "red") && contains(r, "green"), "group tail value member offers flag values");
+
+    // Prefix filter applies to the group-tail completion.
+    auto rp = complete(root, sink, {"paint", "-fc", "r"}, false);
+    expect(contains(rp, "red") && !contains(rp, "green"), "group tail value member prefix filter");
+
+    // Value member in the middle: the attached remainder is its value, the
+    // next word is fresh (cobra falls through to default completion).
+    auto rm = complete(root, sink, {"paint", "-cf", ""}, false);
+    expect(!contains(rm, "red") && !contains(rm, "green"), "mid-group value member offers no flag values");
+
+    // Repeated value member: cobra's last-char rule still opens completion.
+    auto rr = complete(root, sink, {"paint", "-cc", ""}, false);
+    expect(contains(rr, "red") && contains(rr, "green"), "repeated value member still offers flag values");
+
+    // NoOpt tail member never consumes the next word.
+    auto rn = complete(root, sink, {"paint", "-fl", ""}, false);
+    expect(!contains(rn, "low") && !contains(rn, "high"), "noOpt tail member offers no flag values");
+
+    // Count tail member never consumes the next word.
+    auto rc = complete(root, sink, {"paint", "-fn", ""}, false);
+    expect(!contains(rc, "one") && !contains(rc, "two"), "count tail member offers no flag values");
+
+    // Long noOpt flag: the next word is fresh, no value completion.
+    auto rl = complete(root, sink, {"paint", "--level", ""}, false);
+    expect(!contains(rl, "low") && !contains(rl, "high"), "long noOpt flag offers no value completion");
+
+    // Short noOpt flag: same rule.
+    auto rls = complete(root, sink, {"paint", "-l", ""}, false);
+    expect(!contains(rls, "low") && !contains(rls, "high"), "short noOpt flag offers no value completion");
+
+    // Long count flag: the next word is fresh, no value completion.
+    auto rt = complete(root, sink, {"paint", "--tally", ""}, false);
+    expect(!contains(rt, "one") && !contains(rt, "two"), "long count flag offers no value completion");
+
+    // The = form keeps value completion regardless of the noOpt default.
+    auto re = complete(root, sink, {"paint", "--level=l"}, false);
+    expect(contains(re, "--level=low"), "eq form keeps noOpt flag value completion");
+
+    // Plain single short flag still resolves as before.
+    auto rs = complete(root, sink, {"paint", "-c", ""}, false);
+    expect(contains(rs, "red"), "single short flag still offers values");
+
+    // Bool tail member never opens value completion.
+    auto rf = complete(root, sink, {"paint", "-cf", ""}, false);
+    expect(!contains(rf, "red"), "bool tail member offers no flag values");
+}
+
+// ------------------------------------------------------------------
 // Flag name completion: hidden flags, long-only/short-only, version.
 // ------------------------------------------------------------------
 void testFlagNameCompletion() {

@@ -21,6 +21,7 @@ int main() {
     testFlagTypeForHelp();
     testValueCompletionEqualSign();
     testValueCompletionSeparateArg();
+    testValueCompletionShortGroupTail();
     testFlagNameCompletion();
     testSubcommandCompletion();
     testValidArgsDirectiveOverride();

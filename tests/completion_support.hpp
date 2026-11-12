@@ -106,6 +106,7 @@ void testUsageTemplateCommandPathKey();
 void testFlagTypeForHelp();
 void testValueCompletionEqualSign();
 void testValueCompletionSeparateArg();
+void testValueCompletionShortGroupTail();
 void testFlagNameCompletion();
 void testSubcommandCompletion();
 void testValidArgsDirectiveOverride();
