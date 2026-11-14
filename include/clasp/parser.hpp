@@ -744,8 +744,8 @@ private:
             break;
         }
         default: // LCOV_EXCL_LINE (Kind::Unknown is never produced by kindFromDefault)
-            valid = true; // LCOV_EXCL_LINE
-            break; // LCOV_EXCL_LINE
+            valid = true; // LCOV_EXCL_LINE (Kind::Unknown is never produced by kindFromDefault)
+            break; // LCOV_EXCL_LINE (Kind::Unknown is never produced by kindFromDefault)
         }
 
         if (!valid) {
