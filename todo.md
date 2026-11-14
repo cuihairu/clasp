@@ -42,7 +42,7 @@ Evidence: commit a2a7823 · 569/569 CTest green · 100% line/function/branch cov
 - [x] Dynamic `__complete`/`__completeNoDesc` + configurable completion command names
 - [x] Docs generation (markdown/manpage)
 - [x] Config integration (env binding + config file merge + precedence)
-- [ ] Browser language auto-switch for docs site (G2 2026-11-14: no navigator.language probe / rootLocale redirect in `docs/.vitepress/config.ts`; current baseline = manual switch via VitePress locale dropdown + README cross-links; auto-redirect is an enhancement awaiting user scope decision)
+- [ ] zh/index.md mirror of the root-page language auto-pick script (G2 2026-11-14: root page `docs/index.md:29-50` already auto-detects via localStorage > navigator.languages and redirects zh browsers to /zh/; the zh home has no symmetric script to send en browsers back — symmetry enhancement, and whether to roll the pattern out fleet-wide is awaiting user scope decision)
 
 ## P3 Parity (API Surface)
 
