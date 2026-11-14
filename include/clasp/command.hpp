@@ -80,7 +80,10 @@ public:
     // NOTE: when adding a data member, add one moveMember line in
     // moveAllMembers (private data section). That single list drives both
     // move operations, so they cannot drift apart.
-    Command(Command&& other) { moveAllMembers(*this, other); }
+    Command(Command&& other) {
+        moveAllMembers(*this, other);
+        for (auto& c : subcommands_) c->reparent(this);
+    }
 
     Command& operator=(Command&& other) {
         if (this == &other) return *this;

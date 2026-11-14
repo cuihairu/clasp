@@ -1131,6 +1131,33 @@ void testConfigEnvQuotes() {
     }
 }
 
+// Move *construction* must reparent exactly like move assignment. A factory that
+// hands back a built tree without NRVO (MSVC Debug does) otherwise leaves every
+// child's parent_ pointing at the moved-from object, so any inherited-flags walk
+// (effectiveFlags / inheritedPersistentFlags) reads freed stack — the Windows
+// Debug ctest segfault in Command::inheritedPersistentFlags.
+void testCommandMoveConstruction() {
+    clasp::Command root("root");
+    root.withPersistentFlag("--verbose", "", "verbose", "verbose", false);
+    clasp::Command child("sub", "", "child command");
+    child.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
+        return 0;
+    });
+    root.addCommand(std::move(child));
+    // std::move on a named local pins the move constructor; return-by-value can
+    // be elided, which is exactly the path that would skip a missing reparent.
+    clasp::Command moved = std::move(root);
+
+    std::ostringstream help;
+    moved.setOut(help);
+    std::vector<char*> argv = {const_cast<char*>("root"), const_cast<char*>("sub"),
+                               const_cast<char*>("--help")};
+    const int rc = moved.run(static_cast<int>(argv.size()), argv.data());
+    expect(rc == 0, "move construction keeps the child dispatchable");
+    expect(help.str().find("--verbose") != std::string::npos,
+           "move construction reparents children so inherited persistent flags reach help");
+}
+
 // Move assignment transfers the full configured state. operator=(Command&&)
 // had no caller anywhere before the move-member list was unified with the
 // move constructor, so these assertions are its first real coverage.
@@ -1308,6 +1335,9 @@ int main() {
 
     std::cout << "\n=== Testing config env quotes ===" << std::endl;
     testConfigEnvQuotes();
+
+    std::cout << "\n=== Testing command move construction ===" << std::endl;
+    testCommandMoveConstruction();
 
     std::cout << "\n=== Testing command move assignment ===" << std::endl;
     testCommandMoveAssignment();
