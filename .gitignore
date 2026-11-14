@@ -51,9 +51,6 @@ build_cov/
 *.gcda
 *.gcno
 *.gcov
-*.gcno
-*.gcda
-*.gcov
 *.gcov.json.gz
 *.gcda.*
 *.gcno.*
