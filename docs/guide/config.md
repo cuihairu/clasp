@@ -25,4 +25,6 @@ Notes:
 - Unknown extensions are rejected.
 - Environment values override config file values.
 - Explicit CLI flags override both.
+- JSON numbers follow RFC 8259 strictly: `+1`, `01`, `1.`, `-.5` are rejected.
+- `.env` unquoted values strip inline comments: `KEY=value # comment` reads as `value`; quoted values keep `#` as-is.
 - The parsers intentionally implement a practical subset aimed at CLI config merging; see `examples/config_*` for supported shapes.

@@ -8,7 +8,7 @@ English | [简体中文](README.zh.md)
 
 - **Command and Subcommand Handling**: Easily define and manage commands with subcommands and associated actions.
 - **Argument Parsing**: Supports both positional and named arguments with type safety.
-- **Flag Management**: Persistent/local flags, required/hidden/deprecated, groups, repeated flags, pflag-style optional values (`NoOptDefVal`), and extra helpers like bytes/count/IP/CIDR/IPNet/IPMask/URL.
+- **Flag Management**: Persistent/local flags, required/hidden/deprecated, groups, repeated flags, pflag-style optional values (`NoOptDefVal`), and extra helpers like bytes/count/IP/CIDR/IPNet/IPMask/URL/IPSlice/bytesBase64.
 - **Optional Colored Output**: Opt-in ANSI color for built-in help/usage/errors, with built-in themes (`vscode`, `sublime`, `iterm2`) and `--color=auto|always|never`.
 - **Cobra-Like Ergonomics**: Hooks, aliases, suggestions, `TraverseChildren`, sorted help output, examples, and custom help/usage/version templates.
 - **Help and Usage Generation**: Automatically generate help text and usage instructions based on defined commands and flags.

@@ -42,6 +42,7 @@ Evidence: commit a2a7823 · 569/569 CTest green · 100% line/function/branch cov
 - [x] Dynamic `__complete`/`__completeNoDesc` + configurable completion command names
 - [x] Docs generation (markdown/manpage)
 - [x] Config integration (env binding + config file merge + precedence)
+- [ ] Browser language auto-switch for docs site (G2 2026-11-14: no navigator.language probe / rootLocale redirect in `docs/.vitepress/config.ts`; current baseline = manual switch via VitePress locale dropdown + README cross-links; auto-redirect is an enhancement awaiting user scope decision)
 
 ## P3 Parity (API Surface)
 
@@ -161,11 +162,11 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 
 - 契约、构建与打包：定义 C++17、版本一致性、CMake target/install/export 与可选示例测试；代表模块 `CMakeLists.txt:2`、`cmake/claspConfig.cmake.in:3`。
 - 命令树与应用模型：以 `Command`/`Flag` 承载子命令所有权、标志声明、回调和继承配置；代表模块 `include/clasp/command.hpp:69`、`include/clasp/flag.hpp:23`。
-- 执行编排：解析执行节点，串联 parser、help/version、外部源、校验、钩子和动作；代表模块 `include/clasp/command.hpp:1376`、`include/clasp/command.hpp:3034`。
-- Token 解析与类型校验：把 `argv` 变成有序显式值，校验/规范化基础类型和注解扩展类型；代表模块 `include/clasp/parser.hpp:44`、`include/clasp/parser.hpp:1125`。
-- 外部源集成：读取进程环境与配置文件，扁平化映射并按优先级注入 parser；代表模块 `include/clasp/command.hpp:3673`、`include/clasp/command.hpp:4205`。
-- 表现、导出与终端适配：生成 help/usage/version/Markdown/roff，并通过 color 适配终端能力；代表模块 `include/clasp/command.hpp:1494`、`src/color.cpp:14`。
-- 补全协议与 Shell 生成：安装动态 complete 命令、生成四种 shell 脚本并统一上下文解析；代表模块 `include/clasp/command.hpp:4560`、`include/clasp/command.hpp:2815`。
+- 执行编排：解析执行节点，串联 parser、help/version、外部源、校验、钩子和动作；代表模块 `include/clasp/command.hpp:1287`、`include/clasp/command.hpp:2954`。
+- Token 解析与类型校验：把 `argv` 变成有序显式值，校验/规范化基础类型和注解扩展类型；代表模块 `include/clasp/parser.hpp:45`、`include/clasp/parser.hpp:629`。
+- 外部源集成：读取进程环境与配置文件，扁平化映射并按优先级注入 parser；代表模块 `include/clasp/command.hpp:3519`、`include/clasp/command.hpp:3536`。
+- 表现、导出与终端适配：生成 help/usage/version/Markdown/roff，并通过 color 适配终端能力；代表模块 `include/clasp/command.hpp:1409`、`src/color.cpp:14`。
+- 补全协议与 Shell 生成：安装动态 complete 命令、生成四种 shell 脚本并统一上下文解析；代表模块 `include/clasp/command.hpp:3891`、`include/clasp/command.hpp:2725`。
 - 消费验证与文档契约：用 examples、unit/CTest 与双语文档固定 API 和可见行为；代表模块 `examples/basic_example.cpp:7`、`tests/execute.cpp:7`、`docs/guide/index.md:3`。
 
 ### b) 超大文件候选

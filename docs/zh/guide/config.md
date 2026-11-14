@@ -25,4 +25,6 @@ Clasp 提供 viper-like 的“外部源”合并：`flag > env > config > defaul
 - 未知扩展名会直接报错。
 - 环境变量会覆盖配置文件中的值。
 - 显式 CLI flag 会覆盖两者。
+- JSON 数字严格遵循 RFC 8259：`+1`、`01`、`1.`、`-.5` 会被拒绝。
+- `.env` 未加引号的值会剥离行内注释：`KEY=value # comment` 读作 `value`；带引号的值原样保留 `#`。
 - 这些解析器刻意只实现适合 CLI 合并的实用子集；支持的结构可参考 `examples/config_*`。

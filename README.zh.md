@@ -9,7 +9,7 @@
 
 - **命令与子命令**:轻松定义和管理命令、子命令及其关联的动作。
 - **参数解析**:同时支持位置参数和命名参数,并具备类型安全。
-- **Flag 管理**:持久/局部 flag,支持 required/hidden/deprecated、分组、重复 flag、pflag 风格的可选值(`NoOptDefVal`),以及 bytes/count/IP/CIDR/IPNet/IPMask/URL 等额外辅助类型。
+- **Flag 管理**:持久/局部 flag,支持 required/hidden/deprecated、分组、重复 flag、pflag 风格的可选值(`NoOptDefVal`),以及 bytes/count/IP/CIDR/IPNet/IPMask/URL/IPSlice/bytesBase64 等额外辅助类型。
 - **可选的彩色输出**:为内置的 help/usage/错误信息提供可选的 ANSI 颜色,内置主题(`vscode`、`sublime`、`iterm2`),支持 `--color=auto|always|never`。
 - **类 Cobra 的易用性**:Hook、别名、命令建议、`TraverseChildren`、排序的 help 输出、示例,以及自定义 help/usage/version 模板。
 - **Help 与 Usage 生成**:根据已定义的命令和 flag 自动生成帮助文本和用法说明。
