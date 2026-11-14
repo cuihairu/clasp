@@ -1131,6 +1131,85 @@ void testConfigEnvQuotes() {
     }
 }
 
+// Move assignment transfers the full configured state. operator=(Command&&)
+// had no caller anywhere before the move-member list was unified with the
+// move constructor, so these assertions are its first real coverage.
+void testCommandMoveAssignment() {
+    {
+        clasp::Command src("svc", "svc short", "svc long");
+        src.addAlias("sv");
+        src.version("1.2.3");
+        src.withFlag("--port", "", "port", "Port", 0);
+        src.markFlagHidden("--port");
+        src.action([](clasp::Command&, const clasp::Parser& p, const std::vector<std::string>&) {
+            g_capture << "port=" << p.getFlag<int>("--port", 0) << ";";
+            return 0;
+        });
+        clasp::Command child("sub", "", "child command");
+        child.action([](clasp::Command&, const clasp::Parser&, const std::vector<std::string>&) {
+            g_capture << "SUBRUN;";
+            return 0;
+        });
+        src.addCommand(std::move(child));
+
+        clasp::Command dst("placeholder");
+        dst = std::move(src);
+
+        expect(dst.name() == "svc", "move assignment carries name");
+
+        std::ostringstream versionOut;
+        dst.setOut(versionOut);
+        const int rcVer = runArgs(dst, {"--version"});
+        expect(rcVer == 0 && versionOut.str().find("1.2.3") != std::string::npos,
+               "move assignment carries version");
+
+        // Alias dispatch: run under the alias program name; only a carried
+        // alias resolves the command and executes its action.
+        {
+            std::vector<char*> ptrs;
+            ptrs.push_back(const_cast<char*>("sv"));
+            g_capture << "ALIASRUN;";
+            const int rcAlias = dst.run(1, ptrs.data());
+            expect(rcAlias == 0 && g_capture.str().find("ALIASRUN;") != std::string::npos,
+                   "move assignment carries aliases");
+            g_capture.str("");
+        }
+
+        g_capture.str("");
+        const int rc = runArgs(dst, {"--port", "7"});
+        expect(rc == 0, "moved-to command runs");
+        expect(g_capture.str().find("port=7;") != std::string::npos, "moved-to flag value applied");
+
+        std::ostringstream help;
+        dst.setOut(help);
+        const int rcHelp = runArgs(dst, {"--help"});
+        expect(rcHelp == 0, "moved-to help runs");
+        expect(help.str().find("--port") == std::string::npos, "hidden flag marker moved with state");
+
+        g_capture.str("");
+        const int rcSub = runArgs(dst, {"sub"});
+        expect(rcSub == 0, "moved-to root dispatches to subcommand");
+        expect(g_capture.str().find("SUBRUN;") != std::string::npos, "reparented child action executed");
+    }
+    {
+        // Self assignment must be a no-op, not member-wise self-move.
+        clasp::Command c("self");
+        c.withFlag("--v", "", "v", "V", std::string("x"));
+        c.version("9.9.9");
+        clasp::Command& alias = c;
+        c = std::move(alias);
+        expect(c.name() == "self", "self assignment keeps name");
+        std::ostringstream selfVersion;
+        c.setOut(selfVersion);
+        const int rcVer = runArgs(c, {"--version"});
+        expect(rcVer == 0 && selfVersion.str().find("9.9.9") != std::string::npos,
+               "self assignment keeps version");
+        g_capture.str("");
+        const int rc = runArgs(c, {"--v", "y"});
+        expect(rc == 0, "self assigned command still runs");
+    }
+}
+
 } // namespace
 
 int main() {
@@ -1229,6 +1308,9 @@ int main() {
 
     std::cout << "\n=== Testing config env quotes ===" << std::endl;
     testConfigEnvQuotes();
+
+    std::cout << "\n=== Testing command move assignment ===" << std::endl;
+    testCommandMoveAssignment();
 
     if (g_failures == 0) {
         std::cout << "\nok\n";

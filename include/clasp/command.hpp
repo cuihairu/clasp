@@ -77,161 +77,17 @@ public:
     // leaving dangling parents behind (crashes as soon as a factory returns a
     // built Command without NRVO - e.g. MSVC Debug). After the member-wise
     // move, re-point every child at *this.
-    // NOTE: when adding a data member to this class, extend both lists below.
-    Command(Command&& other)
-        : name_(std::move(other.name_)),
-          short_(std::move(other.short_)),
-          long_(std::move(other.long_)),
-          aliases_(std::move(other.aliases_)),
-          annotations_(std::move(other.annotations_)),
-          groups_(std::move(other.groups_)),
-          groupId_(std::move(other.groupId_)),
-          flags_(std::move(other.flags_)),
-          persistentFlags_(std::move(other.persistentFlags_)),
-          subcommands_(std::move(other.subcommands_)),
-          action_(std::move(other.action_)),
-          actionE_(std::move(other.actionE_)),
-          args_(std::move(other.args_)),
-          preRun_(std::move(other.preRun_)),
-          preRunE_(std::move(other.preRunE_)),
-          postRun_(std::move(other.postRun_)),
-          postRunE_(std::move(other.postRunE_)),
-          persistentPreRun_(std::move(other.persistentPreRun_)),
-          persistentPreRunE_(std::move(other.persistentPreRunE_)),
-          persistentPostRun_(std::move(other.persistentPostRun_)),
-          persistentPostRunE_(std::move(other.persistentPostRunE_)),
-          version_(std::move(other.version_)),
-          parent_(std::move(other.parent_)),
-          hidden_(std::move(other.hidden_)),
-          deprecated_(std::move(other.deprecated_)),
-          example_(std::move(other.example_)),
-          silenceUsage_(std::move(other.silenceUsage_)),
-          silenceErrors_(std::move(other.silenceErrors_)),
-          suggestions_(std::move(other.suggestions_)),
-          suggestionsMinimumDistance_(std::move(other.suggestionsMinimumDistance_)),
-          suggestionsOverride_(std::move(other.suggestionsOverride_)),
-          suggestionsMinimumDistanceOverride_(std::move(other.suggestionsMinimumDistanceOverride_)),
-          disableSortCommandsOverride_(std::move(other.disableSortCommandsOverride_)),
-          disableSortFlagsOverride_(std::move(other.disableSortFlagsOverride_)),
-          disableFlagsInUseLineOverride_(std::move(other.disableFlagsInUseLineOverride_)),
-          addHelpCommandOverride_(std::move(other.addHelpCommandOverride_)),
-          helpCommandNameOverride_(std::move(other.helpCommandNameOverride_)),
-          helpTemplateOverride_(std::move(other.helpTemplateOverride_)),
-          usageTemplateOverride_(std::move(other.usageTemplateOverride_)),
-          versionTemplateOverride_(std::move(other.versionTemplateOverride_)),
-          helpFuncOverride_(std::move(other.helpFuncOverride_)),
-          usageFuncOverride_(std::move(other.usageFuncOverride_)),
-          flagErrorFuncOverride_(std::move(other.flagErrorFuncOverride_)),
-          allowUnknownFlagsOverride_(std::move(other.allowUnknownFlagsOverride_)),
-          shortFlagGroupingOverride_(std::move(other.shortFlagGroupingOverride_)),
-          boolNegationOverride_(std::move(other.boolNegationOverride_)),
-          normalizeFlagKeyOverride_(std::move(other.normalizeFlagKeyOverride_)),
-          completionDirectiveOverride_(std::move(other.completionDirectiveOverride_)),
-          completionConfigOverride_(std::move(other.completionConfigOverride_)),
-          disableFlagParsing_(std::move(other.disableFlagParsing_)),
-          traverseChildren_(std::move(other.traverseChildren_)),
-          mutuallyExclusiveFlagGroups_(std::move(other.mutuallyExclusiveFlagGroups_)),
-          oneRequiredFlagGroups_(std::move(other.oneRequiredFlagGroups_)),
-          requiredTogetherFlagGroups_(std::move(other.requiredTogetherFlagGroups_)),
-          unmatchedMarkErrors_(std::move(other.unmatchedMarkErrors_)),
-          validArgs_(std::move(other.validArgs_)),
-          validArgsFunction_(std::move(other.validArgsFunction_)),
-          flagCompletionFuncs_(std::move(other.flagCompletionFuncs_)),
-          flagValueBindings_(std::move(other.flagValueBindings_)),
-          envBindings_(std::move(other.envBindings_)),
-          configFilePath_(std::move(other.configFilePath_)),
-          configFileFlag_(std::move(other.configFileFlag_)),
-          argsOverride_(std::move(other.argsOverride_)),
-          contextOverride_(std::move(other.contextOverride_)),
-          colorEnabled_(std::move(other.colorEnabled_)),
-          colorFlagsInstalled_(std::move(other.colorFlagsInstalled_)),
-          colorDefaultMode_(std::move(other.colorDefaultMode_)),
-          colorRuntimeMode_(std::move(other.colorRuntimeMode_)),
-          colorDefaultTheme_(std::move(other.colorDefaultTheme_)),
-          colorRuntimeTheme_(std::move(other.colorRuntimeTheme_)),
-          out_(std::move(other.out_)),
-          err_(std::move(other.err_)) {
-        for (auto& c : subcommands_) c->reparent(this);
-    }
+    // NOTE: when adding a data member, add one moveMember line in
+    // moveAllMembers (private data section). That single list drives both
+    // move operations, so they cannot drift apart.
+    Command(Command&& other) { moveAllMembers(*this, other); }
 
     Command& operator=(Command&& other) {
         if (this == &other) return *this;
-                name_ = std::move(other.name_);
-        short_ = std::move(other.short_);
-        long_ = std::move(other.long_);
-        aliases_ = std::move(other.aliases_);
-        annotations_ = std::move(other.annotations_);
-        groups_ = std::move(other.groups_);
-        groupId_ = std::move(other.groupId_);
-        flags_ = std::move(other.flags_);
-        persistentFlags_ = std::move(other.persistentFlags_);
-        subcommands_ = std::move(other.subcommands_);
-        action_ = std::move(other.action_);
-        actionE_ = std::move(other.actionE_);
-        args_ = std::move(other.args_);
-        preRun_ = std::move(other.preRun_);
-        preRunE_ = std::move(other.preRunE_);
-        postRun_ = std::move(other.postRun_);
-        postRunE_ = std::move(other.postRunE_);
-        persistentPreRun_ = std::move(other.persistentPreRun_);
-        persistentPreRunE_ = std::move(other.persistentPreRunE_);
-        persistentPostRun_ = std::move(other.persistentPostRun_);
-        persistentPostRunE_ = std::move(other.persistentPostRunE_);
-        version_ = std::move(other.version_);
-        parent_ = std::move(other.parent_);
-        hidden_ = std::move(other.hidden_);
-        deprecated_ = std::move(other.deprecated_);
-        example_ = std::move(other.example_);
-        silenceUsage_ = std::move(other.silenceUsage_);
-        silenceErrors_ = std::move(other.silenceErrors_);
-        suggestions_ = std::move(other.suggestions_);
-        suggestionsMinimumDistance_ = std::move(other.suggestionsMinimumDistance_);
-        suggestionsOverride_ = std::move(other.suggestionsOverride_);
-        suggestionsMinimumDistanceOverride_ = std::move(other.suggestionsMinimumDistanceOverride_);
-        disableSortCommandsOverride_ = std::move(other.disableSortCommandsOverride_);
-        disableSortFlagsOverride_ = std::move(other.disableSortFlagsOverride_);
-        disableFlagsInUseLineOverride_ = std::move(other.disableFlagsInUseLineOverride_);
-        addHelpCommandOverride_ = std::move(other.addHelpCommandOverride_);
-        helpCommandNameOverride_ = std::move(other.helpCommandNameOverride_);
-        helpTemplateOverride_ = std::move(other.helpTemplateOverride_);
-        usageTemplateOverride_ = std::move(other.usageTemplateOverride_);
-        versionTemplateOverride_ = std::move(other.versionTemplateOverride_);
-        helpFuncOverride_ = std::move(other.helpFuncOverride_);
-        usageFuncOverride_ = std::move(other.usageFuncOverride_);
-        flagErrorFuncOverride_ = std::move(other.flagErrorFuncOverride_);
-        allowUnknownFlagsOverride_ = std::move(other.allowUnknownFlagsOverride_);
-        shortFlagGroupingOverride_ = std::move(other.shortFlagGroupingOverride_);
-        boolNegationOverride_ = std::move(other.boolNegationOverride_);
-        normalizeFlagKeyOverride_ = std::move(other.normalizeFlagKeyOverride_);
-        completionDirectiveOverride_ = std::move(other.completionDirectiveOverride_);
-        completionConfigOverride_ = std::move(other.completionConfigOverride_);
-        disableFlagParsing_ = std::move(other.disableFlagParsing_);
-        traverseChildren_ = std::move(other.traverseChildren_);
-        mutuallyExclusiveFlagGroups_ = std::move(other.mutuallyExclusiveFlagGroups_);
-        oneRequiredFlagGroups_ = std::move(other.oneRequiredFlagGroups_);
-        requiredTogetherFlagGroups_ = std::move(other.requiredTogetherFlagGroups_);
-        unmatchedMarkErrors_ = std::move(other.unmatchedMarkErrors_);
-        validArgs_ = std::move(other.validArgs_);
-        validArgsFunction_ = std::move(other.validArgsFunction_);
-        flagCompletionFuncs_ = std::move(other.flagCompletionFuncs_);
-        flagValueBindings_ = std::move(other.flagValueBindings_);
-        envBindings_ = std::move(other.envBindings_);
-        configFilePath_ = std::move(other.configFilePath_);
-        configFileFlag_ = std::move(other.configFileFlag_);
-        argsOverride_ = std::move(other.argsOverride_);
-        contextOverride_ = std::move(other.contextOverride_);
-        colorEnabled_ = std::move(other.colorEnabled_);
-        colorFlagsInstalled_ = std::move(other.colorFlagsInstalled_);
-        colorDefaultMode_ = std::move(other.colorDefaultMode_);
-        colorRuntimeMode_ = std::move(other.colorRuntimeMode_);
-        colorDefaultTheme_ = std::move(other.colorDefaultTheme_);
-        colorRuntimeTheme_ = std::move(other.colorRuntimeTheme_);
-        out_ = std::move(other.out_);
-        err_ = std::move(other.err_);
+        moveAllMembers(*this, other);
         for (auto& c : subcommands_) c->reparent(this);
         return *this;
     }
-
 
     Command& setOut(std::ostream& os) {
         out_ = &os;
@@ -3254,6 +3110,90 @@ private:
         }
         target->printHelp();
         return 0;
+    }
+
+    // Single source of truth for the member-wise move shared by the move
+    // constructor and move assignment above. Move assignment must release
+    // whatever the target already holds, so members are move-assigned; on a
+    // freshly constructed target that is equivalent to move construction.
+    template <typename T>
+    static void moveMember(T Command::*member, Command& dst, Command& src) {
+        dst.*member = std::move(src.*member);
+    }
+
+    static void moveAllMembers(Command& dst, Command& src) {
+        moveMember(&Command::name_, dst, src);
+        moveMember(&Command::short_, dst, src);
+        moveMember(&Command::long_, dst, src);
+        moveMember(&Command::aliases_, dst, src);
+        moveMember(&Command::annotations_, dst, src);
+        moveMember(&Command::groups_, dst, src);
+        moveMember(&Command::groupId_, dst, src);
+        moveMember(&Command::flags_, dst, src);
+        moveMember(&Command::persistentFlags_, dst, src);
+        moveMember(&Command::subcommands_, dst, src);
+        moveMember(&Command::action_, dst, src);
+        moveMember(&Command::actionE_, dst, src);
+        moveMember(&Command::args_, dst, src);
+        moveMember(&Command::preRun_, dst, src);
+        moveMember(&Command::preRunE_, dst, src);
+        moveMember(&Command::postRun_, dst, src);
+        moveMember(&Command::postRunE_, dst, src);
+        moveMember(&Command::persistentPreRun_, dst, src);
+        moveMember(&Command::persistentPreRunE_, dst, src);
+        moveMember(&Command::persistentPostRun_, dst, src);
+        moveMember(&Command::persistentPostRunE_, dst, src);
+        moveMember(&Command::version_, dst, src);
+        moveMember(&Command::parent_, dst, src);
+        moveMember(&Command::hidden_, dst, src);
+        moveMember(&Command::deprecated_, dst, src);
+        moveMember(&Command::example_, dst, src);
+        moveMember(&Command::silenceUsage_, dst, src);
+        moveMember(&Command::silenceErrors_, dst, src);
+        moveMember(&Command::suggestions_, dst, src);
+        moveMember(&Command::suggestionsMinimumDistance_, dst, src);
+        moveMember(&Command::suggestionsOverride_, dst, src);
+        moveMember(&Command::suggestionsMinimumDistanceOverride_, dst, src);
+        moveMember(&Command::disableSortCommandsOverride_, dst, src);
+        moveMember(&Command::disableSortFlagsOverride_, dst, src);
+        moveMember(&Command::disableFlagsInUseLineOverride_, dst, src);
+        moveMember(&Command::addHelpCommandOverride_, dst, src);
+        moveMember(&Command::helpCommandNameOverride_, dst, src);
+        moveMember(&Command::helpTemplateOverride_, dst, src);
+        moveMember(&Command::usageTemplateOverride_, dst, src);
+        moveMember(&Command::versionTemplateOverride_, dst, src);
+        moveMember(&Command::helpFuncOverride_, dst, src);
+        moveMember(&Command::usageFuncOverride_, dst, src);
+        moveMember(&Command::flagErrorFuncOverride_, dst, src);
+        moveMember(&Command::allowUnknownFlagsOverride_, dst, src);
+        moveMember(&Command::shortFlagGroupingOverride_, dst, src);
+        moveMember(&Command::boolNegationOverride_, dst, src);
+        moveMember(&Command::normalizeFlagKeyOverride_, dst, src);
+        moveMember(&Command::completionDirectiveOverride_, dst, src);
+        moveMember(&Command::completionConfigOverride_, dst, src);
+        moveMember(&Command::disableFlagParsing_, dst, src);
+        moveMember(&Command::traverseChildren_, dst, src);
+        moveMember(&Command::mutuallyExclusiveFlagGroups_, dst, src);
+        moveMember(&Command::oneRequiredFlagGroups_, dst, src);
+        moveMember(&Command::requiredTogetherFlagGroups_, dst, src);
+        moveMember(&Command::unmatchedMarkErrors_, dst, src);
+        moveMember(&Command::validArgs_, dst, src);
+        moveMember(&Command::validArgsFunction_, dst, src);
+        moveMember(&Command::flagCompletionFuncs_, dst, src);
+        moveMember(&Command::flagValueBindings_, dst, src);
+        moveMember(&Command::envBindings_, dst, src);
+        moveMember(&Command::configFilePath_, dst, src);
+        moveMember(&Command::configFileFlag_, dst, src);
+        moveMember(&Command::argsOverride_, dst, src);
+        moveMember(&Command::contextOverride_, dst, src);
+        moveMember(&Command::colorEnabled_, dst, src);
+        moveMember(&Command::colorFlagsInstalled_, dst, src);
+        moveMember(&Command::colorDefaultMode_, dst, src);
+        moveMember(&Command::colorRuntimeMode_, dst, src);
+        moveMember(&Command::colorDefaultTheme_, dst, src);
+        moveMember(&Command::colorRuntimeTheme_, dst, src);
+        moveMember(&Command::out_, dst, src);
+        moveMember(&Command::err_, dst, src);
     }
 
     std::string name_;
