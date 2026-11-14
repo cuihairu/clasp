@@ -198,7 +198,16 @@ void testJsonBranchMatrix() {
     };
     const std::vector<Case> cases = {
         {"{\r\n\t \"sv\" : \"ok\" \r\n}\r\n", true, "json: space/tab/nl/cr whitespace skipped"},
-        {"{\"sv\": +5}", true, "json: leading plus sign accepted"},
+        {"{\"sv\": 0}", true, "json: zero accepted"},
+        {"{\"sv\": -0.5e-2}", true, "json: negative zero fraction with exponent accepted"},
+        {"{\"sv\": \"a\\tb\"}", true, "json: escaped control character accepted"},
+        {"{\"sv\": +5}", false, "json: leading plus sign rejected"},
+        {"{\"sv\": 01}", false, "json: leading zeros rejected"},
+        {"{\"sv\": 1.}", false, "json: fraction dot without digits rejected"},
+        {"{\"sv\": -.5}", false, "json: missing integer part rejected"},
+        {"{\"items\": [01, 2]}", false, "json: leading zeros inside array rejected"},
+        {"{\"sv\": \"a\nb\"}", false, "json: raw newline in string rejected"},
+        {"{\"sv\": \"a\tb\"}", false, "json: raw tab in string rejected"},
         {"{\"items\": [1.5, 2e+3]}", true, "json: fraction and exponent multi values"},
         {"{\"alongtoplevelkeyname123456\": 1}", true, "json: long top-level key"},
         {"{\"averylongprefixname\": {\"alongkeyname123\": 1}}", true, "json: long nested key"},

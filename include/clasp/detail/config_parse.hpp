@@ -140,6 +140,9 @@ struct JsonParse {
             const char ch = *p++;
             if (ch == '"') return out;
             if (ch != '\\') {
+                // RFC 8259: control characters (U+0000-U+001F) must appear
+                // escaped in JSON strings; a raw one is a syntax error.
+                if (static_cast<unsigned char>(ch) < 0x20) return std::nullopt;
                 out.push_back(ch);
                 continue;
             }
@@ -162,33 +165,34 @@ struct JsonParse {
         return std::nullopt;
     }
 
+    // RFC 8259 number grammar: [ "-" ] int [ frac ] [ exp ], where int is "0"
+    // or a nonzero digit followed by digits (no leading "+", no leading zeros,
+    // no missing integer part like "-.5") and frac needs at least one digit
+    // after the dot. A stray trailing token (e.g. "01" parses as "0" then "1")
+    // is rejected by the surrounding separator checks.
     std::optional<std::string> parseNumberToken() {
         skipWs();
-        if (p >= end) return std::nullopt; // LCOV_EXCL_LINE (sole caller checked *p is a digit, so p < end)
+        if (p >= end) return std::nullopt; // LCOV_EXCL_LINE (sole caller checked *p starts a number, so p < end)
         const char* start = p;
-        if (*p == '-' || *p == '+') ++p;
-        bool any = false;
-        while (p < end && std::isdigit(static_cast<unsigned char>(*p))) {
-            any = true;
+        if (*p == '-') ++p;
+        if (p < end && *p == '0') {
             ++p;
+        } else if (p < end && *p >= '1' && *p <= '9') {
+            ++p;
+            while (p < end && std::isdigit(static_cast<unsigned char>(*p))) ++p;
+        } else {
+            return std::nullopt;
         }
         if (p < end && *p == '.') {
             ++p;
-            while (p < end && std::isdigit(static_cast<unsigned char>(*p))) {
-                any = true;
-                ++p;
-            }
+            if (p >= end || !std::isdigit(static_cast<unsigned char>(*p))) return std::nullopt;
+            while (p < end && std::isdigit(static_cast<unsigned char>(*p))) ++p;
         }
-        if (!any) return std::nullopt;
         if (p < end && (*p == 'e' || *p == 'E')) {
             ++p;
             if (p < end && (*p == '+' || *p == '-')) ++p;
-            bool expAny = false;
-            while (p < end && std::isdigit(static_cast<unsigned char>(*p))) {
-                expAny = true;
-                ++p;
-            }
-            if (!expAny) return std::nullopt;
+            if (p >= end || !std::isdigit(static_cast<unsigned char>(*p))) return std::nullopt;
+            while (p < end && std::isdigit(static_cast<unsigned char>(*p))) ++p;
         }
         return std::string(start, p);
     }
@@ -201,7 +205,7 @@ struct JsonParse {
         skipWs();
         if (p >= end) return std::nullopt;
         if (*p == '"') return parseString();
-        if (*p == '-' || *p == '+' || std::isdigit(static_cast<unsigned char>(*p))) return parseNumberToken();
+        if (*p == '-' || std::isdigit(static_cast<unsigned char>(*p))) return parseNumberToken();
         if (startsWith("true")) {
             p += 4;
             return std::string("true");
