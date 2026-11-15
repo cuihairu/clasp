@@ -24,6 +24,46 @@ The format is based on Keep a Changelog, and this project follows SemVer.
   canonical Cobra-like strings are locked byte-for-byte (`examples/cobra_strings_example.cpp`), a defined set of pflag edge
   interactions is pinned by behavior tests (`examples/pflag_edge_example.cpp`), and every generated completion script's
   directive-handling logic (bash/zsh/fish/powershell) is asserted. See `COMPAT.md`.
+- The vcpkg draft port now pins `v0.1.2` with a computed `SHA512`, and its `version-semver` matches
+  (`packaging/vcpkg/portfile.cmake`, `packaging/vcpkg/vcpkg.json`).
+
+## 0.1.2 - 2026-09-15
+
+_Backfilled from release history._
+
+### Added
+
+- Branch coverage raised to 100% on top of the existing line/function coverage.
+
+### Changed
+
+- VitePress build output is no longer tracked in version control.
+- The license badge is static, avoiding `shields.io` rate limiting on the README.
+
+### Fixed
+
+- Completion actions are now resolved through the runtime root command, so completion works after the root is moved.
+- Child parent pointers are reattached when a `Command` is moved, keeping the moved tree dispatchable.
+- Portable temp paths and MSVC Debug-CRT report routing for the Windows test matrix.
+
+## 0.1.1 - 2026-06-09
+
+_Backfilled from release history._
+
+### Added
+
+- INI parser for `.ini`/`.cfg` config files, with unknown config extensions rejected.
+- Coverage tests across parser, command, completion, color, and value-parsing paths.
+
+### Changed
+
+- Documentation site migrated from VuePress to VitePress with English/Chinese locales.
+- Cross-platform CI test differences handled instead of skipped.
+
+### Fixed
+
+- `NoOptDefVal` command scanning no longer misreads a following token as a subcommand name.
+- Shared parsing and help rendering consolidated in one place.
 
 ## 0.1.0 - 2026-05-27
 
