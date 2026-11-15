@@ -2,7 +2,8 @@
 
 Goal: C++17 CLI framework mirroring Go Cobra's behavior and ergonomics.
 
-Status: all planned requirements implemented; 0 open items.
+Status: all planned requirements implemented. Open items: 1, and it is BLOCKED on a user decision
+(zh/index.md language auto-pick mirror, see P2 below); every other item is closed. Updated 2026-11-15.
 Evidence: commit a2a7823 · 569/569 CTest green · 100% line/function/branch coverage (gcovr, `include/` + `src/`).
 
 ## P0 Core
