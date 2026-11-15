@@ -42,7 +42,7 @@ Evidence: commit a2a7823 · 569/569 CTest green · 100% line/function/branch cov
 - [x] Dynamic `__complete`/`__completeNoDesc` + configurable completion command names
 - [x] Docs generation (markdown/manpage)
 - [x] Config integration (env binding + config file merge + precedence)
-- [ ] zh/index.md mirror of the root-page language auto-pick script (G2 2026-11-14: root page `docs/index.md:29-50` already auto-detects via localStorage > navigator.languages and redirects zh browsers to /zh/; the zh home has no symmetric script to send en browsers back — symmetry enhancement, and whether to roll the pattern out fleet-wide is awaiting user scope decision)
+- [ ] **BLOCKED（等用户拍板）** zh/index.md mirror of the root-page language auto-pick script (G2 2026-11-14: root page `docs/index.md:29-50` already auto-detects via localStorage > navigator.languages and redirects zh browsers to /zh/; the zh home has no symmetric script to send en browsers back — symmetry enhancement, and whether to roll the pattern out fleet-wide is awaiting user scope decision; pomelo / redis-streaming already ship the two-way symmetric pattern as the fleet reference)
 
 ## P3 Parity (API Surface)
 
@@ -179,6 +179,6 @@ Filed from docs/review/2026-11-01-code-review.md. P1 (JSON config stack overflow
 
 ### c) 目录/分类问题
 
-- `src/command.cpp` 只含注释却参与库编译，而 `Command` 实际定义在头文件；目录布局暗示实现分离，但当前没有对应实现单元（src/command.cpp:1、CMakeLists.txt:39）。
-- `packaging/vcpkg/portfile.cmake` 仍引用 `v0.1.0` 且 `SHA512 0`，与当前 `CMakeLists.txt` 和伞形头的 `0.1.2` 版本契约不一致（packaging/vcpkg/portfile.cmake:4、packaging/vcpkg/portfile.cmake:5、CMakeLists.txt:2、include/clasp/clasp.hpp:9）。
-- 根 `CMakeLists.txt` 在主构建脚本中内联大量示例 target、CTest 名称和精确输出断言，测试契约与库构建配置没有目录/文件边界（CMakeLists.txt:93、CMakeLists.txt:2340）。
+- [x] `src/command.cpp` 只含注释却参与库编译（3 行注释，src/command.cpp:1-3），顺带核实发现 `src/clasp.cpp` 为 0 行空文件——两 TU 对库无贡献，docs 全量无引用（仅引 src/flag.cpp、src/color.cpp）。删除两 TU，`add_library` 源表收敛为 color.cpp + flag.cpp（CMakeLists.txt:39-42） Fixed in commit 9da9a05 · 569/569 CTest green（build-lay -j4，-j8 首轮遇内存瞬态 cc1plus killed，与既有记录一致）
+- [x] `packaging/vcpkg/portfile.cmake` 引用 `v0.1.0` 且 `SHA512 0`，`vcpkg.json` 的 `version-semver` 同为 `0.1.0`，与 `CMakeLists.txt:2` / `include/clasp/clasp.hpp:9` 的 `0.1.2` 版本契约不一致。修复：三处统一 `v0.1.2`，SHA512 按 tag archive 实算填入（88f8c222…，curl codeload tar.gz + sha512sum）；packaging/vcpkg/README.md 措辞由「v0.1.0 push 后补 hash」改为三处同改 + 重算指引；docs/reference/architecture.md:16 + docs/zh/reference/architecture.md:16「当前仍固定在 v0.1.0」句同步 Fixed in commit d55cce0 · packaging/vcpkg/portfile.cmake:4-5 · packaging/vcpkg/vcpkg.json:3 · 569/569 CTest green（build-lay）
+- [x] 根 `CMakeLists.txt` 在主构建脚本中内联大量示例 target、CTest 名称和精确输出断言（CMakeLists.txt:93、CMakeLists.txt:2340） Fixed in commit cfc7f75（LAY-003 同源：根文件 2438→99 行，示例与测试契约拆至 cmake/examples.cmake / cmake/tests.cmake），随 LAY-003 关闭，此处仅补勾账
