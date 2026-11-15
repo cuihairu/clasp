@@ -13,7 +13,7 @@ title: 源码架构
 
 构建契约固定 C++17，校验项目版本与 `CLASP_VERSION_*` 宏一致，编译少量非头文件实现，并导出 `clasp::clasp` CMake 包（`CMakeLists.txt:2`、`CMakeLists.txt:4`、`CMakeLists.txt:11`、`CMakeLists.txt:39`、`CMakeLists.txt:52`、`CMakeLists.txt:61`、`CMakeLists.txt:77`）。配置输入是 `CLASP_BUILD_EXAMPLES`、`CLASP_ENABLE_COVERAGE`、标准安装目录和共享库属性（`CMakeLists.txt:23`、`CMakeLists.txt:27`、`CMakeLists.txt:54`、`CMakeLists.txt:63`）。公开头文件树和 package config 是消费方接口（`CMakeLists.txt:46`、`CMakeLists.txt:70`、`cmake/claspConfig.cmake.in:3`）。
 
-该层保存构建元数据和安装产物，不是运行态。示例与测试是可选消费契约：启用后构建可执行文件、注册 CTest，并锁定可见字符串与解析行为（`CMakeLists.txt:93`、`cmake/tests.cmake:5`、`cmake/examples.cmake:401`、`cmake/examples.cmake:406`）。vcpkg 目录是另一个打包入口草案，当前仍固定在 `v0.1.0`（`packaging/vcpkg/portfile.cmake:1`、`packaging/vcpkg/portfile.cmake:4`、`packaging/vcpkg/README.md:3`）。
+该层保存构建元数据和安装产物，不是运行态。示例与测试是可选消费契约：启用后构建可执行文件、注册 CTest，并锁定可见字符串与解析行为（`CMakeLists.txt:93`、`cmake/tests.cmake:5`、`cmake/examples.cmake:401`、`cmake/examples.cmake:406`）。vcpkg 目录是另一个打包入口草案，固定在 `v0.1.2` 且 `SHA512` 已填（`packaging/vcpkg/portfile.cmake:1`、`packaging/vcpkg/portfile.cmake:4`、`packaging/vcpkg/README.md:3`）。
 
 ## 2. 命令树与应用模型
 

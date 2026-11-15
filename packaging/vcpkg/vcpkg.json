@@ -1,6 +1,6 @@
 {
   "name": "clasp",
-  "version-semver": "0.1.0",
+  "version-semver": "0.1.2",
   "description": "C++17 command-line application framework inspired by Go's Cobra.",
   "homepage": "https://github.com/cuihairu/clasp",
   "license": "Apache-2.0",

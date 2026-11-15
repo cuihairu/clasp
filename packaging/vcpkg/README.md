@@ -2,5 +2,7 @@
 
 This directory is a draft for a future vcpkg port.
 
-Before submitting to `microsoft/vcpkg`, replace `SHA512 0` in `portfile.cmake`
-with the hash reported by vcpkg after `v0.1.0` has been pushed to GitHub.
+The port pins `v0.1.2`: `REF` and `SHA512` in `portfile.cmake` and
+`version-semver` in `vcpkg.json` are filled for that tag. When bumping the
+version, update all three together and recompute the hash from the tag
+archive (`curl -sL https://github.com/cuihairu/clasp/archive/refs/tags/vX.Y.Z.tar.gz | sha512sum`).
