@@ -43,5 +43,5 @@ title: 架构术语表
 | 补全指令 | Completion directive | 以 `:<number>` token 传给 shell 消费方的 Cobra 兼容数字位掩码。 | `include/clasp/command.hpp:39`、`include/clasp/command.hpp:896` |
 | 动态补全 | Dynamic completion | 运行期把 shell words 解析成命令候选、flags、自定义值和描述。 | `include/clasp/command.hpp:2601`、`include/clasp/command.hpp:2725` |
 | 生成补全脚本 | Generated completion script | 输出的 Bash/Zsh、Fish 或 PowerShell 代码，之后回调程序隐藏 complete 命令。 | `include/clasp/command.hpp:1533`、`include/clasp/command.hpp:3912` |
-| 消费者契约 | Consumer contract | 可选 examples、单测和黑盒 CTest，共同固定 API 与可见行为。 | `CMakeLists.txt:93`、`cmake/examples.cmake:401` |
-| 构建包 | Build package | 消费方使用的 CMake target/install/export 面 `clasp::clasp`，配置期强制版本一致。 | `CMakeLists.txt:11`、`CMakeLists.txt:61` |
+| 消费者契约 | Consumer contract | 可选 examples、单测和黑盒 CTest，共同固定 API 与可见行为。 | `CMakeLists.txt:91`、`cmake/examples.cmake:401` |
+| 构建包 | Build package | 消费方使用的 CMake target/install/export 面 `clasp::clasp`，配置期强制版本一致。 | `CMakeLists.txt:11`、`CMakeLists.txt:59` |

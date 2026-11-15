@@ -43,5 +43,5 @@ title: Architecture Glossary
 | 补全指令 | Completion directive | A Cobra-compatible numeric bitmask conveyed as a `:<number>` token to shell consumers. | `include/clasp/command.hpp:39`, `include/clasp/command.hpp:896` |
 | 动态补全 | Dynamic completion | Runtime resolution of shell words into command candidates, flags, custom values, and descriptions. | `include/clasp/command.hpp:2601`, `include/clasp/command.hpp:2725` |
 | 生成补全脚本 | Generated completion script | Emitted Bash/Zsh, Fish, or PowerShell code that later invokes the program's hidden complete commands. | `include/clasp/command.hpp:1533`, `include/clasp/command.hpp:3912` |
-| 消费者契约 | Consumer contract | Opt-in examples, unit tests, and black-box CTest assertions that pin APIs and visible behavior. | `CMakeLists.txt:93`, `cmake/examples.cmake:401` |
-| 构建包 | Build package | The CMake target/install/export surface consumed as `clasp::clasp`, with version consistency enforced at configure time. | `CMakeLists.txt:11`, `CMakeLists.txt:61` |
+| 消费者契约 | Consumer contract | Opt-in examples, unit tests, and black-box CTest assertions that pin APIs and visible behavior. | `CMakeLists.txt:91`, `cmake/examples.cmake:401` |
+| 构建包 | Build package | The CMake target/install/export surface consumed as `clasp::clasp`, with version consistency enforced at configure time. | `CMakeLists.txt:11`, `CMakeLists.txt:59` |
