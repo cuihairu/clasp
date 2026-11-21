@@ -104,17 +104,23 @@ jobs:
       - name: Generate coverage (lcov)
         shell: bash
         run: |
+          # `inconsistent` is reported for libstdc++ headers on GCC 15 runners
+          # ("line is hit but no branches on line have been evaluated"); it is the
+          # same class of bookkeeping noise already tolerated for mismatch/negative.
           lcov --capture --directory build --output-file coverage_raw.info \
             --rc branch_coverage=1 \
             --rc geninfo_unexecuted_blocks=1 \
             --ignore-errors mismatch \
-            --ignore-errors negative
+            --ignore-errors negative \
+            --ignore-errors inconsistent
           lcov --extract coverage_raw.info '*/include/*' '*/src/*' --output-file coverage_filtered.info \
             --rc branch_coverage=1 \
-            --ignore-errors unused
+            --ignore-errors unused \
+            --ignore-errors inconsistent
           lcov --remove coverage_filtered.info '/usr/*' --output-file coverage_filtered.info \
             --rc branch_coverage=1 \
-            --ignore-errors unused
+            --ignore-errors unused \
+            --ignore-errors inconsistent
           sed -i 's|/home/runner/work/clasp/clasp/||g' coverage_filtered.info
           # Remove branch data to ensure Codecov uses line coverage
           grep -v '^BRDA:' coverage_filtered.info | grep -v '^BRF:' | grep -v '^BRH:' > coverage.info
